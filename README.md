@@ -222,21 +222,3 @@ See the [`/website`](website/README.md) directory for examples.
 Some Go projects do have a `src` folder, but it usually happens when the devs came from the Java world where it's a common pattern. If you can help yourself try not to adopt this Java pattern. You really don't want your Go code or Go projects to look like Java :-)
 
 Don't confuse the project level `/src` directory with the `/src` directory Go uses for its workspaces as described in [`How to Write Go Code`](https://golang.org/doc/code.html). The `$GOPATH` environment variable points to your (current) workspace (by default it points to `$HOME/go` on non-windows systems). This workspace includes the top level `/pkg`, `/bin` and `/src` directories. Your actual project ends up being a sub-directory under `/src`, so if you have the `/src` directory in your project the project path will look like this: `/some/path/to/workspace/src/your_project/src/your_code.go`. Note that with Go 1.11 it's possible to have your project outside of your `GOPATH`, but it still doesn't mean it's a good idea to use this layout pattern.
-
-## Badges
-
-* [Go Report Card](https://goreportcard.com/) - It will scan your code with `gofmt`, `go vet`, `gocyclo`, `golint`, `ineffassign`, `license` and `misspell`.
-
-    [![Go Report Card](https://goreportcard.com/badge/github.com/pivaldi/mmw/todo?style=flat-square)](https://goreportcard.com/report/github.com/pivaldi/mmw/todo)
-
-* ~~[GoDoc](http://godoc.org) - It will provide online version of your GoDoc generated documentation. Change the link to point to your project.~~
-
-    [![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/pivaldi/mmw/todo)
-
-* [Pkg.go.dev](https://pkg.go.dev) - Pkg.go.dev is a new destination for Go discovery & docs. You can create a badge using the [badge generation tool](https://pkg.go.dev/badge).
-
-    [![PkgGoDev](https://pkg.go.dev/badge/github.com/pivaldi/mmw/todo)](https://pkg.go.dev/github.com/pivaldi/mmw/todo)
-
-* Release - It will show the latest release number for your project. Change the github link to point to your project.
-
-    [![Release](https://img.shields.io/github/release/pivaldi/mmw/todo.svg?style=flat-square)](https://github.com/pivaldi/mmw/todo/releases/latest)
