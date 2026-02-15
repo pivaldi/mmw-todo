@@ -1,0 +1,219 @@
+# Mise configuration for Todo API project
+# https://mise.jdx.dev/
+
+[shell_alias]
+dev = "mise run run"
+build = "mise run build"
+deploy = "mise run deploy"
+mr = "mise run"
+mt = "mise run"
+
+# Tool versions
+[tools.go]
+version = "latest"
+postinstall = """
+echo "Installing buf..."
+go install github.com/bufbuild/buf/cmd/buf@latest
+echo "Installing protoc-gen-go..."
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+echo "Installing protoc-gen-connect-go..."
+go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+echo "Installing migrate..."
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+echo "Tools installed successfully!"
+"""
+
+[tools.golangci-lint]
+version = "latest"
+
+# Environment variables
+[env]
+BINARY_NAME = "todo"
+BINARY_PATH = "./cmd/todo"
+BUILD_DIR = "bin"
+_.file = ".env"  # Load .env file if it exists
+
+# Development tasks
+[tasks."buf-deps"]
+description = "Download buf dependencies"
+run = "buf mod update"
+
+[tasks.generate]
+description = "Generate code from protobuf definitions"
+run = "buf generate"
+
+[tasks."buf-lint"]
+description = "Lint protobuf files"
+run = "buf lint"
+
+[tasks."buf-format"]
+description = "Format protobuf files"
+run = "buf format -w"
+
+[tasks."buf-breaking"]
+description = "Check for breaking changes in protobuf"
+run = "buf breaking --against '.git#branch=master'"
+
+# Building tasks
+[tasks.build]
+description = "Build the application binary"
+depends = ["generate"]
+run = """
+mkdir -p ${BUILD_DIR}
+go build -o ${BUILD_DIR}/${BINARY_NAME} -v ${BINARY_PATH}
+"""
+
+[tasks."build-linux"]
+description = "Build for Linux"
+depends = ["generate"]
+run = """
+mkdir -p ${BUILD_DIR}
+GOOS=linux GOARCH=amd64 go build -o ${BUILD_DIR}/${BINARY_NAME}-linux-amd64 -v ${BINARY_PATH}
+"""
+
+[tasks."build-darwin"]
+description = "Build for macOS"
+depends = ["generate"]
+run = """
+mkdir -p ${BUILD_DIR}
+GOOS=darwin GOARCH=amd64 go build -o ${BUILD_DIR}/${BINARY_NAME}-darwin-amd64 -v ${BINARY_PATH}
+GOOS=darwin GOARCH=arm64 go build -o ${BUILD_DIR}/${BINARY_NAME}-darwin-arm64 -v ${BINARY_PATH}
+"""
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = """
+go clean
+rm -rf ${BUILD_DIR}
+rm -rf gen/
+"""
+
+# Testing tasks
+[tasks.test]
+description = "Run unit tests"
+run = "go test -v -race -coverprofile=coverage.out ./..."
+
+[tasks."test-coverage"]
+description = "Run tests with coverage report"
+depends = ["test"]
+run = """
+go tool cover -html=coverage.out -o coverage.html
+echo "Coverage report generated: coverage.html"
+"""
+
+[tasks."test-integration"]
+description = "Run integration tests (requires Docker for testcontainers)"
+run = "go test -v -race -tags=integration ./internal/adapters/repository/postgres/... ./test/integration/..."
+
+[tasks."test-api"]
+description = "Run API tests (requires running server)"
+run = "go test -v -tags=api ./test/api/..."
+
+[tasks."test-all"]
+description = "Run all tests"
+depends = ["test", "test-integration", "test-api"]
+
+# Code quality tasks
+[tasks.fmt]
+description = "Format Go code"
+run = "go fmt ./..."
+
+[tasks.lint]
+description = "Run linter"
+run = "golangci-lint run ./..."
+
+[tasks.vet]
+description = "Run go vet"
+run = "go vet ./..."
+
+[tasks.check]
+description = "Run all checks (format, vet, lint)"
+depends = ["fmt", "vet", "lint", "buf-lint"]
+
+# Dependency tasks
+[tasks.deps]
+description = "Download Go dependencies"
+run = "go mod download"
+
+[tasks."deps-tidy"]
+description = "Tidy Go dependencies"
+run = "go mod tidy"
+
+[tasks."deps-verify"]
+description = "Verify Go dependencies"
+run = "go mod verify"
+
+# Database tasks
+[tasks."db-migrate-up"]
+description = "Run database migrations up"
+run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" up"
+
+[tasks."db-migrate-down"]
+description = "Run database migrations down"
+run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" down"
+
+[tasks."db-migrate-force"]
+description = "Force migration version (use with VERSION=<number>)"
+run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" force ${VERSION}"
+
+[tasks."db-seed"]
+description = "Seed database with sample data"
+run = "psql \"${DB_URL}\" -f ./scripts/seed_data.sql"
+
+[tasks."db-reset"]
+description = "Reset database (down, up, seed)"
+depends = ["db-migrate-down", "db-migrate-up", "db-seed"]
+
+[tasks."db-clean"]
+description = "Drop and recreate database (nuclear option)"
+run = """
+docker-compose -f deployments/docker-compose.yml down -v
+docker-compose -f deployments/docker-compose.yml up -d postgres
+sleep 5
+"""
+
+[tasks."db-setup"]
+description = "Complete database setup (clean + migrate)"
+depends = ["db-clean", "db-migrate-up"]
+
+[tasks."db-migrate-version"]
+description = "Show current migration version"
+run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" version"
+
+# Docker tasks
+[tasks."docker-build"]
+description = "Build Docker image"
+run = "docker build -t todo:latest -f build/package/Dockerfile ."
+
+[tasks."docker-up"]
+description = "Start Docker Compose services"
+run = "docker-compose -f deployments/docker-compose.yml up -d"
+
+[tasks."docker-down"]
+description = "Stop Docker Compose services"
+run = "docker-compose -f deployments/docker-compose.yml down"
+
+[tasks."docker-logs"]
+description = "View Docker Compose logs"
+run = "docker-compose -f deployments/docker-compose.yml logs -f"
+
+# Running tasks
+[tasks.run]
+description = "Run the application"
+depends = ["generate"]
+run = "go run ${BINARY_PATH}/main.go"
+
+[tasks."run-dev"]
+description = "Run with hot reload (requires air)"
+run = "air"
+
+# Default task (show help)
+[tasks.default]
+alias = "help"
+
+[tasks.help]
+description = "Display available tasks"
+run = """
+echo "Available tasks:"
+mise tasks
+"""

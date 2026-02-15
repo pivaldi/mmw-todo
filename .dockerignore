@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts
+bin/
+*.out
+*.test
+coverage.out
+coverage.html
+coverage_*.out
+
+# Documentation
+*.md
+!README.md
+docs/
+examples/
+
+# Web frontend (if separate container)
+web/
+
+# Test files
+*_test.go
+
+# Development
+.env
+.env.local
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies (will be downloaded in container)
+vendor/

@@ -1,0 +1,111 @@
+<div class="todo-list-container">
+  <header class="page-header">
+    <h1>Todo List</h1>
+    <button class="btn btn-primary" (click)="createTodo()">
+      <span class="icon">+</span> New Todo
+    </button>
+  </header>
+
+  <div class="filters">
+    <div class="filter-group">
+      <label for="status-filter">Status:</label>
+      <select
+        id="status-filter"
+        [(ngModel)]="statusFilter"
+        (change)="onFilterChange()"
+        class="filter-select">
+        <option value="all">All</option>
+        <option [value]="TaskStatus.PENDING">Pending</option>
+        <option [value]="TaskStatus.IN_PROGRESS">In Progress</option>
+        <option [value]="TaskStatus.COMPLETED">Completed</option>
+        <option [value]="TaskStatus.CANCELLED">Cancelled</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="priority-filter">Priority:</label>
+      <select
+        id="priority-filter"
+        [(ngModel)]="priorityFilter"
+        (change)="onFilterChange()"
+        class="filter-select">
+        <option value="all">All</option>
+        <option [value]="Priority.LOW">Low</option>
+        <option [value]="Priority.MEDIUM">Medium</option>
+        <option [value]="Priority.HIGH">High</option>
+        <option [value]="Priority.URGENT">Urgent</option>
+      </select>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading todos...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+    <button (click)="loadTodos()" class="btn btn-secondary">Retry</button>
+  </div>
+
+  <div *ngIf="!loading && !error && filteredTodos.length === 0" class="empty-state">
+    <p>No todos found.</p>
+    <button class="btn btn-primary" (click)="createTodo()">Create your first todo</button>
+  </div>
+
+  <div *ngIf="!loading && !error && filteredTodos.length > 0" class="todo-grid">
+    <div
+      *ngFor="let todo of filteredTodos"
+      class="todo-card"
+      [class.completed]="todo.status === TaskStatus.COMPLETED"
+      (click)="viewTodo(todo.id)">
+
+      <div class="todo-header">
+        <h3 class="todo-title">{{ todo.title }}</h3>
+        <div class="todo-badges">
+          <span class="badge" [ngClass]="getPriorityClass(todo.priority)">
+            {{ todo.priority }}
+          </span>
+          <span class="badge" [ngClass]="getStatusClass(todo.status)">
+            {{ todo.status }}
+          </span>
+        </div>
+      </div>
+
+      <p *ngIf="todo.description" class="todo-description">
+        {{ todo.description }}
+      </p>
+
+      <div class="todo-meta">
+        <div *ngIf="todo.dueDate" class="due-date">
+          <span class="icon">📅</span>
+          <span
+            [class.overdue]="isDue(todo)"
+            [class.due-soon]="isDueSoon(todo)">
+            {{ todo.dueDate | date:'short' }}
+          </span>
+        </div>
+        <div class="created-at">
+          <span class="icon">🕐</span>
+          <span>{{ todo.createdAt | date:'short' }}</span>
+        </div>
+      </div>
+
+      <div class="todo-actions">
+        <button
+          *ngIf="todo.status !== TaskStatus.COMPLETED"
+          (click)="completeTodo(todo, $event)"
+          class="btn btn-success btn-sm"
+          title="Mark as complete">
+          ✓ Complete
+        </button>
+        <button
+          (click)="deleteTodo(todo, $event)"
+          class="btn btn-danger btn-sm"
+          title="Delete todo">
+          🗑 Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

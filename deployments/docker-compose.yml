@@ -1,0 +1,47 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:18-alpine
+    container_name: todoapp-postgres
+    environment:
+      POSTGRES_DB: todoapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - todoapp-network
+
+  # Todo API Service
+  todo:
+    build:
+      context: ../../..
+      dockerfile: services/todo/build/package/Dockerfile
+    container_name: todoapp-api
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5435/todoapp?sslmode=disable
+      PORT: 8090
+      ENVIRONMENT: development
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - todoapp-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  todoapp-network:
+    driver: bridge

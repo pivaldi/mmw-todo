@@ -1,0 +1,20 @@
+<div class="app-container">
+  <nav class="navbar">
+    <div class="navbar-content">
+      <a routerLink="/todos" class="navbar-brand">
+        <span class="logo">✓</span>
+        {{ title }}
+      </a>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <p>Todo Manager - Built with Angular & DDD/Hexagonal Architecture</p>
+    </div>
+  </footer>
+</div>

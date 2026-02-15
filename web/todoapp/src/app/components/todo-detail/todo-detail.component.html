@@ -1,0 +1,105 @@
+<div class="todo-detail-container">
+  <div class="page-header">
+    <button class="btn btn-link" (click)="goBack()">
+      ← Back to List
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading todo...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+    <button (click)="loadTodo(todo?.id || '')" class="btn btn-secondary">Retry</button>
+  </div>
+
+  <div *ngIf="!loading && !error && todo" class="todo-detail-card">
+    <header class="detail-header">
+      <div class="title-section">
+        <h1>{{ todo.title }}</h1>
+        <div class="badges">
+          <span class="badge" [ngClass]="getPriorityClass(todo.priority)">
+            {{ todo.priority }}
+          </span>
+          <span class="badge" [ngClass]="getStatusClass(todo.status)">
+            {{ todo.status }}
+          </span>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-secondary" (click)="editTodo()">
+          ✏️ Edit
+        </button>
+        <button
+          *ngIf="todo.status !== TaskStatus.COMPLETED"
+          class="btn btn-success"
+          (click)="completeTodo()">
+          ✓ Complete
+        </button>
+        <button
+          *ngIf="todo.status === TaskStatus.COMPLETED || todo.status === TaskStatus.CANCELLED"
+          class="btn btn-info"
+          (click)="reopenTodo()">
+          ↺ Reopen
+        </button>
+        <button class="btn btn-danger" (click)="deleteTodo()">
+          🗑 Delete
+        </button>
+      </div>
+    </header>
+
+    <div class="detail-section">
+      <h3>Description</h3>
+      <p class="description">{{ todo.description || 'No description provided.' }}</p>
+    </div>
+
+    <div class="detail-section">
+      <h3>Details</h3>
+      <dl class="detail-list">
+        <div class="detail-item">
+          <dt>Status</dt>
+          <dd>
+            <span class="badge" [ngClass]="getStatusClass(todo.status)">
+              {{ todo.status }}
+            </span>
+          </dd>
+        </div>
+
+        <div class="detail-item">
+          <dt>Priority</dt>
+          <dd>
+            <span class="badge" [ngClass]="getPriorityClass(todo.priority)">
+              {{ todo.priority }}
+            </span>
+          </dd>
+        </div>
+
+        <div class="detail-item" *ngIf="todo.dueDate">
+          <dt>Due Date</dt>
+          <dd>
+            <span
+              [class.overdue]="isDue()"
+              [class.due-soon]="isDueSoon()">
+              {{ todo.dueDate | date:'full' }}
+            </span>
+            <span *ngIf="isDue()" class="warning-text"> (Overdue!)</span>
+            <span *ngIf="isDueSoon() && !isDue()" class="warning-text"> (Due soon)</span>
+          </dd>
+        </div>
+
+        <div class="detail-item">
+          <dt>Created</dt>
+          <dd>{{ todo.createdAt | date:'full' }}</dd>
+        </div>
+
+        <div class="detail-item">
+          <dt>Last Updated</dt>
+          <dd>{{ todo.updatedAt | date:'full' }}</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>
