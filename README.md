@@ -1,5 +1,7 @@
 # DDD & Hexagonal Architecture with Standard Go Project Layout
 
+This Go module takes part of the [mmw](https://github.com/pivaldi/mmw) project that demonstrates the implementation of the [Go Modular Monolith White Paper](https://github.com/pivaldi/go-modular-monolith-white-paper)
+
 ## Overview
 
 This repository includes a **working example implementation** that demonstrates how to apply Domain-Driven Design (DDD) and Hexagonal Architecture (Ports & Adapters) patterns using the [Standard Go Project Layout](https://github.com/golang-standards/project-layout/releases/latest)).
