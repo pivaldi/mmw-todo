@@ -18,8 +18,20 @@ type PostgresTodoRepository struct {
 	pool *pgxpool.Pool
 }
 
-// NewPostgresTodRepository creates a new PostgreSQL repository
-func NewPostgresTodRepository(pool *pgxpool.Pool) *PostgresTodoRepository {
+// todoRow represents a todo row from the database
+type todoRow struct {
+	ID          string     `db:"id"`
+	Title       string     `db:"title"`
+	Description string     `db:"description"`
+	Status      string     `db:"status"`
+	Priority    string     `db:"priority"`
+	DueDate     *time.Time `db:"due_date"`
+	CreatedAt   time.Time  `db:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at"`
+}
+
+// NewPostgresTodoRepository creates a new PostgreSQL repository
+func NewPostgresTodoRepository(pool *pgxpool.Pool) *PostgresTodoRepository {
 	return &PostgresTodoRepository{
 		pool: pool,
 	}
@@ -64,37 +76,21 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID)
 		WHERE id = $1
 	`
 
-	var (
-		idStr       string
-		title       string
-		description string
-		status      string
-		priority    string
-		dueDate     *time.Time
-		createdAt   time.Time
-		updatedAt   time.Time
-	)
+	rows, err := r.pool.Query(ctx, query, id.String())
+	if err != nil {
+		return nil, fmt.Errorf("querying todo: %w", err)
+	}
+	defer rows.Close()
 
-	err := r.pool.QueryRow(ctx, query, id.String()).Scan(
-		&idStr,
-		&title,
-		&description,
-		&status,
-		&priority,
-		&dueDate,
-		&createdAt,
-		&updatedAt,
-	)
-
+	todo, err := pgx.CollectOneRow(rows, todoRowScanner)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrTodoNotFound
 		}
-		return nil, fmt.Errorf("querying todo: %w", err)
+		return nil, fmt.Errorf("collecting todo: %w", err)
 	}
 
-	// Reconstitute domain aggregate
-	return reconstituteTodo(idStr, title, description, status, priority, dueDate, createdAt, updatedAt)
+	return todo, nil
 }
 
 // FindAll retrieves todos matching the given filters
@@ -144,43 +140,9 @@ func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 	}
 	defer rows.Close()
 
-	todos := []*domain.Todo{}
-	for rows.Next() {
-		var (
-			idStr       string
-			title       string
-			description string
-			status      string
-			priority    string
-			dueDate     *time.Time
-			createdAt   time.Time
-			updatedAt   time.Time
-		)
-
-		err := rows.Scan(
-			&idStr,
-			&title,
-			&description,
-			&status,
-			&priority,
-			&dueDate,
-			&createdAt,
-			&updatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("scanning todo: %w", err)
-		}
-
-		todo, err := reconstituteTodo(idStr, title, description, status, priority, dueDate, createdAt, updatedAt)
-		if err != nil {
-			return nil, err
-		}
-
-		todos = append(todos, todo)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating todos: %w", err)
+	todos, err := pgx.CollectRows(rows, todoRowScanner)
+	if err != nil {
+		return nil, fmt.Errorf("collecting todos: %w", err)
 	}
 
 	return todos, nil
@@ -237,44 +199,46 @@ func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID) e
 	return nil
 }
 
-// reconstituteTodo rebuilds a domain Todo from database values
-func reconstituteTodo(
-	idStr, title, description, status, priority string,
-	dueDate *time.Time,
-	createdAt, updatedAt time.Time,
-) (*domain.Todo, error) {
+// todoRowScanner is a pgx.RowToFunc that scans a row and reconstitutes a domain Todo
+func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
+	// Use pgx.RowToStructByName to automatically map columns to struct fields
+	dbRow, err := pgx.RowToStructByName[todoRow](row)
+	if err != nil {
+		return nil, fmt.Errorf("scanning row: %w", err)
+	}
+
 	// Parse domain ID
-	todoID, err := domain.ParseTodoID(idStr)
+	todoID, err := domain.ParseTodoID(dbRow.ID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid todo ID: %w", err)
 	}
 
 	// Create value objects
-	taskTitle, err := domain.NewTaskTitle(title)
+	taskTitle, err := domain.NewTaskTitle(dbRow.Title)
 	if err != nil {
 		return nil, fmt.Errorf("invalid title: %w", err)
 	}
 
-	taskStatus, err := domain.NewTaskStatus(status)
+	taskStatus, err := domain.NewTaskStatus(dbRow.Status)
 	if err != nil {
 		return nil, fmt.Errorf("invalid status: %w", err)
 	}
 
-	taskPriority, err := domain.NewPriority(priority)
+	taskPriority, err := domain.NewPriority(dbRow.Priority)
 	if err != nil {
 		return nil, fmt.Errorf("invalid priority: %w", err)
 	}
 
 	var domainDueDate *domain.DueDate
-	if dueDate != nil {
+	if dbRow.DueDate != nil {
 		// For reconstitution, we don't validate that due date is in the future
 		// since it may have passed since creation
 		dd := domain.DueDate{}
 		// We need to use reflection or create a helper method
 		// For now, we'll just store the time directly if it's past
 		// In production, you might want to add a reconstitution method to DueDate
-		if dueDate.After(time.Now()) {
-			dd, err = domain.NewDueDate(*dueDate)
+		if dbRow.DueDate.After(time.Now()) {
+			dd, err = domain.NewDueDate(*dbRow.DueDate)
 			if err == nil {
 				domainDueDate = &dd
 			}
@@ -287,12 +251,12 @@ func reconstituteTodo(
 	todo := domain.ReconstituteTodo(
 		todoID,
 		taskTitle,
-		description,
+		dbRow.Description,
 		taskStatus,
 		taskPriority,
 		domainDueDate,
-		createdAt,
-		updatedAt,
+		dbRow.CreatedAt,
+		dbRow.UpdatedAt,
 		nil, // completedAt - we don't track this in current schema
 	)
 

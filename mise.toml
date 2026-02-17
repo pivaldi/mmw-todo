@@ -36,23 +36,38 @@ _.file = ".env"  # Load .env file if it exists
 # Development tasks
 [tasks."buf-deps"]
 description = "Download buf dependencies"
-run = "buf mod update"
+run = """
+cd ../../contracts
+buf mod update
+"""
 
 [tasks.generate]
-description = "Generate code from protobuf definitions"
-run = "buf generate"
+description = "Generate code from protobuf definitions (Todo API only)"
+run = """
+cd ../../contracts
+buf generate --template buf.gen.todo.yaml
+"""
 
 [tasks."buf-lint"]
-description = "Lint protobuf files"
-run = "buf lint"
+description = "Lint protobuf files (Todo API only)"
+run = """
+cd ../../contracts/proto/todo
+buf lint
+"""
 
 [tasks."buf-format"]
-description = "Format protobuf files"
-run = "buf format -w"
+description = "Format protobuf files (Todo API only)"
+run = """
+cd ../../contracts/proto/todo
+buf format -w
+"""
 
 [tasks."buf-breaking"]
-description = "Check for breaking changes in protobuf"
-run = "buf breaking --against '.git#branch=master'"
+description = "Check for breaking changes in protobuf (Todo API only)"
+run = """
+cd ../../contracts/proto/todo
+buf breaking --against '.git#branch=master'
+"""
 
 # Building tasks
 [tasks.build]

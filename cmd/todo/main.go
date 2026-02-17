@@ -62,7 +62,7 @@ func run(config Config, logger *slog.Logger) error {
 	logger.Info("database connection established")
 
 	// Initialize dependencies (Dependency Injection)
-	todoRepository := postgres.NewPostgresTodRepository(dbPool)
+	todoRepository := postgres.NewPostgresTodoRepository(dbPool)
 	eventDispatcher := events.NewInMemoryEventDispatcher(logger)
 	todoService := application.NewTodoApplicationService(todoRepository, eventDispatcher)
 	todoHandler := connecthandler.NewTodoHandler(todoService)
