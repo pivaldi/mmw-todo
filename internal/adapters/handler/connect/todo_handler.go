@@ -7,7 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	todov1 "github.com/pivaldi/mmw/contracts/go/todo/v1"
+	todov1 "github.com/pivaldi/mmw/contracts/gen/go/todo/v1"
 	"github.com/pivaldi/mmw/todo/internal/application"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )

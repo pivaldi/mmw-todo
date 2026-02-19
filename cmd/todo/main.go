@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	todov1connect "github.com/pivaldi/mmw/contracts/go/todo/v1/todov1connect"
+	todov1connect "github.com/pivaldi/mmw/contracts/gen/go/todo/v1/todov1connect"
 	"github.com/pivaldi/mmw/todo/internal/adapters/events"
 	connecthandler "github.com/pivaldi/mmw/todo/internal/adapters/handler/connect"
 	"github.com/pivaldi/mmw/todo/internal/adapters/repository/postgres"

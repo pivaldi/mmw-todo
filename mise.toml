@@ -26,6 +26,9 @@ echo "Tools installed successfully!"
 [tools.golangci-lint]
 version = "latest"
 
+[vars]
+CONTRACTS_DIR = "{{cwd}}/../../contracts"
+
 # Environment variables
 [env]
 BINARY_NAME = "todo"
@@ -37,36 +40,36 @@ _.file = ".env"  # Load .env file if it exists
 [tasks."buf-deps"]
 description = "Download buf dependencies"
 run = """
-cd ../../contracts
+cd {{vars.CONTRACTS_DIR}}
 buf mod update
 """
 
 [tasks.generate]
 description = "Generate code from protobuf definitions (Todo API only)"
 run = """
-cd ../../contracts
+cd {{vars.CONTRACTS_DIR}}
 buf generate --template buf.gen.todo.yaml
 """
 
 [tasks."buf-lint"]
 description = "Lint protobuf files (Todo API only)"
 run = """
-cd ../../contracts/proto/todo
-buf lint
+cd {{vars.CONTRACTS_DIR}}
+buf lint proto/todo
 """
 
 [tasks."buf-format"]
 description = "Format protobuf files (Todo API only)"
 run = """
-cd ../../contracts/proto/todo
-buf format -w
+cd {{vars.CONTRACTS_DIR}}
+buf format -w proto/todo
 """
 
 [tasks."buf-breaking"]
 description = "Check for breaking changes in protobuf (Todo API only)"
 run = """
-cd ../../contracts/proto/todo
-buf breaking --against '.git#branch=master'
+cd {{vars.CONTRACTS_DIR}}
+buf breaking --against '.git#branch=master' proto/todo
 """
 
 # Building tasks
