@@ -87,6 +87,7 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrTodoNotFound
 		}
+
 		return nil, fmt.Errorf("collecting todo: %w", err)
 	}
 
@@ -100,7 +101,7 @@ func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 		FROM todos
 		WHERE 1=1
 	`
-	args := []interface{}{}
+	args := []any{}
 	argIndex := 1
 
 	// Apply status filter
@@ -131,7 +132,6 @@ func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 	if filters.Offset != nil {
 		query += fmt.Sprintf(" OFFSET $%d", argIndex)
 		args = append(args, *filters.Offset)
-		argIndex++
 	}
 
 	rows, err := r.pool.Query(ctx, query, args...)

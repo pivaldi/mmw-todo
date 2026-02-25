@@ -23,19 +23,21 @@ func NewInMemoryEventDispatcher(logger *slog.Logger) *InMemoryEventDispatcher {
 
 // Dispatch publishes domain events
 // Currently logs events; in production would publish to message broker
-func (d *InMemoryEventDispatcher) Dispatch(ctx context.Context, events []domain.DomainEvent) error {
+func (d *InMemoryEventDispatcher) Dispatch(_ context.Context, events []domain.DomainEvent) error {
 	for _, event := range events {
 		// Serialize event data for logging
-		eventData, err := json.Marshal(map[string]interface{}{
-			"type":         event.EventType(),
-			"aggregate_id": event.AggregateID(),
-			"occurred_at":  event.OccurredAt(),
-		})
+		eventData, err := json.Marshal(
+			map[string]any{
+				"type":         event.EventType(),
+				"aggregate_id": event.AggregateID(),
+				"occurred_at":  event.OccurredAt(),
+			})
 		if err != nil {
 			d.logger.Error("failed to marshal event",
 				"error", err,
 				"event_type", event.EventType(),
 			)
+
 			continue
 		}
 

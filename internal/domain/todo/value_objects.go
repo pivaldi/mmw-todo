@@ -8,6 +8,10 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	maxTitleLength = 200
+)
+
 // ENUM(pending, in_progress, completed, cancelled)
 type TaskStatus string
 
@@ -56,7 +60,7 @@ func NewTaskTitle(title string) (TaskTitle, error) {
 	if trimmed == "" {
 		return TaskTitle{}, NewValidationError("title", "cannot be empty")
 	}
-	if len(trimmed) > 200 {
+	if len(trimmed) > maxTitleLength {
 		return TaskTitle{}, NewValidationError("title", "cannot exceed 200 characters")
 	}
 

@@ -20,6 +20,8 @@ echo "Installing protoc-gen-connect-go..."
 go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
 echo "Installing migrate..."
 go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+echo "Installing goda..."
+go install github.com/loov/goda@latest
 echo "Tools installed successfully!"
 """
 
@@ -152,13 +154,41 @@ description = "Run all checks (format, vet, lint)"
 depends = ["fmt", "vet", "lint", "buf-lint"]
 
 # Dependency tasks
-[tasks.deps]
-description = "Download Go dependencies"
-run = "go mod download"
-
 [tasks."deps-tidy"]
 description = "Tidy Go dependencies"
 run = "go mod tidy"
+
+[tasks.deps]
+description = "Analyze dependencies with goda"
+run = """
+  echo "Analyzing workspace dependencies..."
+  goda graph "./..." | dot -Tsvg -o graph.svg
+  xdg-open graph.svg
+"""
+
+[tasks."deps:tree"]
+description = "Show dependency tree"
+run = """
+echo "Dependency tree for workspace:"
+goda tree "./..."
+"""
+
+[tasks."deps:list"]
+description = "List all dependencies"
+run = """
+echo "All dependencies in workspace:"
+goda list "./..."
+"""
+
+[tasks."deps:services"]
+description = "Show dependencies between services and libs"
+run = """
+echo "Service dependencies:"
+goda graph "./services/..."
+echo ""
+echo "Library dependencies:"
+goda graph "./libs/..."
+"""
 
 [tasks."deps-verify"]
 description = "Verify Go dependencies"

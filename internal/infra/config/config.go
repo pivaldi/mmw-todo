@@ -50,8 +50,8 @@ func (d *Database) URL() string {
 type Config struct {
 	Database    *Database `mapstructure:"database"`
 	Port        string    `mapstructure:"port"`
-	Environment string    `env:"APP_EN, required" mapstructure:"environment"`
-	AppName     string    `mapstructure:"app-env"`
+	Environment string    `env:"APP_ENV, required" mapstructure:"environment"`
+	AppName     string    `mapstructure:"app-name"`
 }
 
 // GetAppEnv returns the App environnement variable (prod, testing, etc)
@@ -59,24 +59,33 @@ func (c Config) GetAppEnv() string {
 	return c.Environment
 }
 
-// Load loads the configurations from enbended files:
+// Load loads the configurations from embedded files:
 // - configs/default.toml
 // - configs/<APP_ENV>.toml if exist
-// If envs is not nil, use as environnement variable (eg. unit-tests)
+// If envs is not nil, use as environment variable (eg. unit-tests)
 func Load(ctx context.Context, envs map[string]string) (*Config, error) {
 	config := new(Config)
 
-	password := os.Getenv("DB_PASSWORD")
-	if password == "" {
-		return nil, eris.New("env var DB_PASSWORD not set")
-		// return nil, eris.Wrap(errors.New("env var DB_PASSWORD not set"), "")
+	// Get password from environment
+	var password string
+	if envs != nil {
+		password = envs["DB_PASSWORD"]
+	} else {
+		password = os.Getenv("DB_PASSWORD")
 	}
 
-	config.Database.password = password
+	if password == "" {
+		return nil, eris.New("env var DB_PASSWORD not set")
+	}
+
 	configFS := getConfigFS()
 	err := oglconfig.NewContext(ctx, configFS, envs).Fill(config)
 	if err != nil {
 		return nil, eris.Wrap(err, "error filling config")
+	}
+
+	if config.Database != nil {
+		config.Database.password = password
 	}
 
 	return config, nil

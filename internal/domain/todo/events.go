@@ -38,19 +38,19 @@ type TodoCreated struct {
 }
 
 // EventType returns the event type
-func (e TodoCreated) EventType() string {
+func (e *TodoCreated) EventType() string {
 	return "TodoCreated"
 }
 
 // NewTodoCreatedEvent creates a new TodoCreated event
-func NewTodoCreatedEvent(id TodoID, title TaskTitle, description string, priority Priority, dueDate *DueDate) TodoCreated {
+func NewTodoCreatedEvent(id TodoID, title TaskTitle, description string, priority Priority, dueDate *DueDate) *TodoCreated {
 	var dueDatePtr *time.Time
 	if dueDate != nil {
 		t := dueDate.Time()
 		dueDatePtr = &t
 	}
 
-	return TodoCreated{
+	return &TodoCreated{
 		BaseDomainEvent: BaseDomainEvent{
 			aggregateID: id.String(),
 			occurredAt:  time.Now(),
@@ -73,13 +73,13 @@ type TodoUpdated struct {
 }
 
 // EventType returns the event type
-func (e TodoUpdated) EventType() string {
+func (e *TodoUpdated) EventType() string {
 	return "TodoUpdated"
 }
 
 // NewTodoUpdatedEvent creates a new TodoUpdated event
-func NewTodoUpdatedEvent(id TodoID) TodoUpdated {
-	return TodoUpdated{
+func NewTodoUpdatedEvent(id TodoID) *TodoUpdated {
+	return &TodoUpdated{
 		BaseDomainEvent: BaseDomainEvent{
 			aggregateID: id.String(),
 			occurredAt:  time.Now(),
@@ -94,13 +94,13 @@ type TodoCompleted struct {
 }
 
 // EventType returns the event type
-func (e TodoCompleted) EventType() string {
+func (e *TodoCompleted) EventType() string {
 	return "TodoCompleted"
 }
 
 // NewTodoCompletedEvent creates a new TodoCompleted event
-func NewTodoCompletedEvent(id TodoID, completedAt time.Time) TodoCompleted {
-	return TodoCompleted{
+func NewTodoCompletedEvent(id TodoID, completedAt time.Time) *TodoCompleted {
+	return &TodoCompleted{
 		BaseDomainEvent: BaseDomainEvent{
 			aggregateID: id.String(),
 			occurredAt:  time.Now(),
@@ -116,13 +116,13 @@ type TodoReopened struct {
 }
 
 // EventType returns the event type
-func (e TodoReopened) EventType() string {
+func (e *TodoReopened) EventType() string {
 	return "TodoReopened"
 }
 
 // NewTodoReopenedEvent creates a new TodoReopened event
-func NewTodoReopenedEvent(id TodoID, previousStatus TaskStatus) TodoReopened {
-	return TodoReopened{
+func NewTodoReopenedEvent(id TodoID, previousStatus TaskStatus) *TodoReopened {
+	return &TodoReopened{
 		BaseDomainEvent: BaseDomainEvent{
 			aggregateID: id.String(),
 			occurredAt:  time.Now(),
@@ -137,13 +137,13 @@ type TodoDeleted struct {
 }
 
 // EventType returns the event type
-func (e TodoDeleted) EventType() string {
+func (e *TodoDeleted) EventType() string {
 	return "TodoDeleted"
 }
 
 // NewTodoDeletedEvent creates a new TodoDeleted event
-func NewTodoDeletedEvent(id TodoID) TodoDeleted {
-	return TodoDeleted{
+func NewTodoDeletedEvent(id TodoID) *TodoDeleted {
+	return &TodoDeleted{
 		BaseDomainEvent: BaseDomainEvent{
 			aggregateID: id.String(),
 			occurredAt:  time.Now(),

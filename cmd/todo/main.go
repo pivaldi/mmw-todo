@@ -28,6 +28,15 @@ type Config struct {
 	Environment string
 }
 
+const (
+	serverReadTimeout    = 10 * time.Second
+	serverWriteTimeout   = 10 * time.Second
+	serverIdleTimeout    = 120 * time.Second
+	shutdownTimeout      = 30 * time.Second
+	minDatabaseURLLength = 20
+	maxTitleLength       = 200
+)
+
 func main() {
 	// Load configuration
 	config := loadConfig()
@@ -80,6 +89,7 @@ func run(config Config, logger *slog.Logger) error {
 		if err := dbPool.Ping(r.Context()); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			fmt.Fprintf(w, `{"status":"unhealthy","database":"down"}`)
+
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -112,9 +122,9 @@ func run(config Config, logger *slog.Logger) error {
 			corsMiddleware(loggingMiddleware(mux, logger)),
 			&http2.Server{},
 		),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		ReadTimeout:  serverReadTimeout,
+		WriteTimeout: serverWriteTimeout,
+		IdleTimeout:  serverIdleTimeout,
 	}
 
 	// Start server in goroutine
@@ -137,7 +147,7 @@ func run(config Config, logger *slog.Logger) error {
 		logger.Info("shutdown signal received", "signal", sig)
 
 		// Create context with timeout for graceful shutdown
-		shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 30*time.Second)
+		shutdownCtx, shutdownCancel := context.WithTimeout(ctx, shutdownTimeout)
 		defer shutdownCancel()
 
 		// Gracefully shut down the server
@@ -147,6 +157,7 @@ func run(config Config, logger *slog.Logger) error {
 			if err := server.Close(); err != nil {
 				logger.Error("forcing server close", "error", err)
 			}
+
 			return fmt.Errorf("graceful shutdown: %w", err)
 		}
 
@@ -239,14 +250,16 @@ func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
+
 	return defaultValue
 }
 
 // maskDatabaseURL masks sensitive parts of database URL for logging
 func maskDatabaseURL(url string) string {
 	// Simple masking - in production use more robust URL parsing
-	if len(url) < 20 {
+	if len(url) < minDatabaseURLLength {
 		return "***"
 	}
+
 	return url[:10] + "***" + url[len(url)-10:]
 }

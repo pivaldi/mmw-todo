@@ -1,4 +1,4 @@
-app_name = "Todo"
+app-name = "Todo"
 
 [database]
 user = "rcv"

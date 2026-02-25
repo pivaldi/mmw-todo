@@ -191,10 +191,12 @@ func (s *TodoApplicationService) UpdateTodo(
 	return MapTodoToResponse(todo), nil
 }
 
-// CompleteTodo marks a todo as completed
-func (s *TodoApplicationService) CompleteTodo(
+// executeStatusChange is a helper to avoid code duplication for status change operations
+func (s *TodoApplicationService) executeStatusChange(
 	ctx context.Context,
 	id string,
+	action func(*domain.Todo) error,
+	actionName string,
 ) (*TodoResponse, error) {
 	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
@@ -208,9 +210,9 @@ func (s *TodoApplicationService) CompleteTodo(
 		return nil, fmt.Errorf("finding todo: %w", err)
 	}
 
-	// Complete the todo
-	if err := todo.Complete(); err != nil {
-		return nil, fmt.Errorf("completing todo: %w", err)
+	// Execute the action
+	if err := action(todo); err != nil {
+		return nil, fmt.Errorf("%s: %w", actionName, err)
 	}
 
 	// Persist changes
@@ -230,43 +232,20 @@ func (s *TodoApplicationService) CompleteTodo(
 	return MapTodoToResponse(todo), nil
 }
 
+// CompleteTodo marks a todo as completed
+func (s *TodoApplicationService) CompleteTodo(
+	ctx context.Context,
+	id string,
+) (*TodoResponse, error) {
+	return s.executeStatusChange(ctx, id, (*domain.Todo).Complete, "completing todo")
+}
+
 // ReopenTodo reopens a completed or cancelled todo
 func (s *TodoApplicationService) ReopenTodo(
 	ctx context.Context,
 	id string,
 ) (*TodoResponse, error) {
-	// Parse and validate ID
-	todoID, err := domain.ParseTodoID(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid todo ID: %w", err)
-	}
-
-	// Retrieve existing todo
-	todo, err := s.repository.FindByID(ctx, todoID)
-	if err != nil {
-		return nil, fmt.Errorf("finding todo: %w", err)
-	}
-
-	// Reopen the todo
-	if err := todo.Reopen(); err != nil {
-		return nil, fmt.Errorf("reopening todo: %w", err)
-	}
-
-	// Persist changes
-	if err := s.repository.Update(ctx, todo); err != nil {
-		return nil, fmt.Errorf("updating todo: %w", err)
-	}
-
-	// Dispatch domain events
-	if err := s.dispatcher.Dispatch(ctx, todo.Events()); err != nil {
-		return nil, fmt.Errorf("dispatching events: %w", err)
-	}
-
-	// Clear events after dispatching
-	todo.ClearEvents()
-
-	// Map to response DTO
-	return MapTodoToResponse(todo), nil
+	return s.executeStatusChange(ctx, id, (*domain.Todo).Reopen, "reopening todo")
 }
 
 // DeleteTodo deletes a todo
