@@ -50,9 +50,9 @@ func (s *TodoApplicationService) CreateTodo(
 		return nil, fmt.Errorf("invalid title: %w", err)
 	}
 
-	priority, err := domain.NewPriority(req.Priority)
-	if err != nil {
-		return nil, fmt.Errorf("invalid priority: %w", err)
+	// Validate priority enum
+	if !req.Priority.IsValid() {
+		return nil, fmt.Errorf("invalid priority: %w", domain.ErrInvalidPriority)
 	}
 
 	var dueDate *domain.DueDate
@@ -65,7 +65,7 @@ func (s *TodoApplicationService) CreateTodo(
 	}
 
 	// Create todo using domain factory
-	todo := domain.NewTodo(title, req.Description, priority, dueDate)
+	todo := domain.NewTodo(title, req.Description, req.Priority, dueDate)
 
 	// Persist the todo
 	if err := s.repository.Save(ctx, todo); err != nil {
@@ -143,11 +143,11 @@ func (s *TodoApplicationService) UpdateTodo(
 
 	// Update priority if provided
 	if req.Priority != nil {
-		priority, err := domain.NewPriority(*req.Priority)
-		if err != nil {
-			return nil, fmt.Errorf("invalid priority: %w", err)
+		// Validate priority enum
+		if !req.Priority.IsValid() {
+			return nil, fmt.Errorf("invalid priority: %w", domain.ErrInvalidPriority)
 		}
-		if err := todo.UpdatePriority(priority); err != nil {
+		if err := todo.UpdatePriority(*req.Priority); err != nil {
 			return nil, fmt.Errorf("updating priority: %w", err)
 		}
 	}
@@ -310,11 +310,11 @@ func (s *TodoApplicationService) ListTodos(
 	}
 
 	if filters.Priority != nil {
-		priority, err := domain.NewPriority(*filters.Priority)
-		if err != nil {
-			return nil, fmt.Errorf("invalid priority filter: %w", err)
+		// Validate priority enum
+		if !filters.Priority.IsValid() {
+			return nil, fmt.Errorf("invalid priority filter: %w", domain.ErrInvalidPriority)
 		}
-		repoFilters.Priority = &priority
+		repoFilters.Priority = filters.Priority
 	}
 
 	// Retrieve todos from repository

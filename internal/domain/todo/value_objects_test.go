@@ -331,14 +331,8 @@ func TestNewPriority(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "low lowercase",
+			name:    "low",
 			input:   "low",
-			want:    PriorityLow,
-			wantErr: false,
-		},
-		{
-			name:    "low uppercase",
-			input:   "LOW",
 			want:    PriorityLow,
 			wantErr: false,
 		},

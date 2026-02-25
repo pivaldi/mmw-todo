@@ -85,7 +85,7 @@ func TestTodoService_CreateTodo_ValidRequest_Success(t *testing.T) {
 	req := CreateTodoRequest{
 		Title:       "Buy groceries",
 		Description: "Milk, eggs, bread",
-		Priority:    "medium",
+		Priority:    domain.PriorityMedium,
 	}
 
 	result, err := service.CreateTodo(context.Background(), req)
@@ -432,7 +432,7 @@ func TestTodoService_CreateTodo_WithDueDate_Success(t *testing.T) {
 	futureDate := time.Now().Add(24 * time.Hour)
 	req := CreateTodoRequest{
 		Title:    "Test with due date",
-		Priority: "high",
+		Priority: domain.PriorityHigh,
 		DueDate:  &futureDate,
 	}
 
@@ -455,7 +455,7 @@ func TestTodoService_CreateTodo_WithPastDueDate_ReturnsError(t *testing.T) {
 	pastDate := time.Now().Add(-24 * time.Hour)
 	req := CreateTodoRequest{
 		Title:    "Test with past due date",
-		Priority: "high",
+		Priority: domain.PriorityHigh,
 		DueDate:  &pastDate,
 	}
 

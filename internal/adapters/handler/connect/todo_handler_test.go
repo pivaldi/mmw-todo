@@ -90,7 +90,7 @@ func TestTodoHandler_CreateTodo_Success(t *testing.T) {
 				Title:       "Test Todo",
 				Description: "Test description",
 				Status:      "pending",
-				Priority:    "medium",
+				Priority:    domain.PriorityMedium,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 			}, nil
@@ -134,7 +134,7 @@ func TestTodoHandler_CreateTodo_WithDueDate_Success(t *testing.T) {
 				Title:       "Test Todo",
 				Description: "Test description",
 				Status:      "pending",
-				Priority:    "high",
+				Priority:    domain.PriorityHigh,
 				DueDate:     &dueDate,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
@@ -174,7 +174,7 @@ func TestTodoHandler_GetTodo_Success(t *testing.T) {
 				Title:       "Test Todo",
 				Description: "Test description",
 				Status:      "pending",
-				Priority:    "medium",
+				Priority:    domain.PriorityMedium,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 			}, nil
@@ -241,7 +241,7 @@ func TestTodoHandler_UpdateTodo_Success(t *testing.T) {
 				Title:       newTitle,
 				Description: "Test description",
 				Status:      "pending",
-				Priority:    "medium",
+				Priority:    domain.PriorityMedium,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 			}, nil
@@ -274,7 +274,7 @@ func TestTodoHandler_CompleteTodo_Success(t *testing.T) {
 				Title:       "Test Todo",
 				Description: "Test description",
 				Status:      "completed",
-				Priority:    "medium",
+				Priority:    domain.PriorityMedium,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 			}, nil
@@ -306,7 +306,7 @@ func TestTodoHandler_ReopenTodo_Success(t *testing.T) {
 				Title:       "Test Todo",
 				Description: "Test description",
 				Status:      "pending",
-				Priority:    "medium",
+				Priority:    domain.PriorityMedium,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 			}, nil
@@ -366,7 +366,7 @@ func TestTodoHandler_ListTodos_Success(t *testing.T) {
 				Title:       "Todo 1",
 				Description: "Description 1",
 				Status:      "pending",
-				Priority:    "medium",
+				Priority:    domain.PriorityMedium,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 			}
@@ -376,7 +376,7 @@ func TestTodoHandler_ListTodos_Success(t *testing.T) {
 				Title:       "Todo 2",
 				Description: "Description 2",
 				Status:      "pending",
-				Priority:    "high",
+				Priority:    domain.PriorityHigh,
 				CreatedAt:   time.Now(),
 				UpdatedAt:   time.Now(),
 			}

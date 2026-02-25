@@ -251,16 +251,16 @@ func mapStatusToProto(status domain.TaskStatus) todov1.TaskStatus {
 	}
 }
 
-// mapPriorityToProto converts a priority string to protobuf enum
-func mapPriorityToProto(priority string) todov1.Priority {
+// mapPriorityToProto converts a priority enum to protobuf enum
+func mapPriorityToProto(priority domain.Priority) todov1.Priority {
 	switch priority {
-	case "low":
+	case domain.PriorityLow:
 		return todov1.Priority_PRIORITY_LOW
-	case "medium":
+	case domain.PriorityMedium:
 		return todov1.Priority_PRIORITY_MEDIUM
-	case "high":
+	case domain.PriorityHigh:
 		return todov1.Priority_PRIORITY_HIGH
-	case "urgent":
+	case domain.PriorityUrgent:
 		return todov1.Priority_PRIORITY_URGENT
 	default:
 		return todov1.Priority_PRIORITY_UNSPECIFIED
@@ -283,19 +283,19 @@ func mapStatusFromProto(status todov1.TaskStatus) domain.TaskStatus {
 	}
 }
 
-// mapPriorityFromProto converts a protobuf priority enum to string
-func mapPriorityFromProto(priority todov1.Priority) string {
+// mapPriorityFromProto converts a protobuf priority enum to domain enum
+func mapPriorityFromProto(priority todov1.Priority) domain.Priority {
 	switch priority {
 	case todov1.Priority_PRIORITY_LOW:
-		return "low"
+		return domain.PriorityLow
 	case todov1.Priority_PRIORITY_MEDIUM:
-		return "medium"
+		return domain.PriorityMedium
 	case todov1.Priority_PRIORITY_HIGH:
-		return "high"
+		return domain.PriorityHigh
 	case todov1.Priority_PRIORITY_URGENT:
-		return "urgent"
+		return domain.PriorityUrgent
 	default:
-		return "medium"
+		return domain.PriorityMedium
 	}
 }
 

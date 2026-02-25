@@ -98,30 +98,12 @@ func (s TaskStatus) CanTransitionTo(newStatus TaskStatus) bool {
 	return true
 }
 
-// Priority indicates the importance/urgency of a todo
+// ENUM(low, medium, high, urgent)
 type Priority string
-
-const (
-	PriorityLow    Priority = "low"
-	PriorityMedium Priority = "medium"
-	PriorityHigh   Priority = "high"
-	PriorityUrgent Priority = "urgent"
-)
 
 // NewPriority creates a Priority from a string with validation
 func NewPriority(priority string) (Priority, error) {
-	p := Priority(strings.ToLower(priority))
-	switch p {
-	case PriorityLow, PriorityMedium, PriorityHigh, PriorityUrgent:
-		return p, nil
-	default:
-		return "", ErrInvalidPriority
-	}
-}
-
-// String returns the string representation of Priority
-func (p Priority) String() string {
-	return string(p)
+	return ParsePriority(priority)
 }
 
 // DefaultPriority returns the default priority (Medium)

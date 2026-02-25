@@ -12,6 +12,119 @@ import (
 )
 
 const (
+	// PriorityLow is a Priority of type low.
+	PriorityLow Priority = "low"
+	// PriorityMedium is a Priority of type medium.
+	PriorityMedium Priority = "medium"
+	// PriorityHigh is a Priority of type high.
+	PriorityHigh Priority = "high"
+	// PriorityUrgent is a Priority of type urgent.
+	PriorityUrgent Priority = "urgent"
+)
+
+var ErrInvalidPriority = errors.New("not a valid Priority")
+
+// PriorityValues returns a list of the values for Priority
+func PriorityValues() []Priority {
+	return []Priority{
+		PriorityLow,
+		PriorityMedium,
+		PriorityHigh,
+		PriorityUrgent,
+	}
+}
+
+// String implements the Stringer interface.
+func (x Priority) String() string {
+	return string(x)
+}
+
+// IsValid provides a quick way to determine if the typed value is
+// part of the allowed enumerated values
+func (x Priority) IsValid() bool {
+	_, err := ParsePriority(string(x))
+	return err == nil
+}
+
+var _PriorityValue = map[string]Priority{
+	"low":    PriorityLow,
+	"medium": PriorityMedium,
+	"high":   PriorityHigh,
+	"urgent": PriorityUrgent,
+}
+
+// ParsePriority attempts to convert a string to a Priority.
+func ParsePriority(name string) (Priority, error) {
+	if x, ok := _PriorityValue[name]; ok {
+		return x, nil
+	}
+	return Priority(""), fmt.Errorf("%s is %w", name, ErrInvalidPriority)
+}
+
+// MarshalText implements the text marshaller method.
+func (x Priority) MarshalText() ([]byte, error) {
+	return []byte(string(x)), nil
+}
+
+// UnmarshalText implements the text unmarshaller method.
+func (x *Priority) UnmarshalText(text []byte) error {
+	tmp, err := ParsePriority(string(text))
+	if err != nil {
+		return err
+	}
+	*x = tmp
+	return nil
+}
+
+// AppendText appends the textual representation of itself to the end of b
+// (allocating a larger slice if necessary) and returns the updated slice.
+//
+// Implementations must not retain b, nor mutate any bytes within b[:len(b)].
+func (x *Priority) AppendText(b []byte) ([]byte, error) {
+	return append(b, x.String()...), nil
+}
+
+var errPriorityNilPtr = errors.New("value pointer is nil") // one per type for package clashes
+
+// Scan implements the Scanner interface.
+func (x *Priority) Scan(value interface{}) (err error) {
+	if value == nil {
+		*x = Priority("")
+		return
+	}
+
+	// A wider range of scannable types.
+	// driver.Value values at the top of the list for expediency
+	switch v := value.(type) {
+	case string:
+		*x, err = ParsePriority(v)
+	case []byte:
+		*x, err = ParsePriority(string(v))
+	case Priority:
+		*x = v
+	case *Priority:
+		if v == nil {
+			return errPriorityNilPtr
+		}
+		*x = *v
+	case *string:
+		if v == nil {
+			return errPriorityNilPtr
+		}
+		*x, err = ParsePriority(*v)
+	default:
+		return errors.New("invalid type for Priority")
+	}
+
+	return
+}
+
+// Value implements the driver Valuer interface.
+func (x Priority) Value() (driver.Value, error) {
+	return x.String(), nil
+}
+
+const (
 	// TaskStatusPending is a TaskStatus of type pending.
 	TaskStatusPending TaskStatus = "pending"
 	// TaskStatusInProgress is a TaskStatus of type in_progress.

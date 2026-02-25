@@ -10,7 +10,7 @@ import (
 type CreateTodoRequest struct {
 	Title       string
 	Description string
-	Priority    string
+	Priority    domain.Priority
 	DueDate     *time.Time
 }
 
@@ -19,7 +19,7 @@ type CreateTodoRequest struct {
 type UpdateTodoRequest struct {
 	Title       *string
 	Description *string
-	Priority    *string
+	Priority    *domain.Priority
 	DueDate     *time.Time
 	Status      *domain.TaskStatus
 }
@@ -30,7 +30,7 @@ type TodoResponse struct {
 	Title       string
 	Description string
 	Status      domain.TaskStatus
-	Priority    string
+	Priority    domain.Priority
 	DueDate     *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -39,7 +39,7 @@ type TodoResponse struct {
 // ListFilters represents filtering options for listing todos
 type ListFilters struct {
 	Status   *domain.TaskStatus
-	Priority *string
+	Priority *domain.Priority
 	Limit    *int
 	Offset   *int
 }
@@ -57,7 +57,7 @@ func MapTodoToResponse(todo *domain.Todo) *TodoResponse {
 		Title:       todo.Title().String(),
 		Description: todo.Description(),
 		Status:      todo.Status(),
-		Priority:    todo.Priority().String(),
+		Priority:    todo.Priority(),
 		CreatedAt:   todo.CreatedAt(),
 		UpdatedAt:   todo.UpdatedAt(),
 	}
