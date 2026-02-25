@@ -144,7 +144,7 @@ func TestNewTaskTitle(t *testing.T) {
 }
 
 // TestTaskStatus tests TaskStatus validation and methods
-func TestNewTaskStatus(t *testing.T) {
+func TestParseTaskStatus(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -195,18 +195,18 @@ func TestNewTaskStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			status, err := NewTaskStatus(tt.input)
+			status, err := ParseTaskStatus(tt.input)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Error("NewTaskStatus() expected error but got nil")
+					t.Error("ParseTaskStatus() expected error but got nil")
 				}
 			} else {
 				if err != nil {
-					t.Errorf("NewTaskStatus() unexpected error: %v", err)
+					t.Errorf("ParseTaskStatus() unexpected error: %v", err)
 				}
 				if status != tt.want {
-					t.Errorf("NewTaskStatus() = %v, want %v", status, tt.want)
+					t.Errorf("ParseTaskStatus() = %v, want %v", status, tt.want)
 				}
 			}
 		})
@@ -323,7 +323,7 @@ func TestTaskStatus_CanTransitionTo(t *testing.T) {
 }
 
 // TestPriority tests Priority validation
-func TestNewPriority(t *testing.T) {
+func TestParsePriority(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -368,18 +368,18 @@ func TestNewPriority(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			priority, err := NewPriority(tt.input)
+			priority, err := ParsePriority(tt.input)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Error("NewPriority() expected error but got nil")
+					t.Error("ParsePriority() expected error but got nil")
 				}
 			} else {
 				if err != nil {
-					t.Errorf("NewPriority() unexpected error: %v", err)
+					t.Errorf("ParsePriority() unexpected error: %v", err)
 				}
 				if priority != tt.want {
-					t.Errorf("NewPriority() = %v, want %v", priority, tt.want)
+					t.Errorf("ParsePriority() = %v, want %v", priority, tt.want)
 				}
 			}
 		})

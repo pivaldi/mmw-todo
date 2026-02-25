@@ -219,12 +219,12 @@ func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
 		return nil, fmt.Errorf("invalid title: %w", err)
 	}
 
-	taskStatus, err := domain.NewTaskStatus(dbRow.Status)
+	taskStatus, err := domain.ParseTaskStatus(dbRow.Status)
 	if err != nil {
 		return nil, fmt.Errorf("invalid status: %w", err)
 	}
 
-	taskPriority, err := domain.NewPriority(dbRow.Priority)
+	taskPriority, err := domain.ParsePriority(dbRow.Priority)
 	if err != nil {
 		return nil, fmt.Errorf("invalid priority: %w", err)
 	}

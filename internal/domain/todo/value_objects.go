@@ -68,11 +68,6 @@ func (t TaskTitle) String() string {
 	return t.value
 }
 
-// NewTaskStatus creates a TaskStatus from a string with validation
-func NewTaskStatus(status string) (TaskStatus, error) {
-	return ParseTaskStatus(status)
-}
-
 // IsCompleted checks if the status is completed
 func (s TaskStatus) IsCompleted() bool {
 	return s == TaskStatusCompleted
@@ -100,11 +95,6 @@ func (s TaskStatus) CanTransitionTo(newStatus TaskStatus) bool {
 
 // ENUM(low, medium, high, urgent)
 type Priority string
-
-// NewPriority creates a Priority from a string with validation
-func NewPriority(priority string) (Priority, error) {
-	return ParsePriority(priority)
-}
 
 // DefaultPriority returns the default priority (Medium)
 func DefaultPriority() Priority {
