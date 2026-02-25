@@ -1,16 +1,15 @@
 package config
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"fmt"
 	"io/fs"
 	"net/url"
+	"os"
 
+	oglconfig "github.com/ovya/ogl/config"
 	"github.com/rotisserie/eris"
-	"github.com/sethvargo/go-envconfig"
-	"github.com/spf13/viper"
 )
 
 //go:embed configs/*.toml
@@ -23,14 +22,14 @@ var getConfigFS = func() fs.FS {
 }
 
 type Database struct {
-	User     string `toml:"user"`
-	Password string `env:"DB_PASSWORD, required"`
-	Host     string `toml:"host"`
-	Port     string `toml:"port"`
-	Name     string `toml:"name"`
+	User     string `mapstructure:"user"`
+	password string
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Name     string `mapstructure:"name"`
 }
 
-func (d Database) URL() string {
+func (d *Database) URL() string {
 	u := &url.URL{
 		Scheme: "postgres",
 		Host:   fmt.Sprintf("%s:%s", d.Host, d.Port),
@@ -38,8 +37,8 @@ func (d Database) URL() string {
 	}
 
 	if d.User != "" {
-		if d.Password != "" {
-			u.User = url.UserPassword(d.User, d.Password)
+		if d.password != "" {
+			u.User = url.UserPassword(d.User, d.password)
 		} else {
 			u.User = url.User(d.User)
 		}
@@ -49,9 +48,15 @@ func (d Database) URL() string {
 }
 
 type Config struct {
-	Database    *Database `toml:"database"`
-	Port        string    `toml:"port"`
-	Environment string    `env:"APP_EN, required"`
+	Database    *Database `mapstructure:"database"`
+	Port        string    `mapstructure:"port"`
+	Environment string    `env:"APP_EN, required" mapstructure:"environment"`
+	AppName     string    `mapstructure:"app-env"`
+}
+
+// GetAppEnv returns the App environnement variable (prod, testing, etc)
+func (c Config) GetAppEnv() string {
+	return c.Environment
 }
 
 // Load loads the configurations from enbended files:
@@ -61,51 +66,18 @@ type Config struct {
 func Load(ctx context.Context, envs map[string]string) (*Config, error) {
 	config := new(Config)
 
-	if err := envUnmarshal(ctx, config, envs); err != nil {
-		return nil, err
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		return nil, eris.New("env var DB_PASSWORD not set")
+		// return nil, eris.Wrap(errors.New("env var DB_PASSWORD not set"), "")
 	}
 
-	viper.SetConfigType("toml")
+	config.Database.password = password
 	configFS := getConfigFS()
-	defaultConfig, err := fs.ReadFile(configFS, "configs/default.toml")
+	err := oglconfig.NewContext(ctx, configFS, envs).Fill(config)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to read the default configuration")
-	}
-	if err := viper.ReadConfig(bytes.NewBuffer(defaultConfig)); err != nil {
-		return nil, eris.Wrap(err, "viper failed to read the default configuration")
-	}
-
-	file := config.Environment + ".toml"
-	envConfig, err := fs.ReadFile(configFS, "configs/"+file)
-	if err == nil { // Env config may not exist.
-		// Merge environment-specific config
-		if err := viper.MergeConfig(bytes.NewBuffer(envConfig)); err != nil {
-			return nil, eris.Wrapf(err, "viper failed merging the configuration %s", file)
-		}
-	}
-
-	if err := viper.Unmarshal(config); err != nil {
-		return nil, eris.Wrap(err, "failed to unmarshal config")
+		return nil, eris.Wrap(err, "error filling config")
 	}
 
 	return config, nil
-}
-
-func envUnmarshal(ctx context.Context, config *Config, envs map[string]string) error {
-	if envs == nil {
-		if err := envconfig.Process(ctx, config); err != nil {
-			return eris.Wrap(err, "envconfig process error")
-		}
-
-		return nil
-	}
-
-	if err := envconfig.ProcessWith(ctx, &envconfig.Config{
-		Target:   config,
-		Lookuper: envconfig.MapLookuper(envs),
-	}); err != nil {
-		return eris.Wrapf(err, "envconfig process error with given envs: %v", envs)
-	}
-
-	return nil
 }

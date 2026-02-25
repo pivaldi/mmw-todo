@@ -21,7 +21,7 @@ type UpdateTodoRequest struct {
 	Description *string
 	Priority    *string
 	DueDate     *time.Time
-	Status      *string
+	Status      *domain.TaskStatus
 }
 
 // TodoResponse represents a todo for API responses
@@ -29,7 +29,7 @@ type TodoResponse struct {
 	ID          string
 	Title       string
 	Description string
-	Status      string
+	Status      domain.TaskStatus
 	Priority    string
 	DueDate     *time.Time
 	CreatedAt   time.Time
@@ -38,7 +38,7 @@ type TodoResponse struct {
 
 // ListFilters represents filtering options for listing todos
 type ListFilters struct {
-	Status   *string
+	Status   *domain.TaskStatus
 	Priority *string
 	Limit    *int
 	Offset   *int
@@ -56,7 +56,7 @@ func MapTodoToResponse(todo *domain.Todo) *TodoResponse {
 		ID:          todo.ID().String(),
 		Title:       todo.Title().String(),
 		Description: todo.Description(),
-		Status:      todo.Status().String(),
+		Status:      todo.Status(),
 		Priority:    todo.Priority().String(),
 		CreatedAt:   todo.CreatedAt(),
 		UpdatedAt:   todo.UpdatedAt(),
@@ -76,5 +76,6 @@ func MapTodosToResponse(todos []*domain.Todo) []*TodoResponse {
 	for i, todo := range todos {
 		responses[i] = MapTodoToResponse(todo)
 	}
+
 	return responses
 }

@@ -163,6 +163,7 @@ func (h *TodoHandler) DeleteTodo(
 	}
 
 	response := &todov1.DeleteTodoResponse{}
+
 	return connect.NewResponse(response), nil
 }
 
@@ -235,15 +236,15 @@ func mapTodoToProto(todo *application.TodoResponse) *todov1.Todo {
 }
 
 // mapStatusToProto converts a status string to protobuf enum
-func mapStatusToProto(status string) todov1.TaskStatus {
+func mapStatusToProto(status domain.TaskStatus) todov1.TaskStatus {
 	switch status {
-	case "pending":
+	case domain.TaskStatusPending:
 		return todov1.TaskStatus_TASK_STATUS_PENDING
-	case "in_progress":
+	case domain.TaskStatusInProgress:
 		return todov1.TaskStatus_TASK_STATUS_IN_PROGRESS
-	case "completed":
+	case domain.TaskStatusCompleted:
 		return todov1.TaskStatus_TASK_STATUS_COMPLETED
-	case "cancelled":
+	case domain.TaskStatusCancelled:
 		return todov1.TaskStatus_TASK_STATUS_CANCELLED
 	default:
 		return todov1.TaskStatus_TASK_STATUS_UNSPECIFIED
@@ -267,18 +268,18 @@ func mapPriorityToProto(priority string) todov1.Priority {
 }
 
 // mapStatusFromProto converts a protobuf status enum to string
-func mapStatusFromProto(status todov1.TaskStatus) string {
+func mapStatusFromProto(status todov1.TaskStatus) domain.TaskStatus {
 	switch status {
 	case todov1.TaskStatus_TASK_STATUS_PENDING:
-		return "pending"
+		return domain.TaskStatusPending
 	case todov1.TaskStatus_TASK_STATUS_IN_PROGRESS:
-		return "in_progress"
+		return domain.TaskStatusInProgress
 	case todov1.TaskStatus_TASK_STATUS_COMPLETED:
-		return "completed"
+		return domain.TaskStatusCompleted
 	case todov1.TaskStatus_TASK_STATUS_CANCELLED:
-		return "cancelled"
+		return domain.TaskStatusCancelled
 	default:
-		return "pending"
+		return domain.TaskStatusPending
 	}
 }
 

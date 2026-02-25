@@ -1,3 +1,4 @@
+//go:generate go-enum --marshal --sql --values
 package domain
 
 import (
@@ -6,6 +7,9 @@ import (
 
 	"github.com/google/uuid"
 )
+
+// ENUM(pending, in_progress, completed, cancelled)
+type TaskStatus string
 
 // TodoID is a unique identifier for a Todo aggregate
 type TodoID string
@@ -24,6 +28,7 @@ func ParseTodoID(id string) (TodoID, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return "", ErrInvalidID
 	}
+
 	return TodoID(id), nil
 }
 
@@ -48,7 +53,7 @@ func NewTaskTitle(title string) (TaskTitle, error) {
 	trimmed := strings.TrimSpace(title)
 
 	// Validate length
-	if len(trimmed) == 0 {
+	if trimmed == "" {
 		return TaskTitle{}, NewValidationError("title", "cannot be empty")
 	}
 	if len(trimmed) > 200 {
@@ -63,51 +68,30 @@ func (t TaskTitle) String() string {
 	return t.value
 }
 
-// TaskStatus represents the current state of a todo
-type TaskStatus string
-
-const (
-	StatusPending    TaskStatus = "pending"
-	StatusInProgress TaskStatus = "in_progress"
-	StatusCompleted  TaskStatus = "completed"
-	StatusCancelled  TaskStatus = "cancelled"
-)
-
 // NewTaskStatus creates a TaskStatus from a string with validation
 func NewTaskStatus(status string) (TaskStatus, error) {
-	s := TaskStatus(strings.ToLower(status))
-	switch s {
-	case StatusPending, StatusInProgress, StatusCompleted, StatusCancelled:
-		return s, nil
-	default:
-		return "", ErrInvalidStatus
-	}
-}
-
-// String returns the string representation of TaskStatus
-func (s TaskStatus) String() string {
-	return string(s)
+	return ParseTaskStatus(status)
 }
 
 // IsCompleted checks if the status is completed
 func (s TaskStatus) IsCompleted() bool {
-	return s == StatusCompleted
+	return s == TaskStatusCompleted
 }
 
 // IsCancelled checks if the status is cancelled
 func (s TaskStatus) IsCancelled() bool {
-	return s == StatusCancelled
+	return s == TaskStatusCancelled
 }
 
 // CanTransitionTo checks if transition to new status is valid
 func (s TaskStatus) CanTransitionTo(newStatus TaskStatus) bool {
 	// Completed tasks can only be reopened to pending
-	if s == StatusCompleted && newStatus != StatusPending {
+	if s == TaskStatusCompleted && newStatus != TaskStatusPending {
 		return false
 	}
 
 	// Cancelled tasks can be reopened to pending
-	if s == StatusCancelled && newStatus == StatusCompleted {
+	if s == TaskStatusCancelled && newStatus == TaskStatusCompleted {
 		return false
 	}
 

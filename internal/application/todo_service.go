@@ -169,11 +169,7 @@ func (s *TodoApplicationService) UpdateTodo(
 
 	// Update status if provided
 	if req.Status != nil {
-		status, err := domain.NewTaskStatus(*req.Status)
-		if err != nil {
-			return nil, fmt.Errorf("invalid status: %w", err)
-		}
-		if err := todo.UpdateStatus(status); err != nil {
+		if err := todo.UpdateStatus(*req.Status); err != nil {
 			return nil, fmt.Errorf("updating status: %w", err)
 		}
 	}
@@ -310,11 +306,7 @@ func (s *TodoApplicationService) ListTodos(
 	}
 
 	if filters.Status != nil {
-		status, err := domain.NewTaskStatus(*filters.Status)
-		if err != nil {
-			return nil, fmt.Errorf("invalid status filter: %w", err)
-		}
-		repoFilters.Status = &status
+		repoFilters.Status = filters.Status
 	}
 
 	if filters.Priority != nil {

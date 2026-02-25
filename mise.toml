@@ -46,10 +46,12 @@ buf mod update
 """
 
 [tasks.generate]
-description = "Generate code from protobuf definitions (Todo API only)"
+description = "Generate code from protobuf definitions and Go enums"
 run = """
 cd {{vars.CONTRACTS_DIR}}
 buf generate --template buf.gen.todo.yaml
+cd {{cwd}}
+go generate ./...
 """
 
 [tasks."buf-lint"]

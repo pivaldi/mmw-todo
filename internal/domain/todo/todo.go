@@ -26,7 +26,7 @@ func NewTodo(title TaskTitle, description string, priority Priority, dueDate *Du
 		id:          id,
 		title:       title,
 		description: description,
-		status:      StatusPending,
+		status:      TaskStatusPending,
 		priority:    priority,
 		dueDate:     dueDate,
 		createdAt:   now,
@@ -202,7 +202,7 @@ func (t *Todo) Complete() error {
 		return nil // Already completed, idempotent
 	}
 
-	t.status = StatusCompleted
+	t.status = TaskStatusCompleted
 	now := time.Now()
 	t.completedAt = &now
 	t.updatedAt = now
@@ -219,7 +219,7 @@ func (t *Todo) Reopen() error {
 	}
 
 	previousStatus := t.status
-	t.status = StatusPending
+	t.status = TaskStatusPending
 	t.completedAt = nil
 	t.updatedAt = time.Now()
 
@@ -238,7 +238,7 @@ func (t *Todo) Cancel() error {
 		return nil // Already cancelled, idempotent
 	}
 
-	t.status = StatusCancelled
+	t.status = TaskStatusCancelled
 	t.updatedAt = time.Now()
 	t.addEvent(NewTodoUpdatedEvent(t.id))
 
@@ -251,11 +251,11 @@ func (t *Todo) MarkInProgress() error {
 		return ErrCannotModifyCompleted
 	}
 
-	if t.status == StatusInProgress {
+	if t.status == TaskStatusInProgress {
 		return nil // Already in progress, idempotent
 	}
 
-	t.status = StatusInProgress
+	t.status = TaskStatusInProgress
 	t.updatedAt = time.Now()
 	t.addEvent(NewTodoUpdatedEvent(t.id))
 
@@ -267,6 +267,7 @@ func (t *Todo) IsDue() bool {
 	if t.dueDate == nil {
 		return false
 	}
+
 	return t.dueDate.IsPast()
 }
 
@@ -275,6 +276,7 @@ func (t *Todo) IsDueSoon(within time.Duration) bool {
 	if t.dueDate == nil {
 		return false
 	}
+
 	return t.dueDate.IsApproaching(within)
 }
 
