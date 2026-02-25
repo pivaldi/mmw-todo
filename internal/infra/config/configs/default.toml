@@ -1,0 +1,5 @@
+[database]
+user = "rcv"
+host = "localhost"
+port = "4332"
+name = "poc"
