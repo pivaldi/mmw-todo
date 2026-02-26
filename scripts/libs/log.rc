@@ -1,0 +1,74 @@
+#!/bin/bash
+
+bold=$(tput smso)
+offbold=$(tput rmso)
+resetColor="$(tput sgr0)"
+red="$(
+    tput bold
+    tput setaf 1
+)"
+green="$(
+    tput bold
+    tput setaf 2
+)"
+yellow="$(
+    tput bold
+    tput setaf 3
+)"
+blue="$(
+    tput bold
+    tput setaf 4
+)"
+blueCyan="$(
+    tput bold
+    tput setaf 6
+)"
+
+DOING_MSG=
+
+function _doing() {
+    DOING_MSG=$1
+
+    echo "${blue}⇾ Doing « ${DOING_MSG} »…$resetColor"
+}
+
+function _done() {
+    local DONE="${1:-DONE}"
+
+    [ -z "$1" ] || DONE="$1"
+
+    echo
+    echo "${green} ${resetColor} ${DOING_MSG} : ${green}$DONE${resetColor}"
+    echo
+}
+
+function _doneNTD() {
+    _done 'Nothing to do…'
+}
+
+function _skipped() {
+    echo
+    echo "${blueCyan} ${resetColor} ${DOING_MSG} : ${blueCyan}SKIPPED${resetColor}"
+    echo
+}
+
+function _warn() {
+    echo
+    echo "${yellow}⚠${resetColor} ${DOING_MSG} : ${bold}${yellow}$1${resetColor}${resetBold}"
+    echo
+}
+
+function _fail() {
+    echo "$bold${red} PROCESS ABORTED$resetColor$resetBold"
+    echo
+
+    exit 1
+}
+
+function _do() {
+    # https://unix.stackexchange.com/questions/148109/shifting-command-output-to-the-right
+    local -a cmd=("$@")
+    echo "${blueCyan}+ ${cmd[@]}${resetColor}"
+
+    "${cmd[@]}" || _fail | nl -bn
+}

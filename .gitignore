@@ -37,7 +37,7 @@ bin/
 
 # Configuration with secrets
 configs/*.local.yaml
-.env
+.envrc
 
 # Test coverage
 coverage.out

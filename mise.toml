@@ -1,5 +1,7 @@
 # Mise configuration for Todo API project
 # https://mise.jdx.dev/
+[settings]
+experimental = true
 
 [shell_alias]
 dev = "mise run run"
@@ -11,22 +13,18 @@ mt = "mise run"
 # Tool versions
 [tools.go]
 version = "latest"
-postinstall = """
-echo "Installing buf..."
-go install github.com/bufbuild/buf/cmd/buf@latest
-echo "Installing protoc-gen-go..."
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-echo "Installing protoc-gen-connect-go..."
-go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
-echo "Installing migrate..."
-go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-echo "Installing goda..."
-go install github.com/loov/goda@latest
-echo "Tools installed successfully!"
-"""
 
 [tools.golangci-lint]
 version = "latest"
+
+[hooks]
+preinstall = "true"
+postinstall = [
+  'mise generate git-pre-commit --task=pre-commit > "$(git rev-parse --git-path hooks)/pre-commit"',
+  'chmod +x "$(git rev-parse --git-path hooks)/pre-commit"',
+  "mise run setup",
+  "mise run doctor"
+]
 
 [vars]
 CONTRACTS_DIR = "{{cwd}}/../../contracts"
@@ -37,7 +35,19 @@ GOTESTSUM_OPTIONS = "--format testdox"
 BINARY_NAME = "todo"
 BINARY_PATH = "./cmd/todo"
 BUILD_DIR = "bin"
-_.file = ".env"  # Load .env file if it exists
+_.file = ".envrc"  # Load .envrc file if it exists
+APP_ENV = { required = true }
+
+
+[tasks.setup]
+description = "Bootstrap repo deps"
+run = "go mod download"
+alias = "update"
+
+[tasks.pre-commit]
+description = "Pre-commit checks (can be run manually or as git hook)"
+run = "./scripts/pre-commit.sh"
+
 
 # Development tasks
 [tasks."buf-deps"]
@@ -82,8 +92,9 @@ buf breaking --against '.git#branch=master' proto/todo
 description = "Build the application binary"
 depends = ["generate"]
 run = """
-mkdir -p ${BUILD_DIR}
+[ -e ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
 go build -o ${BUILD_DIR}/${BINARY_NAME} -v ${BINARY_PATH}
+go build -o ${BUILD_DIR}/runner -v ./cmd/runner/runner.go
 """
 
 [tasks."build-linux"]
@@ -268,3 +279,8 @@ run = """
 echo "Available tasks:"
 mise tasks
 """
+
+[tasks.doctor]
+description = "Show tool versions and key environment info"
+run = "./scripts/doctor.sh"
+alias = "dr"
