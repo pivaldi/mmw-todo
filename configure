@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+set -eu
+set -o pipefail
+
+APP_ROOT_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+. "$APP_ROOT_PATH/scripts/init.bash"
+
+# $IN_DOCKER && exit 0
+
+st.h1 "Configuring the project"
+
+st.doing 'Configuration of APP_ENV'
+# shellcheck disable=SC2015
+if isConfigAppEnvNeeded; then
+    cp "${APP_ROOT_PATH}/.envrc.example" "${APP_ROOT_PATH}/.envrc"
+    configAppEnv
+else
+    st.nothingTodo
+fi
+
+# shellcheck disable=SC1091
+. "$APP_ROOT_PATH/.envrc" || exit 1
+
+st.doing 'Installing Mise-en-place'
+if ! type mise &>/dev/null; then
+    if type apt &>/dev/null; then
+        sudo install -dm 755 /etc/apt/keyrings &&
+            curl -fsSL https://mise.jdx.dev/gpg-key.pub | sudo tee /etc/apt/keyrings/mise-archive-keyring.asc >/dev/null &&
+            echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.asc] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list >/dev/null &&
+            sudo apt-get update && sudo apt-get install -y mise
+    else
+        curl https://mise.run | sh
+    fi
+
+    "$APP_ROOT_PATH/scripts/mise-configure.sh"
+
+    st.done
+else
+    st.nothingTodo
+fi
+
+st.h1 'Installing needed environnement'
+mise settings experimental=true
+
+st.doing "Activate mise in current shell"
+eval "$(mise activate bash)"
+st.done
+
+st.doing "Configuring mise in standart shell"
+st.do "$APP_ROOT_PATH/ scripts/mise-configure.sh"
+st.done
+
+st.doing 'Insalling mise usage'
+st.do mise use -g usage
+st.done
+
+st.doing "Core installation"
+st.do mise install
+st.done
+
+if ! type stream-stepper &>/dev/null; then
+    st.doing "Installing stream-stepper"
+    st.do go install github.com/pivaldi/stream-stepper@latest
+    st.done
+else
+    st.nothingTodo
+fi

@@ -1,0 +1,22 @@
+layout {
+    // We want a vertical split (side-by-side panes)
+    pane split_direction="vertical" {
+
+        // Left Pane: Run your Go build
+        pane command="mise" {
+            args "run" "test-all"
+            close_on_exit false
+        }
+
+        // Right Pane: Run your gosec/golangci-lint
+        pane command="mise" {
+            args "run" "check"
+            close_on_exit false
+        }
+    }
+
+    // Bottom Pane: The built-in Zellij status bar (for that clean TUI look)
+    pane size=1 borderless=true {
+        plugin location="zellij:status-bar"
+    }
+}
