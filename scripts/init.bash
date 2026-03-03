@@ -3,12 +3,12 @@
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 readonly SCRIPT_DIR
 
-[ -z "$_IS_INT_" ] || _IS_INT_=false
+[ -z "${_IS_INT_:-}" ] && _IS_INT_=false
 
 $_IS_INT_ && return
 
 source "$SCRIPT_DIR/libs/lobash.bash" || exit 1
-source "$SCRIPT_DIR/libs/st.bash" || exit 1
+source "$SCRIPT_DIR/libs/bash-stepper/st.bash" || exit 1
 
 IN_DOCKER=false
 

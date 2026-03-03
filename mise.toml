@@ -22,6 +22,8 @@ preinstall = "true"
 postinstall = [
   'mise generate git-pre-commit --task=pre-commit > "$(git rev-parse --git-path hooks)/pre-commit"',
   'chmod +x "$(git rev-parse --git-path hooks)/pre-commit"',
+  "go install github.com/pivaldi/stream-stepper@latest",
+  "mise run tools",
   "mise run setup",
   "mise run doctor"
 ]
@@ -40,14 +42,29 @@ APP_ENV = { required = true }
 
 
 [tasks.setup]
-description = "Bootstrap repo deps"
-run = "go mod download"
-alias = "update"
+description = "Update Repo Deps"
+run = """
+#!/usr/bin/env bash
+  set -euo pipefail
+
+  source {{cwd}}/scripts/libs/bash-stepper/st.bash
+  st.h1 'Update Repo Deps'
+  st.doing "Go Mod Tidy"
+  st.do go mod tidy
+  st.done
+  st.doing "Go Mod Download"
+  st.do go mod download
+  st.done
+  """
+
+[tasks.tools]
+description = "Install needed tools awares APP_ENV value"
+run = "scripts/install-tools-ss.sh"
 
 [tasks.pre-commit]
 description = "Pre-commit checks (can be run manually or as git hook)"
-run = "./scripts/pre-commit.sh"
-
+run = "APP_ROOT_PATH={{cwd}} ./scripts/pre-commit.sh"
+alias = "pc"
 
 # Development tasks
 [tasks."buf-deps"]

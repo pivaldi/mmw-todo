@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2119,SC2120
 
 set -o errexit
 set -o nounset
@@ -9,7 +10,7 @@ set -o errtrace
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 source "$SCRIPT_DIR/init.bash" || exit 1
 
-l.trap_error "$@"
+l.trap_error
 
 st.doing "Installing direnv"
 st.do go install github.com/direnv/direnv/v2@latest
@@ -33,8 +34,7 @@ st.done
 st.done "Tools installed successfully!"
 
 [ -z "$APP_ENV" ] && {
-    echo 'APP_ENV not set. Process aborted'
-    exit 1
+    st.fail 'APP_ENV not set.'
 }
 
 if [ "$APP_ENV" = "development" ]; then

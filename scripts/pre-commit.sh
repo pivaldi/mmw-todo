@@ -1,62 +1,98 @@
 #!/bin/bash
+# shellcheck disable=SC2119,SC2120
 # Git pre-commit hook - runs via mise
-set -e
 
-echo "Running pre-commit checks..."
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o errtrace
+(shopt -p inherit_errexit &>/dev/null) && shopt -s inherit_errexit
+
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+source "$SCRIPT_DIR/init.bash" || exit 1
+
+l.trap_error
+
+st.h1 "Running pre-commit checks..."
+
+[ -z "${APP_ROOT_PATH:-}" ] && st.fail 'Environment variable APP_ROOT_PATH not set'
+
+cd "$APP_ROOT_PATH" || l.fail
 
 # Get list of staged files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 
 if [ -z "$STAGED_FILES" ]; then
-  echo "No staged files to check"
-  exit 0
+    echo "No staged files to check"
+    st.nothingTodo
+    exit 0
 fi
 
-# Fix trailing whitespace and ensure newline at end of file
+st.h2 "Fix trailing whitespace and ensure newline at end of file"
 echo "$STAGED_FILES" | while read -r file; do
-  if [ -f "$file" ]; then
-    # Remove trailing whitespace
-    sed -i 's/[[:space:]]*$//' "$file"
-    # Ensure file ends with newline
-    [ -n "$(tail -c1 "$file")" ] && echo >>"$file"
-    git add "$file"
-  fi
+    if [ -f "$file" ]; then
+        st.doing "Removing trailing whitespace on $file"
+        st.do sed -i 's/[[:space:]]*$//' "$file"
+        st.done
+        st.doing "Ensure file ends with newline"
+        st.do sed -i -e "\$a\\" "$file"
+        st.done
+        st.doing 'Re-add file that was fixed'
+        st.do git add "$file"
+        st.done
+    fi
 done
 
-# Check YAML syntax
+st.h2 "Check YAML syntax"
+st.doing "Checking YAML files..."
+PASS=false
 YAML_FILES=$(echo "$STAGED_FILES" | grep -E '\.ya?ml$' || true)
 if [ -n "$YAML_FILES" ]; then
-  echo "Checking YAML files..."
-  echo "$YAML_FILES" | xargs -r yamllint -d relaxed 2>/dev/null || true
+    st.do echo "$YAML_FILES" | xargs -r yamllint -d relaxed 2>/dev/null || true
+    PASS=true
 fi
 
-# Check for large files (>500KB)
+if $PASS; then
+    st.done
+else
+    st.nothingTodo
+fi
+
+DOING_MSG="Check for large files (>500KB)"
+st.h2 "$DOING_MSG"
 echo "$STAGED_FILES" | while read -r file; do
-  if [ -f "$file" ]; then
-    size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo 0)
-    if [ "$size" -gt 512000 ]; then
-      echo "ERROR: File $file is larger than 500KB ($size bytes)"
-      exit 1
+    if [ -f "$file" ]; then
+        size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo 0)
+        if [ "$size" -gt 512000 ]; then
+            st.fail "ERROR: File $file is larger than 500KB ($size bytes)"
+        fi
     fi
-  fi
 done
+st.done
 
-# Go linting (if any Go files changed)
+st.h2 "Go linting if any Go files changed"
 if echo "$STAGED_FILES" | grep -q '\.go$'; then
-  echo "Running golangci-lint..."
-  golangci-lint config verify
-  golangci-lint run --fix
-  # Re-add any files that were fixed
-  echo "$STAGED_FILES" | grep '\.go$' | xargs -r git add
+    st.doing "Running golangci-lint..."
+    st.do golangci-lint config verify
+    st.do golangci-lint run --fix
+    st.done
+    st.doing 'Re-add any files that were fixed'
+    st.do echo "$STAGED_FILES" | grep '\.go$' | xargs -r git add
+    st.done
+else
+    st.nothingTodo
 fi
 
-# Buf lint/generate for proto changes
+st.h2 "Buf lint/generate for proto changes"
 if echo "$STAGED_FILES" | grep -q '\.proto$'; then
-  echo "Running buf lint and generate..."
-  cd internal/user/api && buf lint && buf generate
-  cd - >/dev/null
-  # Add generated files
-  git add internal/user/api/gen/ 2>/dev/null || true
+    echo "Running buf lint and generate..."
+    cd internal/user/api && buf lint && buf generate
+    cd - >/dev/null
+    # Add generated files
+    git add internal/user/api/gen/ 2>/dev/null || true
+else
+    st.nothingTodo
 fi
 
-echo "Pre-commit checks passed!"
+st.h2 "Pre-Commit Checks"
+st.success "PRE-COMMIT CHECKS PASSED 🚀"
