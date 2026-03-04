@@ -2,6 +2,12 @@
 # https://mise.jdx.dev/
 [settings]
 experimental = true
+quiet = true
+
+[tools]
+go = "latest"
+golangci-lint = "latest"
+
 
 [shell_alias]
 dev = "mise run run"
@@ -10,26 +16,8 @@ deploy = "mise run deploy"
 mr = "mise run"
 mt = "mise run"
 
-# Tool versions
-[tools.go]
-version = "latest"
-
-[tools.golangci-lint]
-version = "latest"
-
-[hooks]
-preinstall = "true"
-postinstall = [
-  'mise generate git-pre-commit --task=pre-commit > "$(git rev-parse --git-path hooks)/pre-commit"',
-  'chmod +x "$(git rev-parse --git-path hooks)/pre-commit"',
-  "go install github.com/pivaldi/stream-stepper@latest",
-  "mise run tools",
-  "mise run setup",
-  "mise run doctor"
-]
-
 [vars]
-CONTRACTS_DIR = "{{cwd}}/../../contracts"
+CONTRACTS_DIR = "{{config_root}}/../../contracts"
 GOTESTSUM_OPTIONS = "--format testdox"
 
 # Environment variables
@@ -47,7 +35,9 @@ run = """
 #!/usr/bin/env bash
   set -euo pipefail
 
-  source {{cwd}}/scripts/libs/bash-stepper/st.bash
+  cd {{config_root}} || exit 1
+
+  source scripts/common/libs/st.bash
   st.h1 'Update Repo Deps'
   st.doing "Go Mod Tidy"
   st.do go mod tidy
@@ -59,11 +49,16 @@ run = """
 
 [tasks.tools]
 description = "Install needed tools awares APP_ENV value"
-run = "scripts/install-tools-ss.sh"
+run = "scripts/common/install-tools-ss.sh"
+
+[tasks."tools:update"]
+description = "Install/Update needed tools"
+run = "UPDATE=true scripts/common/install-tools-ss.sh"
+
 
 [tasks.pre-commit]
 description = "Pre-commit checks (can be run manually or as git hook)"
-run = "APP_ROOT_PATH={{cwd}} ./scripts/pre-commit.sh"
+run = "APP_ROOT_PATH={{config_root}} ./scripts/common/pre-commit.sh"
 alias = "pc"
 
 # Development tasks
@@ -77,10 +72,13 @@ buf mod update
 [tasks.generate]
 description = "Generate code from protobuf definitions and Go enums"
 run = """
-cd {{vars.CONTRACTS_DIR}}
-buf generate --template buf.gen.todo.yaml
-cd {{cwd}}
-go generate ./...
+#!/usr/bin/env bash
+  set -euo pipefail
+
+  cd {{vars.CONTRACTS_DIR}}
+  buf generate --template buf.gen.todo.yaml
+  cd {{config_root}} || exit 1
+  go generate ./...
 """
 
 [tasks."buf-lint"]
@@ -111,7 +109,6 @@ depends = ["generate"]
 run = """
 [ -e ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
 go build -o ${BUILD_DIR}/${BINARY_NAME} -v ${BINARY_PATH}
-go build -o ${BUILD_DIR}/runner -v ./cmd/runner/runner.go
 """
 
 [tasks."build-linux"]
@@ -148,7 +145,7 @@ run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v ./... ./..."
 description = "Run tests with coverage report"
 run = """
 go test -v -race -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out -o coverage.html
+go tool cover -html=coverage.out -o coverage.html || exit 1
 echo "Coverage report generated: coverage.html"
 """
 
@@ -185,10 +182,11 @@ depends = ["fmt", "vet", "lint", "buf-lint"]
 description = "Validate architecture boundaries for this service"
 run = "arch-go"
 
-[tasks."arch:show"]
-description = "Show architecture dependcies for this service"
+[tasks."arch:graph"]
+description = "Show graph architectural dependcies for this service"
 run = """goda graph github.com/pivaldi/mmw/todo/... | dot -Tsvg -o graph.svg &&
-  xdg-open graph.svg"""
+  xdg-open graph.svg
+ """
 
 # Dependency tasks
 [tasks."deps-tidy"]
@@ -308,5 +306,5 @@ mise tasks
 
 [tasks.doctor]
 description = "Show tool versions and key environment info"
-run = "./scripts/doctor.sh"
+run = "./scripts/common/doctor.sh"
 alias = "dr"
