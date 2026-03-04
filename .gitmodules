@@ -1,6 +1,3 @@
 [submodule "scripts/libs/bash-progress-indicator"]
 	path = scripts/libs/bash-progress-indicator
 	url = https://github.com/lnfnunes/bash-progress-indicator.git
-[submodule "scripts/libs/bash-stepper"]
-	path = scripts/libs/bash-stepper
-	url = https://github.com/pivaldi/bash-stepper
