@@ -16,18 +16,6 @@ st.doing "Installing direnv"
 st.do go install github.com/direnv/direnv/v2@latest
 st.done
 
-st.doing "Installing buf..."
-st.do go install github.com/bufbuild/buf/cmd/buf@latest
-st.done
-
-st.doing "Installing protoc-gen-go..."
-st.do go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-st.done
-
-st.doing "Installing protoc-gen-connect-go..."
-st.do go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
-st.done
-
 # st.doing "Installing migrate..."
 # st.do go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
@@ -40,8 +28,24 @@ st.done "Tools installed successfully!"
 if [ "$APP_ENV" = "development" ]; then
     st.h1 "Installing development tools..."
 
+    st.doing "Installing buf..."
+    st.do go install github.com/bufbuild/buf/cmd/buf@latest
+    st.done
+
+    st.doing "Installing protoc-gen-go..."
+    st.do go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    st.done
+
+    st.doing "Installing protoc-gen-connect-go..."
+    st.do go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest
+    st.done
+
     st.doing "Installing Goda"
     st.do go install github.com/loov/goda@latest
+    st.done
+
+    st.doing "Installing arch-go"
+    st.do go install -v github.com/arch-go/arch-go/v2@latest
     st.done
 
     st.doing "Installing gopls (LSP)"

@@ -181,6 +181,15 @@ run = "go vet ./..."
 description = "Run all checks (format, vet, lint)"
 depends = ["fmt", "vet", "lint", "buf-lint"]
 
+[tasks."arch:check"]
+description = "Validate architecture boundaries for this service"
+run = "arch-go"
+
+[tasks."arch:show"]
+description = "Show architecture dependcies for this service"
+run = """goda graph github.com/pivaldi/mmw/todo/... | dot -Tsvg -o graph.svg &&
+  xdg-open graph.svg"""
+
 # Dependency tasks
 [tasks."deps-tidy"]
 description = "Tidy Go dependencies"
