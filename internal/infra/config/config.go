@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
+	"strconv"
 
 	oglconfig "github.com/ovya/ogl/config"
 	"github.com/rotisserie/eris"
@@ -47,11 +48,22 @@ func (d *Database) URL() string {
 	return u.String()
 }
 
+type Port int8
+
+func (s Port) String() string {
+	return ":" + strconv.Itoa(int(s))
+}
+
+type Server struct {
+	Port Port `mapstructure:"port"`
+}
+
 type Config struct {
 	Database    *Database `mapstructure:"database"`
 	Port        string    `mapstructure:"port"`
 	Environment string    `env:"APP_ENV, required" mapstructure:"environment"`
-	AppName     string    `mapstructure:"app-name"`
+	AppName     string    `env:"APP_NAME"`
+	Server      *Server   `mapstructure:"server"`
 }
 
 // GetAppEnv returns the App environnement variable (prod, testing, etc)

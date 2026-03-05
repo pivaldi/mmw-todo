@@ -27,6 +27,7 @@ BINARY_PATH = "./cmd/todo"
 BUILD_DIR = "bin"
 _.file = ".envrc"  # Load .envrc file if it exists
 APP_ENV = { required = true }
+APP_NAME = { required = true }
 
 
 [tasks.setup]

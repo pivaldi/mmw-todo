@@ -1,10 +1,13 @@
-# Database configuration
-DB_URL=postgres://postgres:postgres@localhost:5435/todoapp?sslmode=disable
-DATABASE_URL=postgres://postgres:postgres@localhost:5435/todoapp?sslmode=disable
+APP_ENV=development
+APP_NAME=TodoAPI
 
-# Server configuration
-PORT=8090
-ENVIRONMENT=development
+# # Database configuration
+# DB_URL=postgres://postgres:postgres@localhost:5435/todoapp?sslmode=disable
+# DATABASE_URL=postgres://postgres:postgres@localhost:5435/todoapp?sslmode=disable
 
-# Migration version (for db-migrate-force)
-# VERSION=1
+# # Server configuration
+# PORT=8090
+# ENVIRONMENT=development
+
+# # Migration version (for db-migrate-force)
+# # VERSION=1

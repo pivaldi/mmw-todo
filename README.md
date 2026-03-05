@@ -6,6 +6,8 @@ This Go module takes part of the [mmw](https://github.com/pivaldi/mmw) project t
 
 This repository includes a **working example implementation** that demonstrates how to apply Domain-Driven Design (DDD) and Hexagonal Architecture (Ports & Adapters) patterns using the [Standard Go Project Layout](https://github.com/golang-standards/project-layout/releases/latest)).
 
+As is, this project takes part of [the `mmw` project](https://github.com/pivaldi/mmw) and should be use for now from this Monolith Modular Workspace.
+
 ### What's Included
 
 The Todo API example provides:
@@ -21,18 +23,11 @@ The Todo API example provides:
 
 ### Quick Start
 
-This project use **Mise** a modern alternative to Make with tool version management.
-
 ```bash
-# Install mise (https://mise.jdx.dev/)
-# macOS/Linux: curl https://mise.jdx.dev/install.sh | sh
+# Bootstrap the project: install tools APP_ENV aware
+./configure
 
-# Install tools (Latest Go version will be auto-installed)
-mise install
-
-# Generate, test, and run
-mise run generate
-mise run test
+# Start the project
 mise run docker-up
 mise run db-migrate-up
 mise run run
@@ -62,26 +57,6 @@ For detailed architecture documentation, see [`docs/plans/2026-02-03-todo-api-de
 - **Transactional Outbox** - Reliable event publishing
 - **Dependency Injection** - Manual wiring in `cmd/todo/main.go`
 - **Testing Strategy** - Unit tests, integration tests with testcontainers, and API tests
-
-### Why This Example?
-
-Many developers ask how to structure larger Go applications with clean architecture principles. This example shows:
-
-1. How the standard layout maps to DDD/Hexagonal concepts
-2. Where to put domain logic vs infrastructure code
-3. How to maintain testability and flexibility
-4. Real-world patterns for database access, API handling, and testing
-
-The example is intentionally **production-ready** but **not over-engineered** - it shows practical patterns without unnecessary complexity.
-
-If you need help with naming, formatting and style start by running [`gofmt`](https://golang.org/cmd/gofmt/) and [`staticcheck`](https://github.com/dominikh/go-tools/tree/master/cmd/staticcheck). Also make sure to read these Go code style guidelines and recommendations:
-* https://talks.golang.org/2014/names.slide
-* https://golang.org/doc/effective_go.html#names
-* https://blog.golang.org/package-names
-* https://go.dev/wiki/CodeReviewComments
-* [Style guideline for Go packages](https://rakyll.org/style-packages) (rakyll/JBD)
-
-See [`Go Project Layout`](https://medium.com/golang-learn/go-project-layout-e5213cdcfaa2) for additional background information.
 
 ## Go Directories
 
