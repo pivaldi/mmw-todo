@@ -307,5 +307,5 @@ mise tasks
 
 [tasks.doctor]
 description = "Show tool versions and key environment info"
-run = "./scripts/common/doctor.sh"
+run = "{{config_root}}/scripts/common/doctor.sh"
 alias = "dr"
