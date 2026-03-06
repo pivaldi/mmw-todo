@@ -18,7 +18,7 @@ func createTodoWithStatus(t *testing.T, status TaskStatus) *Todo {
 	todo := createValidTodo(t)
 	// Directly set status for testing (bypass business rules)
 	todo.status = status
-	if status == StatusCompleted {
+	if status == TaskStatusCompleted {
 		now := time.Now()
 		todo.completedAt = &now
 	}
@@ -46,8 +46,8 @@ func TestNewTodo(t *testing.T) {
 	if todo.Description() != description {
 		t.Errorf("Description = %v, want %v", todo.Description(), description)
 	}
-	if todo.Status() != StatusPending {
-		t.Errorf("Status = %v, want %v", todo.Status(), StatusPending)
+	if todo.Status() != TaskStatusPending {
+		t.Errorf("Status = %v, want %v", todo.Status(), TaskStatusPending)
 	}
 	if todo.Priority() != priority {
 		t.Errorf("Priority = %v, want %v", todo.Priority(), priority)
@@ -79,25 +79,25 @@ func TestTodo_Complete(t *testing.T) {
 	}{
 		{
 			name:          "complete pending todo",
-			initialStatus: StatusPending,
+			initialStatus: TaskStatusPending,
 			wantErr:       false,
 			wantEvent:     true,
 		},
 		{
 			name:          "complete in_progress todo",
-			initialStatus: StatusInProgress,
+			initialStatus: TaskStatusInProgress,
 			wantErr:       false,
 			wantEvent:     true,
 		},
 		{
 			name:          "complete already completed todo (idempotent)",
-			initialStatus: StatusCompleted,
+			initialStatus: TaskStatusCompleted,
 			wantErr:       false,
 			wantEvent:     false,
 		},
 		{
 			name:          "complete cancelled todo",
-			initialStatus: StatusCancelled,
+			initialStatus: TaskStatusCancelled,
 			wantErr:       true,
 			wantEvent:     false,
 		},
@@ -117,8 +117,8 @@ func TestTodo_Complete(t *testing.T) {
 				if err != nil {
 					t.Errorf("Complete() unexpected error: %v", err)
 				}
-				if todo.Status() != StatusCompleted {
-					t.Errorf("Status = %v, want %v", todo.Status(), StatusCompleted)
+				if todo.Status() != TaskStatusCompleted {
+					t.Errorf("Status = %v, want %v", todo.Status(), TaskStatusCompleted)
 				}
 				if todo.CompletedAt() == nil {
 					t.Error("CompletedAt should be set after completing")
@@ -148,26 +148,26 @@ func TestTodo_Reopen(t *testing.T) {
 	}{
 		{
 			name:           "reopen completed todo",
-			initialStatus:  StatusCompleted,
-			expectedStatus: StatusPending,
+			initialStatus:  TaskStatusCompleted,
+			expectedStatus: TaskStatusPending,
 			wantEvent:      true,
 		},
 		{
 			name:           "reopen cancelled todo",
-			initialStatus:  StatusCancelled,
-			expectedStatus: StatusPending,
+			initialStatus:  TaskStatusCancelled,
+			expectedStatus: TaskStatusPending,
 			wantEvent:      true,
 		},
 		{
 			name:           "reopen pending todo (idempotent)",
-			initialStatus:  StatusPending,
-			expectedStatus: StatusPending,
+			initialStatus:  TaskStatusPending,
+			expectedStatus: TaskStatusPending,
 			wantEvent:      false,
 		},
 		{
 			name:           "reopen in_progress todo (idempotent)",
-			initialStatus:  StatusInProgress,
-			expectedStatus: StatusInProgress,
+			initialStatus:  TaskStatusInProgress,
+			expectedStatus: TaskStatusInProgress,
 			wantEvent:      false,
 		},
 	}
@@ -186,7 +186,7 @@ func TestTodo_Reopen(t *testing.T) {
 				t.Errorf("Status = %v, want %v", todo.Status(), tt.expectedStatus)
 			}
 
-			if todo.CompletedAt() != nil && (tt.initialStatus == StatusCompleted || tt.initialStatus == StatusCancelled) {
+			if todo.CompletedAt() != nil && (tt.initialStatus == TaskStatusCompleted || tt.initialStatus == TaskStatusCancelled) {
 				t.Error("CompletedAt should be nil after reopening completed/cancelled")
 			}
 
@@ -213,13 +213,13 @@ func TestTodo_UpdateTitle(t *testing.T) {
 	}{
 		{
 			name:          "update pending todo title",
-			initialStatus: StatusPending,
+			initialStatus: TaskStatusPending,
 			newTitle:      "Updated title",
 			wantErr:       false,
 		},
 		{
 			name:          "update completed todo title",
-			initialStatus: StatusCompleted,
+			initialStatus: TaskStatusCompleted,
 			newTitle:      "Updated title",
 			wantErr:       true,
 		},
@@ -334,20 +334,20 @@ func TestTodo_UpdateStatus(t *testing.T) {
 	}{
 		{
 			name:    "pending to in_progress",
-			from:    StatusPending,
-			to:      StatusInProgress,
+			from:    TaskStatusPending,
+			to:      TaskStatusInProgress,
 			wantErr: false,
 		},
 		{
 			name:    "in_progress to completed",
-			from:    StatusInProgress,
-			to:      StatusCompleted,
+			from:    TaskStatusInProgress,
+			to:      TaskStatusCompleted,
 			wantErr: false,
 		},
 		{
 			name:    "completed to in_progress (invalid)",
-			from:    StatusCompleted,
-			to:      StatusInProgress,
+			from:    TaskStatusCompleted,
+			to:      TaskStatusInProgress,
 			wantErr: true,
 		},
 	}
@@ -383,22 +383,22 @@ func TestTodo_Cancel(t *testing.T) {
 	}{
 		{
 			name:          "cancel pending todo",
-			initialStatus: StatusPending,
+			initialStatus: TaskStatusPending,
 			wantErr:       false,
 		},
 		{
 			name:          "cancel in_progress todo",
-			initialStatus: StatusInProgress,
+			initialStatus: TaskStatusInProgress,
 			wantErr:       false,
 		},
 		{
 			name:          "cancel completed todo",
-			initialStatus: StatusCompleted,
+			initialStatus: TaskStatusCompleted,
 			wantErr:       true,
 		},
 		{
 			name:          "cancel already cancelled todo (idempotent)",
-			initialStatus: StatusCancelled,
+			initialStatus: TaskStatusCancelled,
 			wantErr:       false,
 		},
 	}
@@ -417,8 +417,8 @@ func TestTodo_Cancel(t *testing.T) {
 				if err != nil {
 					t.Errorf("Cancel() unexpected error: %v", err)
 				}
-				if todo.Status() != StatusCancelled {
-					t.Errorf("Status = %v, want %v", todo.Status(), StatusCancelled)
+				if todo.Status() != TaskStatusCancelled {
+					t.Errorf("Status = %v, want %v", todo.Status(), TaskStatusCancelled)
 				}
 			}
 		})
@@ -436,8 +436,8 @@ func TestTodo_MarkInProgress(t *testing.T) {
 		t.Errorf("MarkInProgress() unexpected error: %v", err)
 	}
 
-	if todo.Status() != StatusInProgress {
-		t.Errorf("Status = %v, want %v", todo.Status(), StatusInProgress)
+	if todo.Status() != TaskStatusInProgress {
+		t.Errorf("Status = %v, want %v", todo.Status(), TaskStatusInProgress)
 	}
 
 	events := todo.Events()
@@ -546,7 +546,7 @@ func TestReconstituteTodo(t *testing.T) {
 	id, _ := ParseTodoID("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
 	title, _ := NewTaskTitle("Reconstituted Todo")
 	description := "From database"
-	status := StatusInProgress
+	status := TaskStatusInProgress
 	priority := PriorityHigh
 	createdAt := time.Now().Add(-24 * time.Hour)
 	updatedAt := time.Now()

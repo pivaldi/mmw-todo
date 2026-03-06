@@ -228,7 +228,7 @@ This project demonstrates **Domain-Driven Design (DDD)** and **Hexagonal Archite
    - Transaction boundaries
    - Event dispatching
 
-3. **Ports Layer** (`internal/ports/`)
+3. **Ports Layer** (`internal/application/ports/`)
    - Interfaces defining boundaries
    - Repository interfaces (secondary ports)
    - Service interfaces (primary ports)

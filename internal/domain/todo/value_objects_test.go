@@ -154,31 +154,30 @@ func TestParseTaskStatus(t *testing.T) {
 		{
 			name:    "pending lowercase",
 			input:   "pending",
-			want:    StatusPending,
+			want:    TaskStatusPending,
 			wantErr: false,
 		},
 		{
-			name:    "pending uppercase",
+			name:    "uppercase not supported (case-sensitive)",
 			input:   "PENDING",
-			want:    StatusPending,
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name:    "in_progress",
 			input:   "in_progress",
-			want:    StatusInProgress,
+			want:    TaskStatusInProgress,
 			wantErr: false,
 		},
 		{
 			name:    "completed",
 			input:   "completed",
-			want:    StatusCompleted,
+			want:    TaskStatusCompleted,
 			wantErr: false,
 		},
 		{
 			name:    "cancelled",
 			input:   "cancelled",
-			want:    StatusCancelled,
+			want:    TaskStatusCancelled,
 			wantErr: false,
 		},
 		{
@@ -219,10 +218,10 @@ func TestTaskStatus_IsCompleted(t *testing.T) {
 		status TaskStatus
 		want   bool
 	}{
-		{StatusCompleted, true},
-		{StatusPending, false},
-		{StatusInProgress, false},
-		{StatusCancelled, false},
+		{TaskStatusCompleted, true},
+		{TaskStatusPending, false},
+		{TaskStatusInProgress, false},
+		{TaskStatusCancelled, false},
 	}
 
 	for _, tt := range tests {
@@ -240,10 +239,10 @@ func TestTaskStatus_IsCancelled(t *testing.T) {
 		status TaskStatus
 		want   bool
 	}{
-		{StatusCancelled, true},
-		{StatusPending, false},
-		{StatusInProgress, false},
-		{StatusCompleted, false},
+		{TaskStatusCancelled, true},
+		{TaskStatusPending, false},
+		{TaskStatusInProgress, false},
+		{TaskStatusCompleted, false},
 	}
 
 	for _, tt := range tests {
@@ -265,50 +264,50 @@ func TestTaskStatus_CanTransitionTo(t *testing.T) {
 	}{
 		{
 			name:      "pending to in_progress",
-			from:      StatusPending,
-			to:        StatusInProgress,
+			from:      TaskStatusPending,
+			to:        TaskStatusInProgress,
 			wantValid: true,
 		},
 		{
 			name:      "pending to completed",
-			from:      StatusPending,
-			to:        StatusCompleted,
+			from:      TaskStatusPending,
+			to:        TaskStatusCompleted,
 			wantValid: true,
 		},
 		{
 			name:      "in_progress to completed",
-			from:      StatusInProgress,
-			to:        StatusCompleted,
+			from:      TaskStatusInProgress,
+			to:        TaskStatusCompleted,
 			wantValid: true,
 		},
 		{
 			name:      "completed to pending (reopen)",
-			from:      StatusCompleted,
-			to:        StatusPending,
+			from:      TaskStatusCompleted,
+			to:        TaskStatusPending,
 			wantValid: true,
 		},
 		{
 			name:      "completed to in_progress (invalid)",
-			from:      StatusCompleted,
-			to:        StatusInProgress,
+			from:      TaskStatusCompleted,
+			to:        TaskStatusInProgress,
 			wantValid: false,
 		},
 		{
 			name:      "completed to cancelled (invalid)",
-			from:      StatusCompleted,
-			to:        StatusCancelled,
+			from:      TaskStatusCompleted,
+			to:        TaskStatusCancelled,
 			wantValid: false,
 		},
 		{
 			name:      "cancelled to pending (reopen)",
-			from:      StatusCancelled,
-			to:        StatusPending,
+			from:      TaskStatusCancelled,
+			to:        TaskStatusPending,
 			wantValid: true,
 		},
 		{
 			name:      "cancelled to completed (invalid)",
-			from:      StatusCancelled,
-			to:        StatusCompleted,
+			from:      TaskStatusCancelled,
+			to:        TaskStatusCompleted,
 			wantValid: false,
 		},
 	}

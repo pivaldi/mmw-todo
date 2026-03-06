@@ -7,7 +7,7 @@ import (
 	"time"
 
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
-	"github.com/pivaldi/mmw/todo/internal/ports"
+	"github.com/pivaldi/mmw/todo/internal/application/ports"
 )
 
 // Mock implementations
@@ -405,8 +405,8 @@ func TestTodoService_ListTodos_WithStatusFilter_FiltersCorrectly(t *testing.T) {
 			// Verify filter was passed correctly
 			if filters.Status == nil {
 				t.Error("Expected status filter to be set")
-			} else if *filters.Status != domain.StatusPending {
-				t.Errorf("Status filter = %v, want %v", *filters.Status, domain.StatusPending)
+			} else if *filters.Status != domain.TaskStatusPending {
+				t.Errorf("Status filter = %v, want %v", *filters.Status, domain.TaskStatusPending)
 			}
 			return []*domain.Todo{}, nil
 		},
@@ -414,7 +414,7 @@ func TestTodoService_ListTodos_WithStatusFilter_FiltersCorrectly(t *testing.T) {
 	mockDispatcher := &MockEventDispatcher{}
 	service := NewTodoApplicationService(mockRepo, mockDispatcher)
 
-	statusFilter := "pending"
+	statusFilter := domain.TaskStatusPending
 	_, err := service.ListTodos(context.Background(), ListFilters{
 		Status: &statusFilter,
 	})

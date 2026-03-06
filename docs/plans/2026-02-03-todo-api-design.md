@@ -42,7 +42,7 @@ The application follows **Hexagonal Architecture** (also known as Ports and Adap
 /cmd/todo          → Application entry point, dependency wiring
 /internal/domain/todo      → Domain entities, value objects, events, business rules
 /internal/application → Use cases, application services, DTOs
-/internal/ports       → Interface definitions (repositories, event dispatchers)
+/internal/application/ports → Interface definitions (repositories, event dispatchers)
 /internal/adapters    → Implementations (PostgreSQL, Connect handlers)
 /api                  → Buf/protobuf definitions
 /configs              → Configuration files
@@ -268,7 +268,7 @@ func (s *TodoApplicationService) CompleteTodo(ctx context.Context, id string) er
 
 Ports define contracts between layers. The inner layers (domain/application) declare what they need; outer layers (adapters) provide implementations.
 
-**Location:** `/internal/ports/`
+**Location:** `/internal/application/ports/`
 
 ### Primary Ports (Driving - Input)
 
@@ -1452,7 +1452,7 @@ project-layout/
 - DTO mapping
 - No business logic
 
-**`internal/ports/`**
+**`internal/application/ports/`**
 - Interface definitions only
 - Contracts between layers
 - Enable dependency inversion

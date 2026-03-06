@@ -1,8 +1,12 @@
+log-level="debug"
+
 [database]
-user = "rcv"
+user = "postgres"
 host = "localhost"
-port = "4332"
-name = "poc"
+port = "5435"
+name = "todoapp"
 
 [server]
 port = 8090
+scheme = "https"
+host = "localhost"

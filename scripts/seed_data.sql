@@ -2,6 +2,8 @@
 -- This file can be run after migrations to populate the database with test data
 
 -- Insert sample todos
+BEGIN;
+
 INSERT INTO todos (id, title, description, status, priority, due_date, created_at, updated_at)
 VALUES
     (
@@ -80,9 +82,10 @@ VALUES
         NOW() - INTERVAL '5 days'
     ),
     (
-        'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13',
+        'f3f87aef-94c2-4b46-95b5-789699bda324',
         'TodoCompleted',
-        '{"id": "c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13", "completed_at": "' || (NOW() - INTERVAL '1 day')::text || '"}'::jsonb,
+        json_build_object('id', 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'completed_at', (NOW() - INTERVAL '1 day')::text),
         NOW() - INTERVAL '1 day',
         NOW() - INTERVAL '1 day'
     );
+COMMIT;

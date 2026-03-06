@@ -41,7 +41,7 @@ The implementation demonstrates:
 
 - **Domain Layer** (`/internal/domain/todo`) - Pure business logic with zero external dependencies
 - **Application Layer** (`/internal/application`) - Use case orchestration and transaction management
-- **Ports** (`/internal/ports`) - Interface definitions for dependency inversion
+- **Ports** (`/internal/application/ports`) - Interface definitions for dependency inversion
 - **Adapters** (`/internal/adapters`) - Concrete implementations (HTTP/gRPC handlers, PostgreSQL repositories)
 - **API Definitions** (`/api`) - Protobuf schemas with Buf for code generation
 - **Web Frontend** (`/web/todoapp`) - Angular application with CRUD operations, filtering, and real-time updates

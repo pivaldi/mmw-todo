@@ -28,6 +28,8 @@ BUILD_DIR = "bin"
 _.file = ".envrc"  # Load .envrc file if it exists
 APP_ENV = { required = true }
 APP_NAME = { required = true }
+DB_PASSWORD="postgres" # TODO: make it secret
+DB_URL="postgres://postgres:{{env.DB_PASSWORD}}@localhost:5435/todoapp?sslmode=disable"
 
 
 [tasks.setup]

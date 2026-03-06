@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/url"
 	"os"
 	"strconv"
@@ -48,26 +49,83 @@ func (d *Database) URL() string {
 	return u.String()
 }
 
-type Port int8
+type Port int16
 
-func (s Port) String() string {
-	return ":" + strconv.Itoa(int(s))
+func (p Port) String() string {
+	return ":" + strconv.Itoa(int(p))
+}
+
+type LogLevel string
+
+// SlogLevel returns the slog.SlogLevel value corresponding to the string level
+func (l LogLevel) SlogLevel() slog.Level {
+	switch string(l) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo // default to info
+	}
+}
+
+// String implements the Stringer interface
+func (l LogLevel) String() string {
+	return string(l)
+}
+
+// IsValid checks if the LogLevel value is valid
+func (l LogLevel) IsValid() bool {
+	switch string(l) {
+	case "debug", "info", "warn", "error":
+		return true
+	default:
+		return false
+	}
 }
 
 type Server struct {
-	Port Port `mapstructure:"port"`
+	Port   Port   `mapstructure:"port"`
+	Scheme string `mapstructure:"scheme"`
+	Host   string `mapstructure:"host"`
+}
+
+func (s Server) URL(path string, queries map[string]string) string {
+	port := ""
+	if (s.Scheme != "http" || s.Port != 80) && (s.Scheme != "https" || s.Port != 443) {
+		port = s.Port.String()
+	}
+
+	u := &url.URL{
+		Scheme: s.Scheme,
+		Host:   s.Host + port,
+		Path:   path,
+	}
+
+	q := u.Query()
+	for key, value := range queries {
+		q.Set(key, value)
+	}
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }
 
 type Config struct {
-	Database    *Database `mapstructure:"database"`
-	Port        string    `mapstructure:"port"`
-	Environment string    `env:"APP_ENV, required" mapstructure:"environment"`
-	AppName     string    `env:"APP_NAME"`
-	Server      *Server   `mapstructure:"server"`
+	Database    *Database   `mapstructure:"database"`
+	Port        string      `mapstructure:"port"`
+	Environment Environment `env:"APP_ENV, required" mapstructure:"environment"`
+	AppName     string      `env:"APP_NAME"`
+	Server      *Server     `mapstructure:"server"`
+	LogLevel    LogLevel    `mapstructure:"log-level"`
 }
 
 // GetAppEnv returns the App environnement variable (prod, testing, etc)
-func (c Config) GetAppEnv() string {
+func (c *Config) GetAppEnv() fmt.Stringer {
 	return c.Environment
 }
 

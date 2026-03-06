@@ -1,23 +1,30 @@
 package main
 
-import "github.com/pivaldi/mmw/todo"
+import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/pivaldi/mmw/todo"
+)
 
 func main() {
-	// if err := run(config, logger); err != nil {
-	// 	logger.Error("application failed", "error", err)
-	// 	os.Exit(1)
-	// }
+	// 1. Create a root context that cancels on SIGINT or SIGTERM
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
-	app, err := todo.New(nil)
+	app := todo.New()
 
-	if err != nil {
+	// 2. Clean up resources when the application exits
+	defer app.Close()
+
+	// 3. Pass the context down the chain
+	if err := app.Bootstrap(ctx, nil); err != nil {
 		panic(err)
 	}
 
-	err = app.Run()
-
-	// TODO: gracefull restart here ?
-	if err != nil {
+	if err := app.Run(ctx); err != nil {
 		panic(err)
 	}
 }
