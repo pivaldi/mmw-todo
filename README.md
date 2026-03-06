@@ -28,8 +28,8 @@ The Todo API example provides:
 ./configure
 
 # Start the project
-mise run docker-up
-mise run db-migrate-up
+mise run docker:up
+mise run db:migrate:up
 mise run run
 ```
 

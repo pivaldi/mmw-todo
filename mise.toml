@@ -7,7 +7,7 @@ quiet = true
 [tools]
 go = "latest"
 golangci-lint = "latest"
-
+zellij = "latest"
 
 [shell_alias]
 dev = "mise run run"
@@ -229,32 +229,32 @@ echo "Library dependencies:"
 goda graph "./libs/..."
 """
 
-[tasks."deps-verify"]
+[tasks."deps:verify"]
 description = "Verify Go dependencies"
 run = "go mod verify"
 
 # Database tasks
-[tasks."db-migrate-up"]
+[tasks."db:migrate:up"]
 description = "Run database migrations up"
 run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" up"
 
-[tasks."db-migrate-down"]
+[tasks."db:migrate:down"]
 description = "Run database migrations down"
 run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" down"
 
-[tasks."db-migrate-force"]
+[tasks."db:migrate:force"]
 description = "Force migration version (use with VERSION=<number>)"
 run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" force ${VERSION}"
 
-[tasks."db-seed"]
+[tasks."db:seed"]
 description = "Seed database with sample data"
 run = "psql \"${DB_URL}\" -f ./scripts/seed_data.sql"
 
 [tasks."db-reset"]
 description = "Reset database (down, up, seed)"
-depends = ["db-migrate-down", "db-migrate-up", "db-seed"]
+depends = ["db:migrate:down", "db:migrate:up", "db:seed"]
 
-[tasks."db-clean"]
+[tasks."db:clean"]
 description = "Drop and recreate database (nuclear option)"
 run = """
 docker-compose -f deployments/docker-compose.yml down -v
@@ -262,28 +262,36 @@ docker-compose -f deployments/docker-compose.yml up -d postgres
 sleep 5
 """
 
-[tasks."db-setup"]
+[tasks."db:setup"]
 description = "Complete database setup (clean + migrate)"
-depends = ["db-clean", "db-migrate-up"]
+depends = ["db:clean", "db:migrate:up"]
 
-[tasks."db-migrate-version"]
+[tasks."db:up"]
+description = "Start Docker Database"
+run = "docker-compose -f deployments/docker-compose.yml up postgres -d"
+
+[tasks."db:down"]
+description = "Stop Docker Database"
+run = "docker-compose -f deployments/docker-compose.yml down postgres -d"
+
+[tasks."db:migrate:version"]
 description = "Show current migration version"
 run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" version"
 
 # Docker tasks
-[tasks."docker-build"]
+[tasks."docker:build"]
 description = "Build Docker image"
 run = "docker build -t todo:latest -f build/package/Dockerfile ."
 
-[tasks."docker-up"]
+[tasks."docker:up"]
 description = "Start Docker Compose services"
 run = "docker-compose -f deployments/docker-compose.yml up -d"
 
-[tasks."docker-down"]
+[tasks."docker:down"]
 description = "Stop Docker Compose services"
 run = "docker-compose -f deployments/docker-compose.yml down"
 
-[tasks."docker-logs"]
+[tasks."docker:logs"]
 description = "View Docker Compose logs"
 run = "docker-compose -f deployments/docker-compose.yml logs -f"
 
@@ -293,9 +301,17 @@ description = "Run the application"
 depends = ["generate"]
 run = "go run ${BINARY_PATH}/main.go"
 
-[tasks."run-dev"]
+[tasks."run:dev"]
 description = "Run with hot reload (requires air)"
-run = "air"
+run = "go tool air"
+
+[tasks."web:start"]
+description = "Run with hot reload (requires air)"
+run = "cd web/todoapp/ && npm install && npm start"
+
+[tasks."zellif:dev"]
+description = "Bootstrap the project with Zellij"
+run = "zellij --layout third_party/zeillij/dev-layout.kdl"
 
 # Default task (show help)
 [tasks.default]

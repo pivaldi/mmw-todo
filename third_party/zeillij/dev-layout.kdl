@@ -1,16 +1,20 @@
 layout {
-    // We want a vertical split (side-by-side panes)
-    pane split_direction="vertical" {
+    pane split_direction="horizontal" {
 
-        // Left Pane: Run your Go build
         pane command="mise" {
-            args "run" "test-all"
+            args "run" "db:up"
+            close_on_exit true
+        }
+
+        pane command="mise" {
+            name "Todo API Server"
+            args "run" "run:dev"
             close_on_exit false
         }
 
-        // Right Pane: Run your gosec/golangci-lint
         pane command="mise" {
-            args "run" "check"
+            name "Todo WEB Server"
+            args "run" "web:start"
             close_on_exit false
         }
     }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
+	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
 
 // TodoService defines the application service interface
