@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ovya/ogl/postgres/uow"
 
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -37,7 +38,7 @@ func NewPostgresTodoRepository(pool *pgxpool.Pool) *PostgresTodoRepository {
 	}
 }
 
-// Save persists a new todo to the database
+// Save persists a new todo to the database.
 func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) error {
 	query := `
 		INSERT INTO todos (id, title, description, status, priority, due_date, created_at, updated_at)
@@ -50,7 +51,10 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 		dueDate = &t
 	}
 
-	_, err := r.pool.Exec(ctx, query,
+	// getExecutor automatically uses the Tx if it's in the ctx!
+	exec := uow.GetExecutor(ctx, r.pool)
+
+	_, err := exec.Exec(ctx, query,
 		todo.ID().String(),
 		todo.Title().String(),
 		todo.Description(),

@@ -1,0 +1,15 @@
+# .mockery.yaml v3 Compliant
+template: testify
+formatter: goimports
+force-file-write: true
+dir: '{{.InterfaceDir}}/mocks'
+pkgname: 'mocks'
+filename: '{{.InterfaceName | snakecase}}.go'
+structname: 'Mock{{.InterfaceName}}'
+
+packages:
+  github.com/pivaldi/mmw/todo/internal/application/ports:
+    interfaces:
+      UnitOfWork: {}
+      TodoRepository: {}
+      EventDispatcher: {}

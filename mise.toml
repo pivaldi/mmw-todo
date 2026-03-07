@@ -8,6 +8,8 @@ quiet = true
 go = "latest"
 golangci-lint = "latest"
 zellij = "latest"
+# pinning a specific version is a strict best practice for mockery.
+"go:github.com/vektra/mockery/v3" = "v3.7.0"
 
 [shell_alias]
 dev = "mise run run"
@@ -83,7 +85,11 @@ run = """
   buf generate --template buf.gen.todo.yaml
   cd {{config_root}} || exit 1
   go generate ./...
-"""
+ """
+
+[tasks."generate:mocks"]
+description = "Generate Go mocks for application ports"
+run = "mockery"
 
 [tasks."buf-lint"]
 description = "Lint protobuf files (Todo API only)"

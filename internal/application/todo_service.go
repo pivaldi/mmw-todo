@@ -25,32 +25,35 @@ type TodoService interface {
 // It orchestrates domain operations and coordinates infrastructure concerns
 type TodoApplicationService struct {
 	repository ports.TodoRepository
+	uow        ports.UnitOfWork
 	dispatcher ports.EventDispatcher
 }
 
 // NewTodoApplicationService creates a new TodoApplicationService
 func NewTodoApplicationService(
 	repository ports.TodoRepository,
+	uow ports.UnitOfWork,
 	dispatcher ports.EventDispatcher,
 ) *TodoApplicationService {
 	return &TodoApplicationService{
 		repository: repository,
+		uow:        uow,
 		dispatcher: dispatcher,
 	}
 }
 
 // CreateTodo creates a new todo
+// Use a transcation for demonstration purpose.
 func (s *TodoApplicationService) CreateTodo(
 	ctx context.Context,
 	req CreateTodoRequest,
 ) (*TodoResponse, error) {
-	// Create value objects from request
+	// 1. Create value objects from request (Pure Domain Logic - no UoW needed yet)
 	title, err := domain.NewTaskTitle(req.Title)
 	if err != nil {
 		return nil, fmt.Errorf("invalid title: %w", err)
 	}
 
-	// Validate priority enum
 	if !req.Priority.IsValid() {
 		return nil, fmt.Errorf("invalid priority: %w", domain.ErrInvalidPriority)
 	}
@@ -64,23 +67,31 @@ func (s *TodoApplicationService) CreateTodo(
 		dueDate = &dd
 	}
 
-	// Create todo using domain factory
 	todo := domain.NewTodo(title, req.Description, req.Priority, dueDate)
 
-	// Persist the todo
-	if err := s.repository.Save(ctx, todo); err != nil {
-		return nil, fmt.Errorf("saving todo: %w", err)
+	// Execute Infrastructure operations within the Unit of Work so with transaction.
+	err = s.uow.WithTransaction(ctx, func(txCtx context.Context) error {
+		// Use txCtx here so the repository uses the transaction if any!
+		if err := s.repository.Save(txCtx, todo); err != nil {
+			return fmt.Errorf("saving todo: %w", err)
+		}
+
+		// Dispatch events using txCtx (e.g., saving to an Outbox table in the same DB)
+		if err := s.dispatcher.Dispatch(txCtx, todo.Events()); err != nil {
+			return fmt.Errorf("dispatching events: %w", err)
+		}
+
+		return nil
+	})
+
+	// Handle UoW failure => Rollback already happened automatically
+	if err != nil {
+		return nil, fmt.Errorf("uow execution faild: %w", err)
 	}
 
-	// Dispatch domain events
-	if err := s.dispatcher.Dispatch(ctx, todo.Events()); err != nil {
-		return nil, fmt.Errorf("dispatching events: %w", err)
-	}
-
-	// Clear events after dispatching
+	// 5. Cleanup and Return
 	todo.ClearEvents()
 
-	// Map to response DTO
 	return MapTodoToResponse(todo), nil
 }
 

@@ -6,67 +6,13 @@ import (
 	"testing"
 	"time"
 
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
+	"github.com/pivaldi/mmw/todo/internal/application/ports/mocks"
+	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
-
-// Mock implementations
-
-type MockTodoRepository struct {
-	SaveFunc     func(ctx context.Context, todo *domain.Todo) error
-	FindByIDFunc func(ctx context.Context, id domain.TodoID) (*domain.Todo, error)
-	FindAllFunc  func(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error)
-	UpdateFunc   func(ctx context.Context, todo *domain.Todo) error
-	DeleteFunc   func(ctx context.Context, id domain.TodoID) error
-}
-
-func (m *MockTodoRepository) Save(ctx context.Context, todo *domain.Todo) error {
-	if m.SaveFunc != nil {
-		return m.SaveFunc(ctx, todo)
-	}
-	return nil
-}
-
-func (m *MockTodoRepository) FindByID(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
-	if m.FindByIDFunc != nil {
-		return m.FindByIDFunc(ctx, id)
-	}
-	return nil, domain.ErrTodoNotFound
-}
-
-func (m *MockTodoRepository) FindAll(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error) {
-	if m.FindAllFunc != nil {
-		return m.FindAllFunc(ctx, filters)
-	}
-	return []*domain.Todo{}, nil
-}
-
-func (m *MockTodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
-	if m.UpdateFunc != nil {
-		return m.UpdateFunc(ctx, todo)
-	}
-	return nil
-}
-
-func (m *MockTodoRepository) Delete(ctx context.Context, id domain.TodoID) error {
-	if m.DeleteFunc != nil {
-		return m.DeleteFunc(ctx, id)
-	}
-	return nil
-}
-
-type MockEventDispatcher struct {
-	DispatchFunc     func(ctx context.Context, events []domain.DomainEvent) error
-	DispatchedEvents []domain.DomainEvent
-}
-
-func (m *MockEventDispatcher) Dispatch(ctx context.Context, events []domain.DomainEvent) error {
-	m.DispatchedEvents = append(m.DispatchedEvents, events...)
-	if m.DispatchFunc != nil {
-		return m.DispatchFunc(ctx, events)
-	}
-	return nil
-}
 
 // Test helpers
 
@@ -75,184 +21,295 @@ func createTestTodo() *domain.Todo {
 	return domain.NewTodo(title, "Test description", domain.PriorityMedium, nil)
 }
 
-// Tests
+func setupService(t *testing.T) (*TodoApplicationService, *mocks.MockTodoRepository, *mocks.MockEventDispatcher, *mocks.MockUnitOfWork) {
+	mockRepo := mocks.NewMockTodoRepository(t)
+	mockDispatcher := mocks.NewMockEventDispatcher(t)
+	mockUoW := mocks.NewMockUnitOfWork(t)
+	service := NewTodoApplicationService(mockRepo, mockUoW, mockDispatcher)
+	return service, mockRepo, mockDispatcher, mockUoW
+}
 
-func TestTodoService_CreateTodo_ValidRequest_Success(t *testing.T) {
-	mockRepo := &MockTodoRepository{}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+// CreateTodo Tests
+
+func TestTodoService_CreateTodo_Success(t *testing.T) {
+	tests := []struct {
+		name       string
+		request    CreateTodoRequest
+		wantTitle  string
+		wantDesc   string
+		wantPri    domain.Priority
+		wantStatus domain.TaskStatus
+	}{
+		{
+			name: "valid todo with all fields",
+			request: CreateTodoRequest{
+				Title:       "Buy groceries",
+				Description: "Milk, eggs, bread",
+				Priority:    domain.PriorityMedium,
+			},
+			wantTitle:  "Buy groceries",
+			wantDesc:   "Milk, eggs, bread",
+			wantPri:    domain.PriorityMedium,
+			wantStatus: domain.TaskStatusPending,
+		},
+		{
+			name: "valid todo with high priority",
+			request: CreateTodoRequest{
+				Title:       "Urgent task",
+				Description: "Complete ASAP",
+				Priority:    domain.PriorityHigh,
+			},
+			wantTitle:  "Urgent task",
+			wantDesc:   "Complete ASAP",
+			wantPri:    domain.PriorityHigh,
+			wantStatus: domain.TaskStatusPending,
+		},
+		{
+			name: "valid todo with low priority",
+			request: CreateTodoRequest{
+				Title:    "Optional task",
+				Priority: domain.PriorityLow,
+			},
+			wantTitle:  "Optional task",
+			wantDesc:   "",
+			wantPri:    domain.PriorityLow,
+			wantStatus: domain.TaskStatusPending,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service, mockRepo, mockDispatcher, mockUoW := setupService(t)
+
+			// Setup UoW to execute the transaction closure
+			mockUoW.EXPECT().
+				WithTransaction(mock.Anything, mock.AnythingOfType("func(context.Context) error")).
+				RunAndReturn(func(ctx context.Context, fn func(txCtx context.Context) error) error {
+					return fn(ctx)
+				})
+
+			// Setup repository to succeed
+			mockRepo.EXPECT().
+				Save(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+				Return(nil)
+
+			// Setup event dispatcher to succeed
+			mockDispatcher.EXPECT().
+				Dispatch(mock.Anything, mock.MatchedBy(func(events []domain.DomainEvent) bool {
+					return len(events) == 1 && events[0].EventType() == "TodoCreated"
+				})).
+				Return(nil)
+
+			result, err := service.CreateTodo(context.Background(), tt.request)
+
+			require.NoError(t, err)
+			require.NotNil(t, result)
+			assert.Equal(t, tt.wantTitle, result.Title)
+			assert.Equal(t, tt.wantDesc, result.Description)
+			assert.Equal(t, tt.wantPri, result.Priority)
+			assert.Equal(t, tt.wantStatus, result.Status)
+		})
+	}
+}
+
+func TestTodoService_CreateTodo_WithDueDate(t *testing.T) {
+	tests := []struct {
+		name      string
+		dueDate   time.Time
+		wantError bool
+	}{
+		{
+			name:      "future due date succeeds",
+			dueDate:   time.Now().Add(24 * time.Hour),
+			wantError: false,
+		},
+		{
+			name:      "past due date fails",
+			dueDate:   time.Now().Add(-24 * time.Hour),
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service, mockRepo, mockDispatcher, mockUoW := setupService(t)
+
+			if !tt.wantError {
+				// Only setup expectations if we expect success
+				mockUoW.EXPECT().
+					WithTransaction(mock.Anything, mock.AnythingOfType("func(context.Context) error")).
+					RunAndReturn(func(ctx context.Context, fn func(txCtx context.Context) error) error {
+						return fn(ctx)
+					})
+
+				mockRepo.EXPECT().
+					Save(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+					Return(nil)
+
+				mockDispatcher.EXPECT().
+					Dispatch(mock.Anything, mock.Anything).
+					Return(nil)
+			}
+
+			req := CreateTodoRequest{
+				Title:    "Test with due date",
+				Priority: domain.PriorityHigh,
+				DueDate:  &tt.dueDate,
+			}
+
+			result, err := service.CreateTodo(context.Background(), req)
+
+			if tt.wantError {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				assert.NotNil(t, result.DueDate)
+			}
+		})
+	}
+}
+
+func TestTodoService_CreateTodo_ValidationErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		request CreateTodoRequest
+	}{
+		{
+			name: "empty title fails",
+			request: CreateTodoRequest{
+				Title:    "",
+				Priority: domain.PriorityMedium,
+			},
+		},
+		{
+			name: "invalid priority fails",
+			request: CreateTodoRequest{
+				Title:    "Test",
+				Priority: "invalid",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service, _, _, _ := setupService(t)
+
+			result, err := service.CreateTodo(context.Background(), tt.request)
+
+			assert.Error(t, err)
+			assert.Nil(t, result)
+		})
+	}
+}
+
+func TestTodoService_CreateTodo_RepositoryError(t *testing.T) {
+	service, mockRepo, _, mockUoW := setupService(t)
+
+	// Setup UoW to execute the transaction closure
+	mockUoW.EXPECT().
+		WithTransaction(mock.Anything, mock.AnythingOfType("func(context.Context) error")).
+		RunAndReturn(func(ctx context.Context, fn func(txCtx context.Context) error) error {
+			return fn(ctx)
+		})
+
+	// Setup repository to fail
+	mockRepo.EXPECT().
+		Save(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+		Return(errors.New("database error"))
+
+	// NOTE: We deliberately DO NOT set an expectation for mockDispatcher.
+	// If the service tries to dispatch events after a save failure, the test will fail!
 
 	req := CreateTodoRequest{
-		Title:       "Buy groceries",
-		Description: "Milk, eggs, bread",
-		Priority:    domain.PriorityMedium,
+		Title:    "Test",
+		Priority: domain.PriorityMedium,
 	}
 
 	result, err := service.CreateTodo(context.Background(), req)
 
-	if err != nil {
-		t.Fatalf("CreateTodo() unexpected error: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("CreateTodo() returned nil result")
-	}
-
-	if result.Title != "Buy groceries" {
-		t.Errorf("Title = %v, want %v", result.Title, "Buy groceries")
-	}
-
-	if result.Description != "Milk, eggs, bread" {
-		t.Errorf("Description = %v, want %v", result.Description, "Milk, eggs, bread")
-	}
-
-	if result.Priority != "medium" {
-		t.Errorf("Priority = %v, want %v", result.Priority, "medium")
-	}
-
-	if result.Status != "pending" {
-		t.Errorf("Status = %v, want %v", result.Status, "pending")
-	}
-
-	// Verify event was dispatched
-	if len(mockDispatcher.DispatchedEvents) != 1 {
-		t.Errorf("Expected 1 event dispatched, got %d", len(mockDispatcher.DispatchedEvents))
-	}
-
-	if mockDispatcher.DispatchedEvents[0].EventType() != "TodoCreated" {
-		t.Errorf("Event type = %v, want %v", mockDispatcher.DispatchedEvents[0].EventType(), "TodoCreated")
-	}
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "saving todo")
 }
 
-func TestTodoService_CreateTodo_InvalidTitle_ReturnsError(t *testing.T) {
-	mockRepo := &MockTodoRepository{}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+// GetTodo Tests
 
-	req := CreateTodoRequest{
-		Title:    "", // Invalid: empty title
-		Priority: "medium",
-	}
-
-	_, err := service.CreateTodo(context.Background(), req)
-
-	if err == nil {
-		t.Error("CreateTodo() expected error for empty title, got nil")
-	}
-}
-
-func TestTodoService_CreateTodo_InvalidPriority_ReturnsError(t *testing.T) {
-	mockRepo := &MockTodoRepository{}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
-
-	req := CreateTodoRequest{
-		Title:    "Test",
-		Priority: "invalid", // Invalid priority
-	}
-
-	_, err := service.CreateTodo(context.Background(), req)
-
-	if err == nil {
-		t.Error("CreateTodo() expected error for invalid priority, got nil")
-	}
-}
-
-func TestTodoService_CreateTodo_RepositoryError_ReturnsError(t *testing.T) {
-	mockRepo := &MockTodoRepository{
-		SaveFunc: func(ctx context.Context, todo *domain.Todo) error {
-			return errors.New("database error")
-		},
-	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
-
-	req := CreateTodoRequest{
-		Title:    "Test",
-		Priority: "medium",
-	}
-
-	_, err := service.CreateTodo(context.Background(), req)
-
-	if err == nil {
-		t.Error("CreateTodo() expected error when repository fails, got nil")
-	}
-}
-
-func TestTodoService_GetTodo_ExistingTodo_Success(t *testing.T) {
+func TestTodoService_GetTodo_Success(t *testing.T) {
 	testTodo := createTestTodo()
-	mockRepo := &MockTodoRepository{
-		FindByIDFunc: func(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
-			return testTodo, nil
-		},
-	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+	service, mockRepo, _, _ := setupService(t)
+
+	mockRepo.EXPECT().
+		FindByID(mock.Anything, testTodo.ID()).
+		Return(testTodo, nil)
 
 	result, err := service.GetTodo(context.Background(), testTodo.ID().String())
 
-	if err != nil {
-		t.Fatalf("GetTodo() unexpected error: %v", err)
-	}
-
-	if result.ID != testTodo.ID().String() {
-		t.Errorf("ID = %v, want %v", result.ID, testTodo.ID().String())
-	}
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, testTodo.ID().String(), result.ID)
+	assert.Equal(t, "Test Todo", result.Title)
 }
 
-func TestTodoService_GetTodo_InvalidID_ReturnsError(t *testing.T) {
-	mockRepo := &MockTodoRepository{}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
-
-	_, err := service.GetTodo(context.Background(), "invalid-id")
-
-	if err == nil {
-		t.Error("GetTodo() expected error for invalid ID, got nil")
-	}
-}
-
-func TestTodoService_GetTodo_NotFound_ReturnsError(t *testing.T) {
-	mockRepo := &MockTodoRepository{
-		FindByIDFunc: func(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
-			return nil, domain.ErrTodoNotFound
+func TestTodoService_GetTodo_Errors(t *testing.T) {
+	tests := []struct {
+		name      string
+		id        string
+		setupMock func(*mocks.MockTodoRepository)
+	}{
+		{
+			name: "invalid ID format",
+			id:   "invalid-id",
+			setupMock: func(m *mocks.MockTodoRepository) {
+				// No setup needed, validation happens before repository call
+			},
+		},
+		{
+			name: "todo not found",
+			id:   domain.NewTodoID().String(),
+			setupMock: func(m *mocks.MockTodoRepository) {
+				m.EXPECT().
+					FindByID(mock.Anything, mock.AnythingOfType("domain.TodoID")).
+					Return(nil, domain.ErrTodoNotFound)
+			},
 		},
 	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
 
-	validID := domain.NewTodoID()
-	_, err := service.GetTodo(context.Background(), validID.String())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service, mockRepo, _, _ := setupService(t)
+			if tt.setupMock != nil {
+				tt.setupMock(mockRepo)
+			}
 
-	if err == nil {
-		t.Error("GetTodo() expected error for non-existent todo, got nil")
+			result, err := service.GetTodo(context.Background(), tt.id)
+
+			assert.Error(t, err)
+			assert.Nil(t, result)
+		})
 	}
 }
 
-func TestTodoService_UpdateTodo_UpdateTitle_Success(t *testing.T) {
+// UpdateTodo Tests
+
+func TestTodoService_UpdateTodo_Success(t *testing.T) {
 	testTodo := createTestTodo()
-	testTodo.ClearEvents() // Clear creation events
+	service, mockRepo, mockDispatcher, _ := setupService(t)
 
-	mockRepo := &MockTodoRepository{
-		FindByIDFunc: func(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
-			// Return a fresh copy with cleared events
-			title, _ := domain.NewTaskTitle("Test Todo")
-			fresh := domain.ReconstituteTodo(
-				testTodo.ID(),
-				title,
-				testTodo.Description(),
-				testTodo.Status(),
-				testTodo.Priority(),
-				testTodo.DueDate(),
-				testTodo.CreatedAt(),
-				testTodo.UpdatedAt(),
-				testTodo.CompletedAt(),
-			)
-			return fresh, nil
-		},
-	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+	mockRepo.EXPECT().
+		FindByID(mock.Anything, testTodo.ID()).
+		Return(testTodo, nil)
+
+	mockRepo.EXPECT().
+		Update(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+		Return(nil)
+
+	mockDispatcher.EXPECT().
+		Dispatch(mock.Anything, mock.MatchedBy(func(events []domain.DomainEvent) bool {
+			return len(events) >= 1
+		})).
+		Return(nil)
 
 	newTitle := "Updated Title"
 	req := UpdateTodoRequest{
@@ -261,207 +318,257 @@ func TestTodoService_UpdateTodo_UpdateTitle_Success(t *testing.T) {
 
 	result, err := service.UpdateTodo(context.Background(), testTodo.ID().String(), req)
 
-	if err != nil {
-		t.Fatalf("UpdateTodo() unexpected error: %v", err)
-	}
-
-	if result.Title != newTitle {
-		t.Errorf("Title = %v, want %v", result.Title, newTitle)
-	}
-
-	// Verify event was dispatched
-	if len(mockDispatcher.DispatchedEvents) != 1 {
-		t.Errorf("Expected 1 event dispatched, got %d", len(mockDispatcher.DispatchedEvents))
-	}
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, newTitle, result.Title)
 }
 
-func TestTodoService_CompleteTodo_PendingTodo_Success(t *testing.T) {
+// CompleteTodo Tests
+
+func TestTodoService_CompleteTodo_Success(t *testing.T) {
 	testTodo := createTestTodo()
-	mockRepo := &MockTodoRepository{
-		FindByIDFunc: func(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
-			return testTodo, nil
-		},
-	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+	service, mockRepo, mockDispatcher, _ := setupService(t)
+
+	mockRepo.EXPECT().
+		FindByID(mock.Anything, testTodo.ID()).
+		Return(testTodo, nil)
+
+	mockRepo.EXPECT().
+		Update(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+		Return(nil)
+
+	mockDispatcher.EXPECT().
+		Dispatch(mock.Anything, mock.MatchedBy(func(events []domain.DomainEvent) bool {
+			// Verify TodoCompleted event is present
+			for _, event := range events {
+				if event.EventType() == "TodoCompleted" {
+					return true
+				}
+			}
+			return false
+		})).
+		Return(nil)
 
 	result, err := service.CompleteTodo(context.Background(), testTodo.ID().String())
 
-	if err != nil {
-		t.Fatalf("CompleteTodo() unexpected error: %v", err)
-	}
-
-	if result.Status != "completed" {
-		t.Errorf("Status = %v, want %v", result.Status, "completed")
-	}
-
-	// Verify TodoCompleted event was dispatched
-	foundCompletedEvent := false
-	for _, event := range mockDispatcher.DispatchedEvents {
-		if event.EventType() == "TodoCompleted" {
-			foundCompletedEvent = true
-			break
-		}
-	}
-
-	if !foundCompletedEvent {
-		t.Error("Expected TodoCompleted event to be dispatched")
-	}
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, domain.TaskStatusCompleted, result.Status)
 }
 
-func TestTodoService_ReopenTodo_CompletedTodo_Success(t *testing.T) {
+// ReopenTodo Tests
+
+func TestTodoService_ReopenTodo_Success(t *testing.T) {
 	testTodo := createTestTodo()
 	testTodo.Complete() // Mark as completed first
 	testTodo.ClearEvents()
 
-	mockRepo := &MockTodoRepository{
-		FindByIDFunc: func(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
-			return testTodo, nil
-		},
-	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+	service, mockRepo, mockDispatcher, _ := setupService(t)
+
+	mockRepo.EXPECT().
+		FindByID(mock.Anything, testTodo.ID()).
+		Return(testTodo, nil)
+
+	mockRepo.EXPECT().
+		Update(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+		Return(nil)
+
+	mockDispatcher.EXPECT().
+		Dispatch(mock.Anything, mock.MatchedBy(func(events []domain.DomainEvent) bool {
+			// Verify TodoReopened event is present
+			for _, event := range events {
+				if event.EventType() == "TodoReopened" {
+					return true
+				}
+			}
+			return false
+		})).
+		Return(nil)
 
 	result, err := service.ReopenTodo(context.Background(), testTodo.ID().String())
 
-	if err != nil {
-		t.Fatalf("ReopenTodo() unexpected error: %v", err)
-	}
-
-	if result.Status != "pending" {
-		t.Errorf("Status = %v, want %v", result.Status, "pending")
-	}
-
-	// Verify TodoReopened event was dispatched
-	foundReopenedEvent := false
-	for _, event := range mockDispatcher.DispatchedEvents {
-		if event.EventType() == "TodoReopened" {
-			foundReopenedEvent = true
-			break
-		}
-	}
-
-	if !foundReopenedEvent {
-		t.Error("Expected TodoReopened event to be dispatched")
-	}
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, domain.TaskStatusPending, result.Status)
 }
 
-func TestTodoService_DeleteTodo_ExistingTodo_Success(t *testing.T) {
+// DeleteTodo Tests
+
+func TestTodoService_DeleteTodo_Success(t *testing.T) {
 	testTodo := createTestTodo()
-	mockRepo := &MockTodoRepository{}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+	service, mockRepo, mockDispatcher, _ := setupService(t)
+
+	mockRepo.EXPECT().
+		Delete(mock.Anything, testTodo.ID()).
+		Return(nil)
+
+	mockDispatcher.EXPECT().
+		Dispatch(mock.Anything, mock.MatchedBy(func(events []domain.DomainEvent) bool {
+			// Verify TodoDeleted event is present
+			for _, event := range events {
+				if event.EventType() == "TodoDeleted" {
+					return true
+				}
+			}
+			return false
+		})).
+		Return(nil)
 
 	err := service.DeleteTodo(context.Background(), testTodo.ID().String())
 
-	if err != nil {
-		t.Fatalf("DeleteTodo() unexpected error: %v", err)
-	}
-
-	// Verify TodoDeleted event was dispatched
-	foundDeletedEvent := false
-	for _, event := range mockDispatcher.DispatchedEvents {
-		if event.EventType() == "TodoDeleted" {
-			foundDeletedEvent = true
-			break
-		}
-	}
-
-	if !foundDeletedEvent {
-		t.Error("Expected TodoDeleted event to be dispatched")
-	}
+	require.NoError(t, err)
 }
 
-func TestTodoService_ListTodos_NoFilters_ReturnsAll(t *testing.T) {
+// ListTodos Tests
+
+func TestTodoService_ListTodos_Success(t *testing.T) {
 	testTodo1 := createTestTodo()
 	testTodo2 := createTestTodo()
 
-	mockRepo := &MockTodoRepository{
-		FindAllFunc: func(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error) {
-			return []*domain.Todo{testTodo1, testTodo2}, nil
-		},
-	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+	service, mockRepo, _, _ := setupService(t)
+
+	mockRepo.EXPECT().
+		FindAll(mock.Anything, mock.AnythingOfType("ports.Filters")).
+		Return([]*domain.Todo{testTodo1, testTodo2}, nil)
 
 	result, err := service.ListTodos(context.Background(), ListFilters{})
 
-	if err != nil {
-		t.Fatalf("ListTodos() unexpected error: %v", err)
-	}
-
-	if len(result.Todos) != 2 {
-		t.Errorf("Expected 2 todos, got %d", len(result.Todos))
-	}
-
-	if result.TotalCount != 2 {
-		t.Errorf("TotalCount = %d, want 2", result.TotalCount)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Len(t, result.Todos, 2)
+	assert.Equal(t, 2, result.TotalCount)
 }
 
-func TestTodoService_ListTodos_WithStatusFilter_FiltersCorrectly(t *testing.T) {
-	mockRepo := &MockTodoRepository{
-		FindAllFunc: func(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error) {
-			// Verify filter was passed correctly
-			if filters.Status == nil {
-				t.Error("Expected status filter to be set")
-			} else if *filters.Status != domain.TaskStatusPending {
-				t.Errorf("Status filter = %v, want %v", *filters.Status, domain.TaskStatusPending)
-			}
-			return []*domain.Todo{}, nil
-		},
-	}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+func TestTodoService_ListTodos_WithStatusFilter(t *testing.T) {
+	service, mockRepo, _, _ := setupService(t)
+
+	mockRepo.EXPECT().
+		FindAll(mock.Anything, mock.MatchedBy(func(filters ports.Filters) bool {
+			// Verify status filter is passed correctly
+			return filters.Status != nil && *filters.Status == domain.TaskStatusPending
+		})).
+		Return([]*domain.Todo{}, nil)
 
 	statusFilter := domain.TaskStatusPending
-	_, err := service.ListTodos(context.Background(), ListFilters{
+	result, err := service.ListTodos(context.Background(), ListFilters{
 		Status: &statusFilter,
 	})
 
-	if err != nil {
-		t.Fatalf("ListTodos() unexpected error: %v", err)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, result)
 }
 
-func TestTodoService_CreateTodo_WithDueDate_Success(t *testing.T) {
-	mockRepo := &MockTodoRepository{}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
+// Transaction and Rollback Tests
 
-	futureDate := time.Now().Add(24 * time.Hour)
+func TestTodoService_TransactionRollback_OnError(t *testing.T) {
+	service, mockRepo, _, mockUoW := setupService(t)
+
+	// Setup UoW to execute the transaction closure
+	mockUoW.EXPECT().
+		WithTransaction(mock.Anything, mock.AnythingOfType("func(context.Context) error")).
+		RunAndReturn(func(ctx context.Context, fn func(txCtx context.Context) error) error {
+			return fn(ctx)
+		})
+
+	// Setup repository to fail
+	mockRepo.EXPECT().
+		Save(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+		Return(errors.New("database duplicate key error"))
+
+	// NOTE: We deliberately DO NOT set an expectation for mockDispatcher.
+	// If the service tries to dispatch events after a save failure, the test will fail!
+
 	req := CreateTodoRequest{
-		Title:    "Test with due date",
-		Priority: domain.PriorityHigh,
-		DueDate:  &futureDate,
-	}
-
-	result, err := service.CreateTodo(context.Background(), req)
-
-	if err != nil {
-		t.Fatalf("CreateTodo() unexpected error: %v", err)
-	}
-
-	if result.DueDate == nil {
-		t.Error("Expected due date to be set")
-	}
-}
-
-func TestTodoService_CreateTodo_WithPastDueDate_ReturnsError(t *testing.T) {
-	mockRepo := &MockTodoRepository{}
-	mockDispatcher := &MockEventDispatcher{}
-	service := NewTodoApplicationService(mockRepo, mockDispatcher)
-
-	pastDate := time.Now().Add(-24 * time.Hour)
-	req := CreateTodoRequest{
-		Title:    "Test with past due date",
-		Priority: domain.PriorityHigh,
-		DueDate:  &pastDate,
+		Title:    "Fail Test",
+		Priority: domain.PriorityLow,
 	}
 
 	_, err := service.CreateTodo(context.Background(), req)
 
-	if err == nil {
-		t.Error("CreateTodo() expected error for past due date, got nil")
+	assert.Error(t, err)
+}
+
+// Examples using mockery-generated mocks with proper transaction handling
+
+func TestCreateTodo_Success(t *testing.T) {
+	// 1. Instantiate the auto-generated v3 mocks
+	// Note: Because we set structname: "Mock{{.InterfaceName}}", the constructor is NewMock...
+	mockRepo := mocks.NewMockTodoRepository(t)
+	mockUoW := mocks.NewMockUnitOfWork(t)
+	mockDispatcher := mocks.NewMockEventDispatcher(t)
+
+	ctx := context.Background()
+
+	// 2. The UoW Closure Magic
+	// We tell the mock: "When WithTransaction is called, intercept it and run the closure!"
+	mockUoW.EXPECT().
+		WithTransaction(mock.Anything, mock.AnythingOfType("func(context.Context) error")).
+		RunAndReturn(func(ctx context.Context, fn func(txCtx context.Context) error) error {
+			return fn(ctx) // Instantly execute the inner block
+		})
+
+	// 3. Setup Expectations inside the closure
+	mockRepo.EXPECT().
+		Save(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+		Return(nil)
+
+	mockDispatcher.EXPECT().
+		Dispatch(mock.Anything, mock.Anything).
+		Return(nil)
+
+	// 4. Instantiate your Service
+	service := NewTodoApplicationService(mockRepo, mockUoW, mockDispatcher)
+
+	// 5. Execute the actual Request
+	req := CreateTodoRequest{
+		Title:    "Learn Go Clean Architecture",
+		Priority: domain.PriorityHigh,
 	}
+
+	resp, err := service.CreateTodo(ctx, req)
+
+	// 6. Assertions
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "Learn Go Clean Architecture", resp.Title)
+
+	// Note: We don't need `mockRepo.AssertExpectations(t)` because
+	// passing `t` to the constructor (NewMock...) handles that automatically!
+}
+
+func TestCreateTodo_RollbackOnSaveFailure(t *testing.T) {
+	mockRepo := mocks.NewMockTodoRepository(t)
+	mockUoW := mocks.NewMockUnitOfWork(t)
+	mockDispatcher := mocks.NewMockEventDispatcher(t)
+
+	ctx := context.Background()
+
+	// Execute closure exactly like success case
+	mockUoW.EXPECT().
+		WithTransaction(mock.Anything, mock.AnythingOfType("func(context.Context) error")).
+		RunAndReturn(func(ctx context.Context, fn func(txCtx context.Context) error) error {
+			return fn(ctx)
+		})
+
+	// Simulate a database failure!
+	mockRepo.EXPECT().
+		Save(mock.Anything, mock.AnythingOfType("*domain.Todo")).
+		Return(assert.AnError)
+
+	// NOTE: We deliberately DO NOT set an expectation for mockDispatcher.
+	// If the service tries to dispatch events after a save failure, the test will correctly fail!
+
+	service := NewTodoApplicationService(mockRepo, mockUoW, mockDispatcher)
+
+	req := CreateTodoRequest{
+		Title:    "Trigger Failure",
+		Priority: domain.PriorityLow,
+	}
+
+	resp, err := service.CreateTodo(ctx, req)
+
+	// Assert the failure bubbled up
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+	assert.ErrorIs(t, err, assert.AnError)
 }

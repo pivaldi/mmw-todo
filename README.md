@@ -30,10 +30,12 @@ The Todo API example provides:
 # Start the project
 mise run docker:up
 mise run db:migrate:up
-mise run run
+cd web/todoapp/ && npm install && npm start
 ```
 
 > Mise provides automatic tool version management and better cross-platform support. See [`docs/MISE.md`](docs/MISE.md) for details.
+
+One the database is migrated you can use Zellij to bootstrap the project with the unique command `mise run zellij:dev`
 
 ### Architecture Highlights
 

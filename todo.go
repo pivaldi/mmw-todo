@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ovya/ogl/postgres/uow"
 	"github.com/pivaldi/mmw/contracts/gen/go/todo/v1/todov1connect"
 	"github.com/pivaldi/mmw/todo/internal/adapters/events"
 	connecthandler "github.com/pivaldi/mmw/todo/internal/adapters/handler/connect"
@@ -28,11 +29,12 @@ const (
 )
 
 type app struct {
-	config      *config.Config
-	logger      *slog.Logger
-	todoService *application.TodoApplicationService
-	todoHandler *connecthandler.TodoHandler
-	dbPool      *pgxpool.Pool
+	config         *config.Config
+	logger         *slog.Logger
+	todoService    *application.TodoApplicationService
+	todoHandler    *connecthandler.TodoHandler
+	dbPool         *pgxpool.Pool
+	isBootstrapped bool
 }
 
 func (app *app) logError(err error, msg string) error {
@@ -54,10 +56,23 @@ func (a *app) Close() {
 	}
 }
 
-func (a *app) Bootstrap(ctx context.Context, envs map[string]string) error {
+func (a *app) GetConfig(ctx context.Context, envs map[string]string) (*config.Config, error) {
+	if a.isBootstrapped {
+		return a.config, nil
+	}
+
 	conf, err := config.Load(ctx, envs)
 	if err != nil {
-		return eris.Wrap(err, "app failed to load configuration")
+		return nil, eris.Wrap(err, "app failed to load configuration")
+	}
+
+	return conf, nil
+}
+
+func (a *app) Bootstrap(ctx context.Context, envs map[string]string) error {
+	conf, err := a.GetConfig(ctx, envs)
+	if err != nil {
+		return err
 	}
 	a.config = conf
 	a.logger = setupLogger(conf)
@@ -78,14 +93,20 @@ func (a *app) Bootstrap(ctx context.Context, envs map[string]string) error {
 
 	todoRepository := postgres.NewPostgresTodoRepository(dbPool)
 	eventDispatcher := events.NewInMemoryEventDispatcher(a.logger)
-	a.todoService = application.NewTodoApplicationService(todoRepository, eventDispatcher)
+	a.todoService = application.NewTodoApplicationService(todoRepository, uow.NewUnitOfWork(dbPool), eventDispatcher)
 	a.todoHandler = connecthandler.NewTodoHandler(a.todoService)
+
+	a.isBootstrapped = true
 
 	return nil
 }
 
 // Run runs the Connect server (HTTP+GRPC).
 func (a *app) Run(ctx context.Context) error {
+	if !a.isBootstrapped {
+		return eris.New("app is not bootstrapped")
+	}
+
 	mux := http.NewServeMux()
 
 	// FIX: Register handlers BEFORE starting the server

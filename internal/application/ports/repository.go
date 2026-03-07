@@ -33,3 +33,8 @@ type Filters struct {
 	Limit    *int
 	Offset   *int
 }
+
+// UnitOfWork defines the contract for atomic operations
+type UnitOfWork interface {
+	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
+}
