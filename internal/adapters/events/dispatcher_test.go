@@ -11,7 +11,7 @@ import (
 
 func TestInMemoryEventDispatcher_Dispatch_Success(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	dispatcher := NewInMemoryEventDispatcher(logger)
+	dispatcher := NewLogEventDispatcher(logger)
 
 	// Create test events
 	todoID := domain.NewTodoID()
@@ -30,7 +30,7 @@ func TestInMemoryEventDispatcher_Dispatch_Success(t *testing.T) {
 
 func TestInMemoryEventDispatcher_Dispatch_EmptyEvents_Success(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	dispatcher := NewInMemoryEventDispatcher(logger)
+	dispatcher := NewLogEventDispatcher(logger)
 
 	// Should handle empty event slice
 	err := dispatcher.Dispatch(context.Background(), []domain.DomainEvent{})
@@ -42,7 +42,7 @@ func TestInMemoryEventDispatcher_Dispatch_EmptyEvents_Success(t *testing.T) {
 
 func TestInMemoryEventDispatcher_Dispatch_MultipleEvents_Success(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	dispatcher := NewInMemoryEventDispatcher(logger)
+	dispatcher := NewLogEventDispatcher(logger)
 
 	// Create multiple test events
 	todoID := domain.NewTodoID()

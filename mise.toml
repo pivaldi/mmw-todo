@@ -287,7 +287,7 @@ run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" version"
 # Docker tasks
 [tasks."docker:build"]
 description = "Build Docker image"
-run = "docker build -t todo:latest -f build/package/Dockerfile ."
+run = "cd ../.. && docker build -t todo:latest -f services/todo/build/package/Dockerfile ."
 
 [tasks."docker:up"]
 description = "Start Docker Compose services"

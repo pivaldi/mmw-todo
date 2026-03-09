@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git make
@@ -7,12 +7,21 @@ RUN apk add --no-cache git make
 # Set working directory
 WORKDIR /workspace
 
-# Copy workspace file
-COPY go.work ./
+# Create custom go.work file for Docker (only modules we need)
+RUN printf 'go 1.26.1\n\nuse (\n\t.\n\t./contracts\n\t./libs/ogl\n\t./services/todo\n)\n' > go.work
+
+# Copy root module (contains shared code)
+COPY go.mod go.sum* ./
 
 # Copy contracts module
 COPY contracts/go.mod contracts/go.sum* ./contracts/
-COPY contracts/go ./contracts/go
+COPY contracts/gen ./contracts/gen
+
+# Copy libs module (ogl)
+COPY libs/ogl/go.mod libs/ogl/go.sum* ./libs/ogl/
+
+# Copy notifications module (needed for root module replace directive)
+COPY services/notifications/go.mod services/notifications/go.sum* ./services/notifications/
 
 # Copy todo service module
 COPY services/todo/go.mod services/todo/go.sum ./services/todo/
@@ -21,8 +30,14 @@ COPY services/todo/go.mod services/todo/go.sum ./services/todo/
 WORKDIR /workspace/services/todo
 RUN go mod download
 
-# Copy todo service source code
-COPY services/todo/ ./
+# Copy source code (back to workspace root for correct paths)
+WORKDIR /workspace
+COPY shared ./shared
+COPY libs/ogl ./libs/ogl
+COPY services/todo ./services/todo
+
+# Switch back to service directory for build
+WORKDIR /workspace/services/todo
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \

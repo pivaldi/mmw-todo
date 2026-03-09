@@ -7,10 +7,10 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/url"
-	"os"
 	"strconv"
 
 	oglconfig "github.com/ovya/ogl/config"
+	"github.com/ovya/ogl/platform"
 	"github.com/rotisserie/eris"
 )
 
@@ -124,9 +124,36 @@ type Config struct {
 	LogLevel    LogLevel    `mapstructure:"log-level"`
 }
 
+var _ = platform.Config(&Config{})
+
 // GetAppEnv returns the App environnement variable (prod, testing, etc)
 func (c *Config) GetAppEnv() fmt.Stringer {
 	return c.Environment
+}
+
+// GetAppName returns the App name (implements platform.Config)
+func (c *Config) GetAppName() string {
+	return c.AppName
+}
+
+// GetPort return the server port. Implements platform.Config
+func (c *Config) GetPort() string {
+	return c.Server.Port.String()
+}
+
+// EnvMixing mix secrets env var to the config
+func (c *Config) EnvMixing(envs map[string]string) {
+	if envs == nil {
+		return
+	}
+
+	dbpk := "DB_PASSWORD"
+	for _, key := range []string{dbpk, "TODO_" + dbpk} {
+		if password, ok := envs[key]; ok {
+			c.Database.password = password
+			break
+		}
+	}
 }
 
 // Load loads the configurations from embedded files:
@@ -136,26 +163,16 @@ func (c *Config) GetAppEnv() fmt.Stringer {
 func Load(ctx context.Context, envs map[string]string) (*Config, error) {
 	config := new(Config)
 
-	// Get password from environment
-	var password string
-	if envs != nil {
-		password = envs["DB_PASSWORD"]
-	} else {
-		password = os.Getenv("DB_PASSWORD")
-	}
-
-	if password == "" {
-		return nil, eris.New("env var DB_PASSWORD not set")
-	}
-
 	configFS := getConfigFS()
 	err := oglconfig.NewContext(ctx, configFS, envs).Fill(config)
 	if err != nil {
 		return nil, eris.Wrap(err, "error filling config")
 	}
 
-	if config.Database != nil {
-		config.Database.password = password
+	config.EnvMixing(envs)
+
+	if config.Database.password == "" {
+		return nil, eris.New("env var DB_PASSWORD not set")
 	}
 
 	return config, nil

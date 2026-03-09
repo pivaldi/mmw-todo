@@ -72,6 +72,59 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 	return nil
 }
 
+// BatchSave persists multiple todos efficiently in a single network trip
+// Example:
+func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.Todo) error {
+	if len(todos) == 0 {
+		return nil
+	}
+
+	batch := &pgx.Batch{}
+	query := `
+		INSERT INTO todos (id, title, description, status, priority, due_date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+
+	// 1. Queue all the queries into the batch locally in memory
+	for _, todo := range todos {
+		var dueDate *time.Time
+		if todo.DueDate() != nil {
+			t := todo.DueDate().Time()
+			dueDate = &t
+		}
+
+		batch.Queue(query,
+			todo.ID().String(),
+			todo.Title().String(),
+			todo.Description(),
+			todo.Status().String(),
+			todo.Priority().String(),
+			dueDate,
+			todo.CreatedAt(),
+			todo.UpdatedAt(),
+		)
+	}
+
+	// 2. Get the executor (magically uses the transaction if inside a UoW!)
+	exec := uow.GetExecutor(ctx, r.pool)
+
+	// 3. Send the entire batch to Postgres at once
+	br := exec.SendBatch(ctx, batch)
+
+	// You must close the BatchResults to release the connection back to the pool!
+	defer br.Close()
+
+	// 4. Verify that every single query succeeded
+	for i := range todos {
+		_, err := br.Exec()
+		if err != nil {
+			return fmt.Errorf("batch insert failed at index %d: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
 // FindByID retrieves a todo by its ID
 func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
 	query := `
