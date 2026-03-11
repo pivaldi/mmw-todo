@@ -130,12 +130,17 @@ type Config struct {
 
 var _ = platform.Config(&Config{})
 
+// GetServerHost returns the server host. Implements platform.Config
+func (c *Config) GetServerHost() string {
+	return c.Server.Host
+}
+
 // GetAppEnv returns the App environnement variable (prod, testing, etc)
 func (c *Config) GetAppEnv() fmt.Stringer {
 	return c.Environment
 }
 
-// GetAppName returns the App name (implements platform.Config)
+// GetAppName returns the App name. Implements platform.Config
 func (c *Config) GetAppName() string {
 	return c.AppName
 }

@@ -7,45 +7,47 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ovya/ogl/database/outbox"
 	"github.com/ovya/ogl/oglcore"
+	"github.com/ovya/ogl/oglevents"
 	"github.com/ovya/ogl/postgres/uow"
 	"github.com/pivaldi/mmw/contracts/gen/go/todo/v1/todov1connect"
 	"github.com/pivaldi/mmw/todo/internal/adapters/events"
 	connecthandler "github.com/pivaldi/mmw/todo/internal/adapters/handler/connect"
 	"github.com/pivaldi/mmw/todo/internal/adapters/repository/postgres"
 	"github.com/pivaldi/mmw/todo/internal/application"
-	"github.com/pivaldi/mmw/todo/internal/infra/workers"
 )
 
+const relayTableName = "events"
+
 type Module struct {
-	dbPool         *pgxpool.Pool
-	relay          *workers.EventsRelay
-	handler        *connecthandler.TodoHandler
-	isBootstrapped bool
-	logger         *slog.Logger
+	dbPool  *pgxpool.Pool
+	relay   *outbox.EventsRelay
+	handler *connecthandler.TodoHandler
+	logger  *slog.Logger
 }
 
 // Ensure Module implements oglcore.Module
 var _ oglcore.Module = (*Module)(nil)
 
-func Build(dbPool *pgxpool.Pool, eventBus workers.SystemEventBus, logger *slog.Logger) *Module {
+func Build(dbPool *pgxpool.Pool, eventBus oglevents.SystemEventBus, logger *slog.Logger) *Module {
 	// Initialize everything internal to Todo here!
 	return &Module{
-		dbPool:         dbPool,
-		relay:          workers.NewEnventsRelay(dbPool, eventBus, logger),
-		handler:        newTodoHandler(dbPool),
-		logger:         logger,
-		isBootstrapped: true,
+		dbPool:  dbPool,
+		relay:   outbox.NewEnventsRelay(dbPool, eventBus, logger, relayTableName),
+		handler: newTodoHandler(dbPool),
+		logger:  logger,
 	}
 }
 
+// Close properly releases allocated resources
+// Example: If you had a local cache or an internal batch processor:
+//
+//	if err := m.internalCache.Flush(); err != nil {
+//	    return err
+//	}
 func (m *Module) Close() error {
 	m.logger.Info("shutting down module internal resources")
-
-	// Example: If you had a local cache or an internal batch processor:
-	// if err := m.internalCache.Flush(); err != nil {
-	//     return err
-	// }
 
 	return nil
 }
