@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ovya/ogl/core"
+	"github.com/ovya/ogl/oglcore"
 	"github.com/ovya/ogl/postgres/uow"
 	"github.com/pivaldi/mmw/contracts/gen/go/todo/v1/todov1connect"
 	"github.com/pivaldi/mmw/todo/internal/adapters/events"
@@ -17,24 +17,22 @@ import (
 	"github.com/pivaldi/mmw/todo/internal/infra/workers"
 )
 
-const panicMsg = "module is not bootstrapped. Use NewModule."
-
 type Module struct {
 	dbPool         *pgxpool.Pool
-	relay          *workers.OutboxRelay
+	relay          *workers.EventsRelay
 	handler        *connecthandler.TodoHandler
 	isBootstrapped bool
 	logger         *slog.Logger
 }
 
-// Ensure Module implements core.Module
-var _ core.Module = (*Module)(nil)
+// Ensure Module implements oglcore.Module
+var _ oglcore.Module = (*Module)(nil)
 
 func Build(dbPool *pgxpool.Pool, eventBus workers.SystemEventBus, logger *slog.Logger) *Module {
 	// Initialize everything internal to Todo here!
 	return &Module{
 		dbPool:         dbPool,
-		relay:          workers.NewOutboxRelay(dbPool, eventBus, logger),
+		relay:          workers.NewEnventsRelay(dbPool, eventBus, logger),
 		handler:        newTodoHandler(dbPool),
 		logger:         logger,
 		isBootstrapped: true,
@@ -42,7 +40,7 @@ func Build(dbPool *pgxpool.Pool, eventBus workers.SystemEventBus, logger *slog.L
 }
 
 func (m *Module) Close() error {
-	m.logger.Info("shutting down todo module internal resources")
+	m.logger.Info("shutting down module internal resources")
 
 	// Example: If you had a local cache or an internal batch processor:
 	// if err := m.internalCache.Flush(); err != nil {
@@ -53,19 +51,11 @@ func (m *Module) Close() error {
 }
 
 func (m *Module) RegisterRoutes(mux *http.ServeMux) {
-	if !m.isBootstrapped {
-		panic(panicMsg)
-	}
-
 	path, handler := todov1connect.NewTodoServiceHandler(m.handler)
 	mux.Handle(path, handler)
 }
 
 func (m *Module) StartWorkers(ctx context.Context) error {
-	if !m.isBootstrapped {
-		panic(panicMsg)
-	}
-
 	// This blocks until ctx is canceled (which happens on shutdown)
 	m.relay.Start(ctx)
 

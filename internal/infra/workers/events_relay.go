@@ -16,15 +16,15 @@ type SystemEventBus interface {
 	Publish(ctx context.Context, eventType string, payload []byte) error
 }
 
-type OutboxRelay struct {
+type EventsRelay struct {
 	pool     *pgxpool.Pool
 	bus      SystemEventBus
 	logger   *slog.Logger
 	interval time.Duration
 }
 
-func NewOutboxRelay(pool *pgxpool.Pool, bus SystemEventBus, logger *slog.Logger) *OutboxRelay {
-	return &OutboxRelay{
+func NewEnventsRelay(pool *pgxpool.Pool, bus SystemEventBus, logger *slog.Logger) *EventsRelay {
+	return &EventsRelay{
 		pool:     pool,
 		bus:      bus,
 		logger:   logger,
@@ -33,7 +33,7 @@ func NewOutboxRelay(pool *pgxpool.Pool, bus SystemEventBus, logger *slog.Logger)
 }
 
 // Start runs continuously until the context is canceled (Graceful Shutdown)
-func (r *OutboxRelay) Start(ctx context.Context) {
+func (r *EventsRelay) Start(ctx context.Context) {
 	r.logger.Info("starting outbox relay worker")
 	ticker := time.NewTicker(r.interval)
 	defer ticker.Stop()
@@ -51,7 +51,7 @@ func (r *OutboxRelay) Start(ctx context.Context) {
 	}
 }
 
-func (r *OutboxRelay) processBatch(ctx context.Context) error {
+func (r *EventsRelay) processBatch(ctx context.Context) error {
 	// 1. Open a transaction for the worker
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -62,7 +62,7 @@ func (r *OutboxRelay) processBatch(ctx context.Context) error {
 	// 2. Fetch unpublished events (Lock them so other workers ignore them)
 	query := `
 		SELECT id, event_type, payload
-		FROM outbox_events
+		FROM events
 		WHERE published_at IS NULL
 		ORDER BY occurred_at ASC
 		LIMIT 100
@@ -99,7 +99,7 @@ func (r *OutboxRelay) processBatch(ctx context.Context) error {
 	// 4. If we published anything, mark them as done using pgx.Batch
 	if len(eventIDs) > 0 {
 		batch := &pgx.Batch{}
-		updateQuery := `UPDATE outbox_events SET published_at = NOW() WHERE id = $1`
+		updateQuery := `UPDATE events SET published_at = NOW() WHERE id = $1`
 		for _, id := range eventIDs {
 			batch.Queue(updateQuery, id)
 		}

@@ -70,15 +70,3 @@ dependenciesRules:
       internal:
         - '**.domain.**'
     description: 'Infrastructure layer should only depend on domain for type definitions'
-
-  # Main Entry Point - Minimal bootstrap
-  # NOTE: cmd should NOT import internal packages directly, only the composition root
-  - package: '**.cmd.**'
-    shouldNotDependsOn:
-      internal:
-        - '**.application'
-        - '**.adapters.**'
-        - '**.infra.**'
-        - '**.domain.**'
-        - '**.ports'
-    description: 'Main package should not import internal packages directly, only composition root'

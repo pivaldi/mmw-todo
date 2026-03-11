@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strconv"
 
-	oglconfig "github.com/ovya/ogl/config"
+	oglconfig "github.com/ovya/ogl/oglconfig"
 	"github.com/ovya/ogl/platform"
 	"github.com/rotisserie/eris"
 )
@@ -37,6 +37,10 @@ func (d *Database) URL() string {
 		Host:   fmt.Sprintf("%s:%s", d.Host, d.Port),
 		Path:   d.Name,
 	}
+
+	q := u.Query()
+	q.Add("sslmode", "disable")
+	u.RawQuery = q.Encode()
 
 	if d.User != "" {
 		if d.password != "" {
@@ -136,9 +140,14 @@ func (c *Config) GetAppName() string {
 	return c.AppName
 }
 
-// GetPort return the server port. Implements platform.Config
-func (c *Config) GetPort() string {
+// GetServerPort return the server port. Implements platform.Config
+func (c *Config) GetServerPort() string {
 	return c.Server.Port.String()
+}
+
+// GetDatabaseURL return the database URL . Implements platform.Config
+func (c *Config) GetDatabaseURL() string {
+	return c.Database.URL()
 }
 
 // EnvMixing mix secrets env var to the config

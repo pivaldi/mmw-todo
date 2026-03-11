@@ -1,9 +1,5 @@
--- Sample seed data for development and testing
--- This file can be run after migrations to populate the database with test data
-
--- Insert sample todos
-BEGIN;
-
+-- +goose Up
+-- +goose StatementBegin
 INSERT INTO todos (id, title, description, status, priority, due_date, created_at, updated_at)
 VALUES
     (
@@ -58,34 +54,38 @@ VALUES
     );
 
 -- Insert corresponding domain events
-INSERT INTO domain_events (aggregate_id, event_type, event_data, occurred_at, published_at)
+INSERT INTO events (event_type, payload, occurred_at, published_at)
 VALUES
     (
-        'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
         'TodoCreated',
         '{"id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", "title": "Complete project documentation", "priority": "high"}'::jsonb,
         NOW() - INTERVAL '2 days',
         NOW() - INTERVAL '2 days'
     ),
     (
-        'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
         'TodoCreated',
         '{"id": "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a12", "title": "Review pull requests", "priority": "medium"}'::jsonb,
         NOW() - INTERVAL '1 day',
         NOW() - INTERVAL '1 day'
     ),
     (
-        'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13',
         'TodoCreated',
         '{"id": "c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13", "title": "Fix authentication bug", "priority": "urgent"}'::jsonb,
         NOW() - INTERVAL '5 days',
         NOW() - INTERVAL '5 days'
     ),
     (
-        'f3f87aef-94c2-4b46-95b5-789699bda324',
         'TodoCompleted',
         json_build_object('id', 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', 'completed_at', (NOW() - INTERVAL '1 day')::text),
         NOW() - INTERVAL '1 day',
         NOW() - INTERVAL '1 day'
     );
-COMMIT;
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+
+TRUNCATE table todos;
+
+-- +goose StatementEnd

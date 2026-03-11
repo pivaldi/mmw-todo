@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ovya/ogl/core"
+	"github.com/ovya/ogl/oglcore"
+	"github.com/ovya/ogl/oglslog"
 	"github.com/pivaldi/mmw/todo/internal/infra/config"
 	"github.com/rotisserie/eris"
 	"golang.org/x/net/http2"
@@ -29,7 +30,7 @@ const (
 type app struct {
 	config  *config.Config
 	logger  *slog.Logger
-	modules []core.Module // Keep a list of all registered modules
+	modules []oglcore.Module // Keep a list of all registered modules
 
 	// todoService    *application.TodoApplicationService
 	// todoHandler    *connecthandler.TodoHandler
@@ -50,7 +51,7 @@ func New() *app {
 	return &app{}
 }
 
-func (a *app) SetModules(modules []core.Module) error {
+func (a *app) SetModules(modules []oglcore.Module) error {
 	if !a.isBootstrapped {
 		return errors.New("app is not bootstraped")
 	}
@@ -213,21 +214,32 @@ func maskDatabaseURL(url string) string {
 	return url[:10] + "***" + url[len(url)-10:]
 }
 
-// setupLogger creates a structured logger based on environment
+// setupLogger automatically configures the logger based on the environment
 func setupLogger(conf *config.Config) *slog.Logger {
-	var handler slog.Handler
+	isProd := conf.Environment == config.EnvironmentProduction
+	replaceErr := func(_ []string, a slog.Attr) slog.Attr {
+		// Detect if the attribute value is an `error` type
+		if err, isError := a.Value.Any().(error); isError {
+			if isProd {
+				return slog.Any(a.Key, eris.ToJSON(err, true))
+			}
 
-	if conf.Environment == config.EnvironmentProduction {
-		// JSON format for production
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: conf.LogLevel.SlogLevel(),
-		})
-	} else {
-		// Text format for development
-		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level: conf.LogLevel.SlogLevel(),
-		})
+			return slog.String(a.Key, "\n"+eris.ToString(err, true))
+		}
+
+		return a
 	}
 
-	return slog.New(handler)
+	var logger *slog.Logger
+	if isProd {
+		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level:       conf.LogLevel.SlogLevel(),
+			ReplaceAttr: replaceErr,
+		})
+		logger = slog.New(handler)
+	} else {
+		logger = slog.New(oglslog.StdoutTxtHandler(conf.LogLevel.SlogLevel(), replaceErr))
+	}
+
+	return logger
 }

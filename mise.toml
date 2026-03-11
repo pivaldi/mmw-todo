@@ -21,6 +21,7 @@ mt = "mise run"
 [vars]
 CONTRACTS_DIR = "{{config_root}}/../../contracts"
 GOTESTSUM_OPTIONS = "--format testdox"
+MIGRATIONS_DIR= "{{config_root}}/internal/infra/persistence/migrations/scripts"
 
 # Environment variables
 [env]
@@ -240,25 +241,43 @@ description = "Verify Go dependencies"
 run = "go mod verify"
 
 # Database tasks
+[tasks."db:migrate:build"]
+description = "Build the database migrations (needed to embed go migrations)"
+# sources = ["cmd/migration/*.go", "{{config_root}}/internal/infra/persistence/migrations/scripts/*.go"]
+run = """
+  go build -o ${BUILD_DIR}/ cmd/migration/migrate.go &&
+  ls -l ${BUILD_DIR}/migrate
+"""
+
 [tasks."db:migrate:up"]
+# depends = ["db:migrate:build"]
 description = "Run database migrations up"
-run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" up"
+run = "go run cmd/migration/migrate.go up"
 
 [tasks."db:migrate:down"]
+depends = ["db:migrate:build"]
 description = "Run database migrations down"
-run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" down"
+run = "${BUILD_DIR}/migrate down"
 
-[tasks."db:migrate:force"]
-description = "Force migration version (use with VERSION=<number>)"
-run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" force ${VERSION}"
+[tasks."db:migrate:create"]
+description = "Create new SQL/Go migration"
+run = "go run cmd/migration/migrate.go create -d {{vars.MIGRATIONS_DIR}}"
 
-[tasks."db:seed"]
-description = "Seed database with sample data"
-run = "psql \"${DB_URL}\" -f ./scripts/seed_data.sql"
+[tasks."db:migrate:version"]
+description = "Show current migration version"
+run = "go run cmd/migration/migrate.go version"
 
-[tasks."db-reset"]
-description = "Reset database (down, up, seed)"
-depends = ["db:migrate:down", "db:migrate:up", "db:seed"]
+[tasks."db:migrate:fix"]
+description = "Fix the order of migrations"
+run = "go run cmd/migration/migrate.go fix"
+
+[tasks."db:migrate:reset"]
+description = "Fix the order of migrations"
+run = "go run cmd/migration/migrate.go reset"
+
+[tasks."db:migrate:status"]
+description = "Show current migration statud"
+run = "go run cmd/migration/migrate.go status"
 
 [tasks."db:clean"]
 description = "Drop and recreate database (nuclear option)"
@@ -279,10 +298,6 @@ run = "docker-compose -f deployments/docker-compose.yml up postgres -d"
 [tasks."db:down"]
 description = "Stop Docker Database"
 run = "docker-compose -f deployments/docker-compose.yml down postgres -d"
-
-[tasks."db:migrate:version"]
-description = "Show current migration version"
-run = "migrate -path ./scripts/migrations -database \"${DB_URL}\" version"
 
 # Docker tasks
 [tasks."docker:build"]

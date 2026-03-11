@@ -50,7 +50,7 @@ func TestNewOutboxRelay(t *testing.T) {
 	mockBus := &mockSystemEventBus{}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	relay := NewOutboxRelay(nil, mockBus, logger)
+	relay := NewEnventsRelay(nil, mockBus, logger)
 
 	assert.NotNil(t, relay)
 	assert.Equal(t, mockBus, relay.bus)
@@ -62,7 +62,7 @@ func TestOutboxRelay_Start_ContextCancellation(t *testing.T) {
 	mockBus := &mockSystemEventBus{}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	relay := NewOutboxRelay(nil, mockBus, logger)
+	relay := NewEnventsRelay(nil, mockBus, logger)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -97,7 +97,7 @@ func TestOutboxRelay_Start_ProcessesPeriodicBatches(t *testing.T) {
 	// Insert test events
 	ctx := context.Background()
 	_, err := pool.Exec(ctx, `
-		INSERT INTO outbox_events (event_type, payload, occurred_at)
+		INSERT INTO events (event_type, payload, occurred_at)
 		VALUES
 			('TodoCreated', '{"id":"1","title":"Test 1"}', NOW()),
 			('TodoUpdated', '{"id":"2","title":"Test 2"}', NOW())
@@ -107,7 +107,7 @@ func TestOutboxRelay_Start_ProcessesPeriodicBatches(t *testing.T) {
 	// Setup relay with fast interval for testing
 	mockBus := &mockSystemEventBus{}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	relay := NewOutboxRelay(pool, mockBus, logger)
+	relay := NewEnventsRelay(pool, mockBus, logger)
 	relay.interval = 100 * time.Millisecond
 
 	// Start relay in background
@@ -124,7 +124,7 @@ func TestOutboxRelay_Start_ProcessesPeriodicBatches(t *testing.T) {
 
 	// Verify events were marked as published in database
 	var count int
-	err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM outbox_events WHERE published_at IS NOT NULL").Scan(&count)
+	err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM events WHERE published_at IS NOT NULL").Scan(&count)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, count, 2, "Events should be marked as published")
 
@@ -165,7 +165,7 @@ func TestOutboxRelay_Interval_Configuration(t *testing.T) {
 	mockBus := &mockSystemEventBus{}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	relay := NewOutboxRelay(nil, mockBus, logger)
+	relay := NewEnventsRelay(nil, mockBus, logger)
 
 	// Default interval should be 2 seconds
 	assert.Equal(t, 2*time.Second, relay.interval)
@@ -328,7 +328,7 @@ func TestOutboxRelay_LifecycleManagement(t *testing.T) {
 	t.Run("graceful shutdown on context cancellation", func(t *testing.T) {
 		mockBus := &mockSystemEventBus{}
 		logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-		relay := NewOutboxRelay(nil, mockBus, logger)
+		relay := NewEnventsRelay(nil, mockBus, logger)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 		defer cancel()
@@ -345,7 +345,7 @@ func TestOutboxRelay_LifecycleManagement(t *testing.T) {
 	t.Run("ticker stops on shutdown", func(t *testing.T) {
 		mockBus := &mockSystemEventBus{}
 		logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-		relay := NewOutboxRelay(nil, mockBus, logger)
+		relay := NewEnventsRelay(nil, mockBus, logger)
 		// Use very long interval to prevent ticker from firing during test
 		relay.interval = 10 * time.Second
 
@@ -394,7 +394,7 @@ func TestOutboxRelay_ConfigurableInterval(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockBus := &mockSystemEventBus{}
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			relay := NewOutboxRelay(nil, mockBus, logger)
+			relay := NewEnventsRelay(nil, mockBus, logger)
 
 			relay.interval = tt.interval
 			assert.Equal(t, tt.interval, relay.interval)

@@ -4,12 +4,12 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ovya/ogl/postgres/uow"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	"github.com/rotisserie/eris"
 )
 
 type PostgresOutboxDispatcher struct {
@@ -27,13 +27,13 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 	}
 
 	batch := &pgx.Batch{}
-	query := `INSERT INTO outbox_events (aggregate_id, event_type, payload, occurred_at) VALUES ($1, $2, $3, $4)`
+	query := `INSERT INTO events (event_type, payload, occurred_at) VALUES ($2, $3, $4)`
 
 	// Queue all events into the batch
 	for _, event := range events {
 		payload, err := json.Marshal(event)
 		if err != nil {
-			return fmt.Errorf("failed to marshal event %s: %w", event.EventType(), err)
+			return eris.Wrapf(err, "failed to marshal event %s", event.EventType())
 		}
 
 		batch.Queue(query, event.AggregateID(), event.EventType(), payload, event.OccurredAt())
@@ -48,7 +48,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 	// Verify all inserts succeeded
 	for i := range events {
 		if _, err := br.Exec(); err != nil {
-			return fmt.Errorf("failed to insert outbox event at index %d: %w", i, err)
+			return eris.Wrapf(err, "failed to insert outbox event at index %d", i)
 		}
 	}
 
