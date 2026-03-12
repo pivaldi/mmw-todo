@@ -297,7 +297,7 @@ run = "docker-compose -f deployments/docker-compose.yml up postgres -d"
 
 [tasks."db:down"]
 description = "Stop Docker Database"
-run = "docker-compose -f deployments/docker-compose.yml down postgres -d"
+run = "docker-compose -f deployments/docker-compose.yml down postgres"
 
 # Docker tasks
 [tasks."docker:build"]

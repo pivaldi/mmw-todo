@@ -33,7 +33,6 @@ import (
 	"github.com/ovya/ogl/platform"
 	"github.com/ovya/ogl/platform/middleware"
 	"github.com/ovya/ogl/platform/runner"
-	"github.com/pivaldi/mmw/notifications"
 	"github.com/pivaldi/mmw/todo"
 	"github.com/rotisserie/eris"
 )
@@ -99,10 +98,11 @@ func main() {
 	defer dbPool.Close()
 
 	todoLogger := logger.With("module", "todo")
-	notifLogger := logger.With("module", "notifications")
+	// notifLogger := logger.With("module", "notifications")
 	modules := []oglcore.Module{
 		todo.Build(dbPool, systemBus, todoLogger),
-		notifications.Build(rawBus, notifLogger),
+		// Use RabitMQ consummer instead
+		// notifications.Build(rawBus, notifLogger),
 	}
 
 	platformRuner := runner.New(
