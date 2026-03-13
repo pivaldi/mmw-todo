@@ -53,6 +53,12 @@ func main() {
 		return
 	}
 
+	if err := db.PingContext(context.Background()); err != nil {
+		logError("can ping database connection", err)
+
+		return
+	}
+
 	options := []goose.OptionsFunc{
 		goose.WithAllowMissing(),
 	}

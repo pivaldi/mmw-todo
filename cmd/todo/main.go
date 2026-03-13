@@ -27,11 +27,9 @@ import (
 	"github.com/ThreeDotsLabs/watermill/pubsub/gochannel"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ovya/ogl/oglcore"
-	"github.com/ovya/ogl/oglevents"
 	oglos "github.com/ovya/ogl/oglos"
 	"github.com/ovya/ogl/oglslog"
 	"github.com/ovya/ogl/platform/config"
-	"github.com/ovya/ogl/platform/middleware"
 	"github.com/ovya/ogl/platform/runner"
 	"github.com/pivaldi/mmw/todo"
 	"github.com/rotisserie/eris"
@@ -45,24 +43,29 @@ const (
 var errFormater = eris.ToJSON
 
 var logger *slog.Logger
+var dbPool *pgxpool.Pool
 var exiteCode = 0
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer func() {
 		cancel()
+		dbPool.Close()
 		os.Exit(exiteCode)
 	}()
 
-	logger, err := setupLogger()
+	var err error
+
+	logger, err = setupLogger()
 	if err != nil {
 		exiteCode = 1
 		logError("boostraping logge", err)
 
 		return
 	}
+	todoLogger := logger.With("module", "todo")
 
-	watermillLogger := watermill.NewSlogLogger(logger)
+	watermillLogger := watermill.NewSlogLogger(todoLogger)
 	rawBus := gochannel.NewGoChannel(
 		gochannel.Config{
 			// Output channel buffer size
@@ -78,7 +81,7 @@ func main() {
 	// When extracted, you might swap Watermill's GoChannel for RabbitMQ here!
 	// systemBus := setupRabbitMQ()
 	// Wrap the raw infrastructure in the Adapter.
-	systemBus := oglevents.NewWatermillBus(rawBus)
+	// systemBus := oglevents.NewWatermillBus(rawBus)
 
 	conf, err := todo.GetConfig(ctx, oglos.EnvMap())
 	if err != nil {
@@ -88,28 +91,19 @@ func main() {
 		return
 	}
 
-	dbPool, err := getDatabasePoolConnexion(ctx, conf)
+	dbPool, err = getDatabasePoolConnexion(ctx, todoLogger, conf)
 	if err != nil {
-		exiteCode = 1
-		logError("creating todo database pool", err)
+		logError("creating database pool", err)
 
 		return
 	}
-	defer dbPool.Close()
-
-	todoLogger := logger.With("module", "todo")
 	// notifLogger := logger.With("module", "notifications")
 	modules := []oglcore.Module{
-		todo.Build(dbPool, systemBus, todoLogger),
 		// Use RabitMQ consummer instead
 		// notifications.Build(rawBus, notifLogger),
 	}
 
-	platformRuner := runner.New(
-		conf, logger, dbPool, modules,
-		middleware.LoggingMiddleware(logger, conf.Environment.IsDev()),
-		middleware.CORSMiddleware(conf),
-	)
+	platformRuner := runner.New(logger, modules)
 
 	err = platformRuner.Run(ctx)
 	if err != nil {
@@ -160,9 +154,9 @@ func setupLogger() (*slog.Logger, error) {
 	return logger, nil
 }
 
-func getDatabasePoolConnexion(ctx context.Context, conf config.Config) (*pgxpool.Pool, error) {
+func getDatabasePoolConnexion(ctx context.Context, logger *slog.Logger, conf config.Config) (*pgxpool.Pool, error) {
 	dbUrl := conf.GetDatabaseURL()
-	logger.Info("connecting to todo database", "url", maskDatabaseURL(dbUrl))
+	logger.Info("connecting to database", "url", maskDatabaseURL(dbUrl))
 
 	dbPool, err := pgxpool.New(ctx, dbUrl)
 	if err != nil {
@@ -170,9 +164,9 @@ func getDatabasePoolConnexion(ctx context.Context, conf config.Config) (*pgxpool
 	}
 
 	if err := dbPool.Ping(ctx); err != nil {
-		dbPool.Close()
-		return nil, eris.Wrap(err, "pinging database")
+		return dbPool, eris.Wrap(err, "pinging database")
 	}
+
 	logger.Info("database connection established")
 
 	return dbPool, nil
