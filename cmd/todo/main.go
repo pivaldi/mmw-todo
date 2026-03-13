@@ -30,7 +30,7 @@ import (
 	"github.com/ovya/ogl/oglevents"
 	oglos "github.com/ovya/ogl/oglos"
 	"github.com/ovya/ogl/oglslog"
-	"github.com/ovya/ogl/platform"
+	"github.com/ovya/ogl/platform/config"
 	"github.com/ovya/ogl/platform/middleware"
 	"github.com/ovya/ogl/platform/runner"
 	"github.com/pivaldi/mmw/todo"
@@ -160,7 +160,7 @@ func setupLogger() (*slog.Logger, error) {
 	return logger, nil
 }
 
-func getDatabasePoolConnexion(ctx context.Context, conf platform.Config) (*pgxpool.Pool, error) {
+func getDatabasePoolConnexion(ctx context.Context, conf config.Config) (*pgxpool.Pool, error) {
 	dbUrl := conf.GetDatabaseURL()
 	logger.Info("connecting to todo database", "url", maskDatabaseURL(dbUrl))
 

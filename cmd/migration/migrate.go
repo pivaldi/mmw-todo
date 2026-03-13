@@ -30,6 +30,8 @@ func main() {
 		if db != nil {
 			db.Close()
 		}
+
+		os.Exit(exit)
 	}()
 
 	goose.SetLogger(&migrator.FancyLogger{})

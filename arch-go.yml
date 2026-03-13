@@ -70,3 +70,15 @@ dependenciesRules:
       internal:
         - '**.domain.**'
     description: 'Infrastructure layer should only depend on domain for type definitions'
+
+  # Command Layer (Entry Points) - Can orchestrate and depend on everything
+  - package: '**.cmd.**'
+    shouldNotDependsOn:
+      internal: []
+    description: 'Command layer is entry point and can depend on all internal packages'
+
+  # Root Package (Module Interface) - Exposes module to orchestrator
+  - package: 'github.com/pivaldi/mmw/todo'
+    shouldNotDependsOn:
+      internal: []
+    description: 'Root package exposes module interface and can depend on all internal packages'
