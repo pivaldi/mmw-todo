@@ -9,6 +9,7 @@ import (
 
 	todov1 "github.com/pivaldi/mmw/contracts/gen/go/todo/v1"
 	"github.com/pivaldi/mmw/todo/internal/application"
+	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
 
@@ -31,7 +32,7 @@ func (h *TodoHandler) CreateTodo(
 	req *connect.Request[todov1.CreateTodoRequest],
 ) (*connect.Response[todov1.CreateTodoResponse], error) {
 	// Convert protobuf request to application DTO
-	appReq := application.CreateTodoRequest{
+	appReq := dto.CreateTodoRequest{
 		Title:       req.Msg.Title,
 		Description: req.Msg.Description,
 		Priority:    mapPriorityFromProto(req.Msg.Priority),
@@ -44,7 +45,7 @@ func (h *TodoHandler) CreateTodo(
 	}
 
 	// Call application service
-	todo, err := h.service.CreateTodo(ctx, appReq)
+	todo, err := h.service.CreateTodo(ctx, &appReq)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -80,7 +81,7 @@ func (h *TodoHandler) UpdateTodo(
 	req *connect.Request[todov1.UpdateTodoRequest],
 ) (*connect.Response[todov1.UpdateTodoResponse], error) {
 	// Convert protobuf request to application DTO
-	appReq := application.UpdateTodoRequest{}
+	appReq := dto.UpdateTodoRequest{}
 
 	if req.Msg.Title != nil {
 		appReq.Title = req.Msg.Title
@@ -106,7 +107,7 @@ func (h *TodoHandler) UpdateTodo(
 	}
 
 	// Call application service
-	todo, err := h.service.UpdateTodo(ctx, req.Msg.Id, appReq)
+	todo, err := h.service.UpdateTodo(ctx, req.Msg.Id, &appReq)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -173,7 +174,7 @@ func (h *TodoHandler) ListTodos(
 	req *connect.Request[todov1.ListTodosRequest],
 ) (*connect.Response[todov1.ListTodosResponse], error) {
 	// Convert protobuf filters to application filters
-	filters := application.ListFilters{}
+	filters := dto.ListFilters{}
 
 	// Convert int32 pointers to int pointers
 	if req.Msg.Limit != nil {
@@ -197,7 +198,7 @@ func (h *TodoHandler) ListTodos(
 	}
 
 	// Call application service
-	result, err := h.service.ListTodos(ctx, filters)
+	result, err := h.service.ListTodos(ctx, &filters)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -217,7 +218,7 @@ func (h *TodoHandler) ListTodos(
 }
 
 // mapTodoToProto converts an application TodoResponse to protobuf Todo
-func mapTodoToProto(todo *application.TodoResponse) *todov1.Todo {
+func mapTodoToProto(todo *dto.TodoResponse) *todov1.Todo {
 	protoTodo := &todov1.Todo{
 		Id:          todo.ID,
 		Title:       todo.Title,

@@ -28,7 +28,7 @@ The integration tests use [testcontainers-go](https://golang.testcontainers.org/
 
 ```bash
 # Run with the integration build tag
-go test -tags=integration -v ./internal/adapters/repository/postgres/...
+go test -tags=integration -v ./internal/adapters/outbound/persistence/postgres/...
 
 # Or use the Makefile target
 make test-integration
@@ -97,7 +97,7 @@ import (
     "log"
 
     "github.com/jackc/pgx/v5/pgxpool"
-    "github.com/pivaldi/mmw/todo/internal/adapters/repository/postgres"
+    "github.com/pivaldi/mmw/todo/internal/adapters/outbound/persistence/postgres"
     "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
 

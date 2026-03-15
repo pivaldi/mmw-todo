@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strconv"
 
-	oglconfig "github.com/ovya/ogl/oglconfig"
-	pltConfig "github.com/ovya/ogl/platform/config"
+	oglconfig "github.com/ovya/ogl/config"
+	oglpfConfig "github.com/ovya/ogl/platform/config"
 	"github.com/rotisserie/eris"
 )
 
@@ -128,9 +128,9 @@ type Config struct {
 	LogLevel    LogLevel    `mapstructure:"log-level"`
 }
 
-var _ = pltConfig.Config(&Config{})
+var _ = oglpfConfig.Config(&Config{})
 
-// GetServerHost returns the server host. Implements pltConfig.Config
+// GetServerHost returns the server host. Implements oglpfConfig.Config
 func (c *Config) GetServerHost() string {
 	return c.Server.Host
 }
@@ -140,17 +140,17 @@ func (c *Config) GetAppEnv() fmt.Stringer {
 	return c.Environment
 }
 
-// GetAppName returns the App name. Implements pltConfig.Config
+// GetAppName returns the App name. Implements oglpfConfig.Config
 func (c *Config) GetAppName() string {
 	return c.AppName
 }
 
-// GetServerPort return the server port. Implements pltConfig.Config
+// GetServerPort return the server port. Implements oglpfConfig.Config
 func (c *Config) GetServerPort() string {
 	return c.Server.Port.String()
 }
 
-// GetDatabaseURL return the database URL . Implements pltConfig.Config
+// GetDatabaseURL return the database URL . Implements oglpfConfig.Config
 func (c *Config) GetDatabaseURL() string {
 	return c.Database.URL()
 }

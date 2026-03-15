@@ -329,7 +329,7 @@ type Transaction interface {
 
 ### Input Adapter: Connect Handler
 
-**Location:** `/internal/adapters/handler/connect/`
+**Location:** `/internal/adapters/inbound/connect/`
 
 Implements the Buf Connect service interface, handling both HTTP and gRPC requests:
 
@@ -371,7 +371,7 @@ func (h *TodoServiceHandler) CreateTodo(
 
 ### Output Adapter: PostgreSQL Repository
 
-**Location:** `/internal/adapters/repository/postgres/`
+**Location:** `/internal/adapters/outbound/persistence/postgres/`
 
 Implements `TodoRepository` port using PostgreSQL:
 

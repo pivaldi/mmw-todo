@@ -11,16 +11,16 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ovya/ogl/database/outbox"
-	"github.com/ovya/ogl/oglcore"
-	"github.com/ovya/ogl/oglevents"
-	"github.com/ovya/ogl/oglos"
-	"github.com/ovya/ogl/platform/oglserver"
-	"github.com/ovya/ogl/postgres/uow"
+	ogloutbox "github.com/ovya/ogl/db/outbox"
+	oglos "github.com/ovya/ogl/os"
+	ogluow "github.com/ovya/ogl/pg/uow"
+	oglcore "github.com/ovya/ogl/platform/core"
+	oglevents "github.com/ovya/ogl/platform/events"
+	oglserver "github.com/ovya/ogl/platform/server"
 	"github.com/pivaldi/mmw/contracts/gen/go/todo/v1/todov1connect"
-	"github.com/pivaldi/mmw/todo/internal/adapters/events"
-	connecthandler "github.com/pivaldi/mmw/todo/internal/adapters/handler/connect"
-	"github.com/pivaldi/mmw/todo/internal/adapters/repository/postgres"
+	connecthandler "github.com/pivaldi/mmw/todo/internal/adapters/inbound/connect"
+	"github.com/pivaldi/mmw/todo/internal/adapters/outbound/events"
+	"github.com/pivaldi/mmw/todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw/todo/internal/application"
 	"golang.org/x/sync/errgroup"
 )
@@ -29,7 +29,7 @@ const relayTableName = "events"
 
 type App struct {
 	appName string
-	relay   *outbox.EventsRelay
+	relay   *ogloutbox.EventsRelay
 	server  *oglserver.HTTPServer
 	logger  *slog.Logger
 }
@@ -65,7 +65,7 @@ func New(dbPool *pgxpool.Pool, eventBus oglevents.SystemEventBus, logger *slog.L
 	// Initialize everything internal to Todo here!
 	return &App{
 		appName: conf.GetAppName(),
-		relay:   outbox.NewEnventsRelay(dbPool, eventBus, logger, relayTableName),
+		relay:   ogloutbox.NewEnventsRelay(dbPool, eventBus, logger, relayTableName),
 		server:  oglserver.NewHTTPServer("todo-api", conf.GetServerPort(), mux, logger),
 		logger:  logger,
 	}, nil
@@ -109,7 +109,7 @@ func (m *App) Start(ctx context.Context) error {
 func newTodoHandler(dbPool *pgxpool.Pool) *connecthandler.TodoHandler {
 	todoRepository := postgres.NewPostgresTodoRepository(dbPool)
 	eventDispatcher := events.NewPostgresOutboxDispatcher(dbPool)
-	todoService := application.NewTodoApplicationService(todoRepository, uow.NewUnitOfWork(dbPool), eventDispatcher)
+	todoService := application.NewTodoApplicationService(todoRepository, ogluow.NewUnitOfWork(dbPool), eventDispatcher)
 
 	return connecthandler.NewTodoHandler(todoService)
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ovya/ogl/postgres/uow"
+	ogluow "github.com/ovya/ogl/pg/uow"
 
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -52,7 +52,7 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 	}
 
 	// getExecutor automatically uses the Tx if it's in the ctx!
-	exec := uow.GetExecutor(ctx, r.pool)
+	exec := ogluow.GetExecutor(ctx, r.pool)
 
 	_, err := exec.Exec(ctx, query,
 		todo.ID().String(),
@@ -105,8 +105,8 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 		)
 	}
 
-	// 2. Get the executor (magically uses the transaction if inside a UoW!)
-	exec := uow.GetExecutor(ctx, r.pool)
+	// 2. Get the executor (magically uses the transaction if inside a Ogluow!)
+	exec := ogluow.GetExecutor(ctx, r.pool)
 
 	// 3. Send the entire batch to Postgres at once
 	br := exec.SendBatch(ctx, batch)

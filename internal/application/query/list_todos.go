@@ -1,0 +1,56 @@
+package query
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/pivaldi/mmw/todo/internal/application/dto"
+	"github.com/pivaldi/mmw/todo/internal/application/ports"
+	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+)
+
+// ListTodosQuery handles retrieving a list of todos with filters
+type ListTodosQuery struct {
+	repository ports.TodoRepository
+}
+
+// NewListTodosQuery creates a new ListTodosQuery
+func NewListTodosQuery(repository ports.TodoRepository) *ListTodosQuery {
+	return &ListTodosQuery{repository: repository}
+}
+
+// Execute retrieves todos with optional filters
+func (q *ListTodosQuery) Execute(
+	ctx context.Context,
+	filters *dto.ListFilters,
+) (*dto.ListTodosResponse, error) {
+	// Convert application filters to repository filters
+	repoFilters := ports.Filters{
+		Limit:  filters.Limit,
+		Offset: filters.Offset,
+	}
+
+	if filters.Status != nil {
+		repoFilters.Status = filters.Status
+	}
+
+	if filters.Priority != nil {
+		// Validate priority enum
+		if !filters.Priority.IsValid() {
+			return nil, fmt.Errorf("invalid priority filter: %w", domain.ErrInvalidPriority)
+		}
+		repoFilters.Priority = filters.Priority
+	}
+
+	// Retrieve todos from repository
+	todos, err := q.repository.FindAll(ctx, repoFilters)
+	if err != nil {
+		return nil, fmt.Errorf("finding todos: %w", err)
+	}
+
+	// Map to response DTOs
+	return &dto.ListTodosResponse{
+		Todos:      dto.MapTodosToResponse(todos),
+		TotalCount: len(todos),
+	}, nil
+}

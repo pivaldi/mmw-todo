@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ovya/ogl/postgres/uow"
+	oglpguow "github.com/ovya/ogl/pg/uow"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 	"github.com/rotisserie/eris"
 )
@@ -36,11 +36,11 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 			return eris.Wrapf(err, "failed to marshal event %s", event.EventType())
 		}
 
-		batch.Queue(query, event.AggregateID(), event.EventType(), payload, event.OccurredAt())
+		batch.Queue(query, event.AggregateID(), event.EventType(), string(payload), event.OccurredAt())
 	}
 
-	// Magically uses the transaction from the UoW context!
-	exec := uow.GetExecutor(ctx, d.pool)
+	// Magically uses the transaction from the Oglpguow context!
+	exec := oglpguow.GetExecutor(ctx, d.pool)
 
 	br := exec.SendBatch(ctx, batch)
 	defer br.Close()

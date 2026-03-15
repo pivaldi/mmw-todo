@@ -26,11 +26,12 @@ import (
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/pubsub/gochannel"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ovya/ogl/oglcore"
-	oglos "github.com/ovya/ogl/oglos"
-	"github.com/ovya/ogl/oglslog"
-	"github.com/ovya/ogl/platform/config"
-	"github.com/ovya/ogl/platform/runner"
+	oglos "github.com/ovya/ogl/os"
+	oglpfconfig "github.com/ovya/ogl/platform/config"
+	oglcore "github.com/ovya/ogl/platform/core"
+	oglevents "github.com/ovya/ogl/platform/events"
+	oglrunner "github.com/ovya/ogl/platform/runner"
+	oglslog "github.com/ovya/ogl/slog"
 	"github.com/pivaldi/mmw/todo"
 	"github.com/rotisserie/eris"
 )
@@ -77,6 +78,8 @@ func main() {
 	)
 
 	defer rawBus.Close()
+	// Wrap the raw infrastructure in the Adapter.
+	systemBus := oglevents.NewWatermillBus(rawBus)
 
 	// When extracted, you might swap Watermill's GoChannel for RabbitMQ here!
 	// systemBus := setupRabbitMQ()
@@ -97,13 +100,21 @@ func main() {
 
 		return
 	}
+
+	todoApp, err := todo.New(dbPool, systemBus, todoLogger)
+	if err != nil {
+		logError("creating app failed", err)
+		return
+	}
+
 	// notifLogger := logger.With("module", "notifications")
 	modules := []oglcore.Module{
+		todoApp,
 		// Use RabitMQ consummer instead
 		// notifications.Build(rawBus, notifLogger),
 	}
 
-	platformRuner := runner.New(logger, modules)
+	platformRuner := oglrunner.New(logger, modules)
 
 	err = platformRuner.Run(ctx)
 	if err != nil {
@@ -154,7 +165,7 @@ func setupLogger() (*slog.Logger, error) {
 	return logger, nil
 }
 
-func getDatabasePoolConnexion(ctx context.Context, logger *slog.Logger, conf config.Config) (*pgxpool.Pool, error) {
+func getDatabasePoolConnexion(ctx context.Context, logger *slog.Logger, conf oglpfconfig.Config) (*pgxpool.Pool, error) {
 	dbUrl := conf.GetDatabaseURL()
 	logger.Info("connecting to database", "url", maskDatabaseURL(dbUrl))
 

@@ -36,6 +36,7 @@ dependenciesRules:
     shouldOnlyDependsOn:
       internal:
         - '**.domain.**'
+        - 'application.**'
         - '**.ports'
     description: 'Application layer depends on domain and ports only'
 

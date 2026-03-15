@@ -8,10 +8,10 @@ import (
 	"log/slog"
 	"os"
 
-	pgcli "github.com/ovya/ogl/database/cli"
-	"github.com/ovya/ogl/database/migrator"
-	"github.com/ovya/ogl/oglos"
-	"github.com/ovya/ogl/oglslog"
+	dbpgcli "github.com/ovya/ogl/db/cli"
+	oglmigrator "github.com/ovya/ogl/db/migrator"
+	oglos "github.com/ovya/ogl/os"
+	oglslog "github.com/ovya/ogl/slog"
 	"github.com/pivaldi/mmw/todo/internal/infra/config"
 	"github.com/pivaldi/mmw/todo/internal/infra/persistence/migrations"
 	"github.com/pressly/goose/v3"
@@ -34,7 +34,7 @@ func main() {
 		os.Exit(exit)
 	}()
 
-	goose.SetLogger(&migrator.FancyLogger{})
+	goose.SetLogger(&oglmigrator.FancyLogger{})
 	goose.SetDebug(true)
 	goose.SetSequential(true)
 
@@ -63,9 +63,9 @@ func main() {
 		goose.WithAllowMissing(),
 	}
 
-	m := migrator.New(db, migrations.FS, "scripts", options...)
+	m := oglmigrator.New(db, migrations.FS, "scripts", options...)
 
-	migrateCmd := pgcli.NewMigrateCmd(m)
+	migrateCmd := dbpgcli.NewMigrateCmd(m)
 
 	if err := migrateCmd.Execute(); err != nil {
 		logError("command failed", err)

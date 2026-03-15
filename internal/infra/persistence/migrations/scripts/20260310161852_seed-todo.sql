@@ -58,19 +58,19 @@ INSERT INTO events (event_type, payload, occurred_at, published_at)
 VALUES
     (
         'TodoCreated',
-        '{"id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", "title": "Complete project documentation", "priority": "high"}'::jsonb,
+        '{"id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", "title": "Complete project documentation", "priority": "high"}',
         NOW() - INTERVAL '2 days',
         NOW() - INTERVAL '2 days'
     ),
     (
         'TodoCreated',
-        '{"id": "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a12", "title": "Review pull requests", "priority": "medium"}'::jsonb,
+        '{"id": "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a12", "title": "Review pull requests", "priority": "medium"}',
         NOW() - INTERVAL '1 day',
         NOW() - INTERVAL '1 day'
     ),
     (
         'TodoCreated',
-        '{"id": "c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13", "title": "Fix authentication bug", "priority": "urgent"}'::jsonb,
+        '{"id": "c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13", "title": "Fix authentication bug", "priority": "urgent"}',
         NOW() - INTERVAL '5 days',
         NOW() - INTERVAL '5 days'
     ),
