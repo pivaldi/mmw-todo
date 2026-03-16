@@ -272,19 +272,18 @@ description = "Fix the order of migrations"
 run = "go run cmd/migration/migrate.go fix"
 
 [tasks."db:migrate:reset"]
-description = "Fix the order of migrations"
+description = "Down all the migrations"
 run = "go run cmd/migration/migrate.go reset"
 
 [tasks."db:migrate:status"]
 description = "Show current migration statud"
 run = "go run cmd/migration/migrate.go status"
 
-[tasks."db:clean"]
-description = "Drop and recreate database (nuclear option)"
+[tasks."db:reset"]
+description = "Drop the database (nuclear option)"
 run = """
 docker-compose -f deployments/docker-compose.yml down -v
 docker-compose -f deployments/docker-compose.yml up -d postgres
-sleep 5
 """
 
 [tasks."db:setup"]

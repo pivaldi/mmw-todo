@@ -1,3 +1,4 @@
+// services/todo/internal/infra/config/config.go
 package config
 
 import (
@@ -6,11 +7,9 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"net/url"
-	"strconv"
 
 	oglconfig "github.com/ovya/ogl/config"
-	oglpfConfig "github.com/ovya/ogl/platform/config"
+	oglpfconfig "github.com/ovya/ogl/platform/config"
 	"github.com/rotisserie/eris"
 )
 
@@ -21,42 +20,6 @@ var embeddedFS embed.FS
 // This is a variable so it can be mocked in tests.
 var getConfigFS = func() fs.FS {
 	return embeddedFS
-}
-
-type Database struct {
-	User     string `mapstructure:"user"`
-	password string
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	Name     string `mapstructure:"name"`
-}
-
-func (d *Database) URL() string {
-	u := &url.URL{
-		Scheme: "postgres",
-		Host:   fmt.Sprintf("%s:%s", d.Host, d.Port),
-		Path:   d.Name,
-	}
-
-	q := u.Query()
-	q.Add("sslmode", "disable")
-	u.RawQuery = q.Encode()
-
-	if d.User != "" {
-		if d.password != "" {
-			u.User = url.UserPassword(d.User, d.password)
-		} else {
-			u.User = url.User(d.User)
-		}
-	}
-
-	return u.String()
-}
-
-type Port int16
-
-func (p Port) String() string {
-	return ":" + strconv.Itoa(int(p))
 }
 
 type LogLevel string
@@ -92,101 +55,34 @@ func (l LogLevel) IsValid() bool {
 	}
 }
 
-type Server struct {
-	Port   Port   `mapstructure:"port"`
-	Scheme string `mapstructure:"scheme"`
-	Host   string `mapstructure:"host"`
-}
-
-func (s Server) URL(path string, queries map[string]string) string {
-	port := ""
-	if (s.Scheme != "http" || s.Port != 80) && (s.Scheme != "https" || s.Port != 443) {
-		port = s.Port.String()
-	}
-
-	u := &url.URL{
-		Scheme: s.Scheme,
-		Host:   s.Host + port,
-		Path:   path,
-	}
-
-	q := u.Query()
-	for key, value := range queries {
-		q.Set(key, value)
-	}
-	u.RawQuery = q.Encode()
-
-	return u.String()
-}
-
 type Config struct {
-	Database    *Database   `mapstructure:"database"`
-	Port        string      `mapstructure:"port"`
-	Environment Environment `env:"APP_ENV, required" mapstructure:"environment"`
-	AppName     string      `env:"APP_NAME"`
-	Server      *Server     `mapstructure:"server"`
-	LogLevel    LogLevel    `mapstructure:"log-level"`
+	Database    *oglpfconfig.Database `mapstructure:"database"`
+	Environment Environment           `env:"APP_ENV, required" mapstructure:"environment"`
+	AppName     string                `env:"APP_NAME"`
+	Server      *oglpfconfig.Server   `mapstructure:"server"`
+	LogLevel    LogLevel              `mapstructure:"log-level"`
 }
 
-var _ = oglpfConfig.Config(&Config{})
-
-// GetServerHost returns the server host. Implements oglpfConfig.Config
-func (c *Config) GetServerHost() string {
-	return c.Server.Host
-}
-
-// GetAppEnv returns the App environnement variable (prod, testing, etc)
 func (c *Config) GetAppEnv() fmt.Stringer {
 	return c.Environment
 }
 
-// GetAppName returns the App name. Implements oglpfConfig.Config
-func (c *Config) GetAppName() string {
-	return c.AppName
-}
-
-// GetServerPort return the server port. Implements oglpfConfig.Config
-func (c *Config) GetServerPort() string {
-	return c.Server.Port.String()
-}
-
-// GetDatabaseURL return the database URL . Implements oglpfConfig.Config
-func (c *Config) GetDatabaseURL() string {
-	return c.Database.URL()
-}
-
-// EnvMixing mix secrets env var to the config
-func (c *Config) EnvMixing(envs map[string]string) {
-	if envs == nil {
-		return
-	}
-
-	dbpk := "DB_PASSWORD"
-	for _, key := range []string{dbpk, "TODO_" + dbpk} {
-		if password, ok := envs[key]; ok {
-			c.Database.password = password
-			break
-		}
-	}
-}
-
+// Load reads the TOML files and automatically overrides them with Env Vars
 // Load loads the configurations from embedded files:
 // - configs/default.toml
 // - configs/<APP_ENV>.toml if exist
-// If envs is not nil, use as environment variable (eg. unit-tests)
-func Load(ctx context.Context, envs map[string]string) (*Config, error) {
+// If envs is not nil, automatically overrides them with Env Vars.
+func Load(ctx context.Context, envprefix string, envs map[string]string) (*Config, error) {
 	config := new(Config)
 
 	configFS := getConfigFS()
-	err := oglconfig.NewContext(ctx, configFS, envs).Fill(config)
+	err := oglconfig.NewContext(ctx, envprefix, configFS, envs).Fill(config)
 	if err != nil {
 		return nil, eris.Wrap(err, "error filling config")
 	}
 
-	config.EnvMixing(envs)
-
-	if config.Database.password == "" {
-		return nil, eris.New("env var DB_PASSWORD not set")
+	if config.Database.Password == "" {
+		return nil, eris.New("database password is empty")
 	}
 
 	return config, nil

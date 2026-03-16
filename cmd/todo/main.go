@@ -1,23 +1,8 @@
 package main
 
-// func main() {
-// 	// // 1. Setup Infra (In the future, this might connect to its own dedicated Postgres!)
-// 	// dbPool := setupDatabase()
-
-// 	// // When extracted, you might swap Watermill's GoChannel for RabbitMQ here!
-// 	// eventBus := setupRabbitMQ()
-
-// 	// // 2. Build ONLY the Todo Module
-// 	// modules := []core.Module{
-// 	// 	todo.Build(dbPool, eventBus, logger),
-// 	// }
-
-// 	// app := NewApp(modules)
-// 	// return app.Run(ctx)
-// }
-
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -27,7 +12,6 @@ import (
 	"github.com/ThreeDotsLabs/watermill/pubsub/gochannel"
 	"github.com/jackc/pgx/v5/pgxpool"
 	oglos "github.com/ovya/ogl/os"
-	oglpfconfig "github.com/ovya/ogl/platform/config"
 	oglcore "github.com/ovya/ogl/platform/core"
 	oglevents "github.com/ovya/ogl/platform/events"
 	oglrunner "github.com/ovya/ogl/platform/runner"
@@ -45,25 +29,34 @@ var errFormater = eris.ToJSON
 
 var logger *slog.Logger
 var dbPool *pgxpool.Pool
-var exiteCode = 0
+var exitCode = 0
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer func() {
 		cancel()
 		dbPool.Close()
-		os.Exit(exiteCode)
+		os.Exit(exitCode)
 	}()
 
 	var err error
 
-	logger, err = setupLogger()
+	conf, err := todo.GetConfig(ctx, "", oglos.EnvMap())
 	if err != nil {
-		exiteCode = 1
-		logError("boostraping logge", err)
+		exitCode = 1
+		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
 
 		return
 	}
+
+	logger, err = oglslog.New(conf.Environment.String(), conf.LogLevel.SlogLevel())
+	if err != nil {
+		exitCode = 1
+		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
+
+		return
+	}
+
 	todoLogger := logger.With("module", "todo")
 
 	watermillLogger := watermill.NewSlogLogger(todoLogger)
@@ -86,22 +79,14 @@ func main() {
 	// Wrap the raw infrastructure in the Adapter.
 	// systemBus := oglevents.NewWatermillBus(rawBus)
 
-	conf, err := todo.GetConfig(ctx, oglos.EnvMap())
-	if err != nil {
-		exiteCode = 1
-		logError("todo app error", eris.Wrap(err, "app failed to load configuration"))
-
-		return
-	}
-
-	dbPool, err = getDatabasePoolConnexion(ctx, todoLogger, conf)
+	dbPool, err = getDatabasePoolConnexion(ctx, todoLogger, conf.Database.URL())
 	if err != nil {
 		logError("creating database pool", err)
 
 		return
 	}
 
-	todoApp, err := todo.New(dbPool, systemBus, todoLogger)
+	todoApp, err := todo.New(conf, dbPool, systemBus, todoLogger)
 	if err != nil {
 		logError("creating app failed", err)
 		return
@@ -119,7 +104,7 @@ func main() {
 	err = platformRuner.Run(ctx)
 	if err != nil {
 		logError("platform error", err)
-		exiteCode = 1
+		exitCode = 1
 
 		return
 	}
@@ -130,43 +115,7 @@ func logError(msg string, err error) {
 	l.Error(msg, "details", errFormater(err, true))
 }
 
-// setupLogger automatically configures the logger based on the environment
-func setupLogger() (*slog.Logger, error) {
-	appEnv := os.Getenv("APP_ENV")
-	if appEnv == "" {
-		return nil, eris.New("Environment variable APP_ENV not set.")
-	}
-
-	isProd := appEnv == "production"
-	replaceErr := func(_ []string, a slog.Attr) slog.Attr {
-		// Detect if the attribute value is an `error` type
-		if err, isError := a.Value.Any().(error); isError {
-			if isProd {
-				return slog.Any(a.Key, eris.ToJSON(err, true))
-			}
-
-			return slog.String(a.Key, "\n"+eris.ToString(err, true))
-		}
-
-		return a
-	}
-
-	var logger *slog.Logger
-	if isProd {
-		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level:       slog.LevelWarn, // TODO: from plateform config
-			ReplaceAttr: replaceErr,
-		})
-		logger = slog.New(handler)
-	} else {
-		logger = slog.New(oglslog.StdoutTxtHandler(slog.LevelDebug, replaceErr))
-	}
-
-	return logger, nil
-}
-
-func getDatabasePoolConnexion(ctx context.Context, logger *slog.Logger, conf oglpfconfig.Config) (*pgxpool.Pool, error) {
-	dbUrl := conf.GetDatabaseURL()
+func getDatabasePoolConnexion(ctx context.Context, logger *slog.Logger, dbUrl string) (*pgxpool.Pool, error) {
 	logger.Info("connecting to database", "url", maskDatabaseURL(dbUrl))
 
 	dbPool, err := pgxpool.New(ctx, dbUrl)

@@ -1,12 +1,14 @@
 log-level="debug"
 
 [database]
+scheme = "postgres"
 user = "postgres"
 host = "localhost"
-port = "5435"
+port = 5435
 name = "todoapp"
 
 [server]
 port = 8090
 scheme = "https"
 host = "localhost"
+allowed-origins = ["*"] # IMPORTANT; Change this in production !

@@ -12,7 +12,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	ogloutbox "github.com/ovya/ogl/db/outbox"
-	oglos "github.com/ovya/ogl/os"
 	ogluow "github.com/ovya/ogl/pg/uow"
 	oglcore "github.com/ovya/ogl/platform/core"
 	oglevents "github.com/ovya/ogl/platform/events"
@@ -39,12 +38,13 @@ var _ oglcore.Module = (*App)(nil)
 
 var conf *config.Config
 
-func GetConfig(ctx context.Context, envs map[string]string) (*config.Config, error) {
+func GetConfig(ctx context.Context, envprefix string, envs map[string]string) (*config.Config, error) {
 	if conf != nil {
 		return conf, nil
 	}
 
-	conf, err := config.Load(ctx, envs)
+	var err error // IMPORTANT!!
+	conf, err = config.Load(ctx, envprefix, envs)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to load todo configuration")
 	}
@@ -52,21 +52,17 @@ func GetConfig(ctx context.Context, envs map[string]string) (*config.Config, err
 	return conf, nil
 }
 
-func New(dbPool *pgxpool.Pool, eventBus oglevents.SystemEventBus, logger *slog.Logger) (*App, error) {
-	conf, err := GetConfig(context.Background(), oglos.EnvMap())
-	if err != nil {
-		return nil, err
-	}
-
+func New(cfg *config.Config, dbPool *pgxpool.Pool, eventBus oglevents.SystemEventBus, logger *slog.Logger) (*App, error) {
+	// Don't use GetConfig here because we do not know the prefix.
 	mux := http.NewServeMux()
 	path, handler := todov1connect.NewTodoServiceHandler(newTodoHandler(dbPool))
 	mux.Handle(path, handler)
 
 	// Initialize everything internal to Todo here!
 	return &App{
-		appName: conf.GetAppName(),
+		appName: cfg.AppName,
 		relay:   ogloutbox.NewEnventsRelay(dbPool, eventBus, logger, relayTableName),
-		server:  oglserver.NewHTTPServer("todo-api", conf.GetServerPort(), mux, logger),
+		server:  oglserver.NewHTTPServer("todo-api", cfg.Environment.String(), cfg.Server, mux, logger),
 		logger:  logger,
 	}, nil
 }
@@ -83,11 +79,13 @@ func (m *App) Close() error {
 	return nil
 }
 
+// TODO; remove this and pass the name of the app where needed
 func (m *App) GetName() string {
 	return m.appName
 }
 
 func (m *App) Start(ctx context.Context) error {
+	m.logger.Info("starting the app")
 	g, gCtx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
@@ -96,14 +94,15 @@ func (m *App) Start(ctx context.Context) error {
 
 	if m.relay != nil {
 		g.Go(func() error {
-			// relay.Start MUST respects context cancellation
 			m.relay.Start(gCtx)
 
 			return nil
 		})
 	}
 
-	return eris.Wrapf(g.Wait(), "%s failure", m.GetName())
+	err := g.Wait()
+
+	return eris.Wrapf(err, "%s failure", m.GetName())
 }
 
 func newTodoHandler(dbPool *pgxpool.Pool) *connecthandler.TodoHandler {

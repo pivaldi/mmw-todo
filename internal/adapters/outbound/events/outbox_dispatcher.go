@@ -27,7 +27,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 	}
 
 	batch := &pgx.Batch{}
-	query := `INSERT INTO events (event_type, payload, occurred_at) VALUES ($2, $3, $4)`
+	query := `INSERT INTO events (event_type, payload, occurred_at) VALUES ($2, $3::jsonb, $4)`
 
 	// Queue all events into the batch
 	for _, event := range events {
@@ -39,7 +39,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 		batch.Queue(query, event.AggregateID(), event.EventType(), string(payload), event.OccurredAt())
 	}
 
-	// Magically uses the transaction from the Oglpguow context!
+	// uses the transaction from the Oglpguow context!
 	exec := oglpguow.GetExecutor(ctx, d.pool)
 
 	br := exec.SendBatch(ctx, batch)

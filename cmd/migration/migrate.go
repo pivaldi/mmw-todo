@@ -39,14 +39,14 @@ func main() {
 	goose.SetSequential(true)
 
 	ctx := context.Background()
-	conf, err := config.Load(ctx, oglos.EnvMap())
+	conf, err := config.Load(ctx, "", oglos.EnvMap())
 	if err != nil {
 		logError("loading config failed", err)
 
 		return
 	}
 
-	db, err = sql.Open("postgres", conf.GetDatabaseURL())
+	db, err = sql.Open("postgres", conf.Database.URL())
 	if err != nil {
 		logError("can not open database connection", err)
 
