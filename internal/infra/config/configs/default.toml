@@ -5,7 +5,7 @@ scheme = "postgres"
 user = "postgres"
 host = "localhost"
 port = 5435
-name = "todoapp"
+name = "mmw"
 
 [server]
 port = 8090

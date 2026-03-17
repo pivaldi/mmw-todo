@@ -1,7 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
 
-CREATE TABLE IF NOT EXISTS todos (
+-- Create schema todo
+CREATE SCHEMA todo;
+
+-- Create table todo.todo
+CREATE TABLE IF NOT EXISTS todo.todo (
     id UUID PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     description TEXT,
@@ -17,16 +21,19 @@ CREATE TABLE IF NOT EXISTS todos (
 );
 
 -- Create indexes for common queries
-CREATE INDEX idx_todos_status ON todos(status);
-CREATE INDEX idx_todos_due_date ON todos(due_date) WHERE due_date IS NOT NULL;
-CREATE INDEX idx_todos_created_at ON todos(created_at DESC);
-CREATE INDEX idx_todos_priority ON todos(priority);
+CREATE INDEX idx_todo_status ON todo.todo(status);
+CREATE INDEX idx_todo_due_date ON todo.todo(due_date) WHERE due_date IS NOT NULL;
+CREATE INDEX idx_todo_created_at ON todo.todo(created_at DESC);
+CREATE INDEX idx_todo_priority ON todo.todo(priority);
 
 -- Add a comment to the table
-COMMENT ON TABLE todos IS 'Stores todo items with their properties and status';
+COMMENT ON TABLE todo.todo IS 'Stores todo items with their properties and status';
+
+-- Create schema event for transactional events
+CREATE SCHEMA event;
 
 -- Create outbox events table for transactional event publishing via workers
-CREATE TABLE IF NOT EXISTS events (
+CREATE TABLE IF NOT EXISTS event.event (
     id BIGSERIAL PRIMARY KEY,
     event_type VARCHAR(100) NOT NULL,
     payload JSONB NOT NULL,
@@ -35,29 +42,29 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- Index for finding unpublished events (used by outbox relay worker)
-CREATE INDEX idx_unpublished ON events(occurred_at ASC) WHERE published_at IS NULL;
+CREATE INDEX idx_unpublished ON event.event(occurred_at ASC) WHERE published_at IS NULL;
 
 -- Index for published events cleanup
-CREATE INDEX idx_published ON events(published_at) WHERE published_at IS NOT NULL;
+CREATE INDEX idx_published ON event.event(published_at) WHERE published_at IS NOT NULL;
 
 -- Add comments
-COMMENT ON TABLE events IS 'Transactional outbox for event publishing via workers';
-COMMENT ON COLUMN events.payload IS 'Event payload';
-COMMENT ON COLUMN events.published_at IS 'NULL indicates unpublished event, non-NULL means published';
+COMMENT ON TABLE event.event IS 'Transactional outbox for event publishing via workers';
+COMMENT ON COLUMN event.event.payload IS 'Event payload';
+COMMENT ON COLUMN event.event.published_at IS 'NULL indicates unpublished event, non-NULL means published';
 
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
 
-DROP INDEX IF EXISTS idx_todos_priority;
-DROP INDEX IF EXISTS idx_todos_created_at;
-DROP INDEX IF EXISTS idx_todos_due_date;
-DROP INDEX IF EXISTS idx_todos_status;
-DROP TABLE IF EXISTS todos;
+DROP INDEX IF EXISTS idx_todo_priority;
+DROP INDEX IF EXISTS idx_todo_created_at;
+DROP INDEX IF EXISTS idx_todo_due_date;
+DROP INDEX IF EXISTS idx_todo_status;
+DROP TABLE IF EXISTS todo;
 
 DROP INDEX IF EXISTS idx_published;
 DROP INDEX IF EXISTS idx_unpublished;
-DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS event.event;
 
 -- +goose StatementEnd

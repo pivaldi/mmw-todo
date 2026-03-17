@@ -63,7 +63,7 @@ docker-compose -f deployments/docker-compose.yml --profile tools up -d
 ```bash
 # Using Docker
 docker run --name todoapp-postgres \
-  -e POSTGRES_DB=todoapp \
+  -e POSTGRES_DB=mmw \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
   -p 5432:5435 \
@@ -75,7 +75,7 @@ docker run --name todoapp-postgres \
 ### 2. Run Database Migrations
 
 ```bash
-export DATABASE_URL="postgres://postgres:postgres@localhost:5435/todoapp?sslmode=disable"
+export DATABASE_URL="postgres://postgres:postgres@localhost:5435/mmw?sslmode=disable"
 
 # Run migrations up
 make db-migrate-up
@@ -125,7 +125,7 @@ The application is configured via environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5435/todoapp?sslmode=disable` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://postgres:postgres@localhost:5435/mmw?sslmode=disable` |
 | `PORT` | HTTP server port | `8090` |
 | `ENVIRONMENT` | Environment (development/production) | `development` |
 
@@ -315,10 +315,10 @@ migrate -path ./scripts/migrations -database "$DATABASE_URL" version
 
 ```bash
 # Using psql
-psql postgres://postgres:postgres@localhost:5435/todoapp
+psql postgres://postgres:postgres@localhost:5435/mmw
 
 # Or via Docker
-docker exec -it todoapp-postgres psql -U postgres -d todoapp
+docker exec -it todoapp-postgres psql -U postgres -d mmw
 ```
 
 ## Code Quality

@@ -12,11 +12,10 @@ zellij = "latest"
 "go:github.com/vektra/mockery/v3" = "v3.7.0"
 
 [shell_alias]
-dev = "mise run run"
+dev = "mise run run:dev"
 build = "mise run build"
 deploy = "mise run deploy"
-mr = "mise run"
-mt = "mise run"
+r = "mise run"
 
 [vars]
 CONTRACTS_DIR = "{{config_root}}/../../contracts"
@@ -32,8 +31,7 @@ _.file = ".envrc"  # Load .envrc file if it exists
 APP_ENV = { required = true }
 APP_NAME = { required = true }
 DB_PASSWORD="postgres" # TODO: make it secret
-DB_URL="postgres://postgres:{{env.DB_PASSWORD}}@localhost:5435/todoapp?sslmode=disable"
-
+DB_URL="postgres://postgres:{{env.DB_PASSWORD}}@localhost:5435/mmw?sslmode=disable"
 
 [tasks.setup]
 description = "Update Repo Deps"
@@ -113,7 +111,6 @@ cd {{vars.CONTRACTS_DIR}}
 buf breaking --against '.git#branch=master' proto/todo
 """
 
-# Building tasks
 [tasks.build]
 description = "Build the application binary"
 depends = ["generate"]
@@ -279,25 +276,6 @@ run = "go run cmd/migration/migrate.go reset"
 description = "Show current migration statud"
 run = "go run cmd/migration/migrate.go status"
 
-[tasks."db:reset"]
-description = "Drop the database (nuclear option)"
-run = """
-docker-compose -f deployments/docker-compose.yml down -v
-docker-compose -f deployments/docker-compose.yml up -d postgres
-"""
-
-[tasks."db:setup"]
-description = "Complete database setup (clean + migrate)"
-depends = ["db:clean", "db:migrate:up"]
-
-[tasks."db:up"]
-description = "Start Docker Database"
-run = "docker-compose -f deployments/docker-compose.yml up postgres -d"
-
-[tasks."db:down"]
-description = "Stop Docker Database"
-run = "docker-compose -f deployments/docker-compose.yml down postgres"
-
 # Docker tasks
 [tasks."docker:build"]
 description = "Build Docker image"
@@ -318,7 +296,7 @@ run = "docker-compose -f deployments/docker-compose.yml logs -f"
 # Running tasks
 [tasks.run]
 description = "Run the application"
-depends = ["generate"]
+# depends = ["generate"] # See https://buf.build/docs/bsr/rate-limits/ for details about BSR rate limiting.
 run = "go run ${BINARY_PATH}/main.go"
 
 [tasks."run:dev"]

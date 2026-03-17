@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-INSERT INTO todos (id, title, description, status, priority, due_date, created_at, updated_at)
+INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at)
 VALUES
     (
         'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -54,7 +54,7 @@ VALUES
     );
 
 -- Insert corresponding domain events
-INSERT INTO events (event_type, payload, occurred_at, published_at)
+INSERT INTO event.event (event_type, payload, occurred_at, published_at)
 VALUES
     (
         'TodoCreated',
@@ -86,6 +86,6 @@ VALUES
 -- +goose Down
 -- +goose StatementBegin
 
-TRUNCATE table todos;
+TRUNCATE table todo.todo;
 
 -- +goose StatementEnd

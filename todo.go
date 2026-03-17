@@ -24,7 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const relayTableName = "events"
+const relayTableName = "event.event"
 
 type App struct {
 	appName string

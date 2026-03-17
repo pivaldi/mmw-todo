@@ -27,7 +27,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 	}
 
 	batch := &pgx.Batch{}
-	query := `INSERT INTO events (event_type, payload, occurred_at) VALUES ($2, $3::jsonb, $4)`
+	query := `INSERT INTO event.event (event_type, payload, occurred_at) VALUES ($2, $3::jsonb, $4)`
 
 	// Queue all events into the batch
 	for _, event := range events {

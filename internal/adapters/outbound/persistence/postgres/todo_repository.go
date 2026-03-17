@@ -41,7 +41,7 @@ func NewPostgresTodoRepository(pool *pgxpool.Pool) *PostgresTodoRepository {
 // Save persists a new todo to the database.
 func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) error {
 	query := `
-		INSERT INTO todos (id, title, description, status, priority, due_date, created_at, updated_at)
+		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
@@ -81,7 +81,7 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 
 	batch := &pgx.Batch{}
 	query := `
-		INSERT INTO todos (id, title, description, status, priority, due_date, created_at, updated_at)
+		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 
@@ -129,7 +129,7 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
 	query := `
 		SELECT id, title, description, status, priority, due_date, created_at, updated_at
-		FROM todos
+		FROM todo.todo
 		WHERE id = $1
 	`
 
@@ -155,7 +155,7 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID)
 func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error) {
 	query := `
 		SELECT id, title, description, status, priority, due_date, created_at, updated_at
-		FROM todos
+		FROM todo.todo
 		WHERE 1=1
 	`
 	args := []any{}
@@ -208,7 +208,7 @@ func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 // Update updates an existing todo
 func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
 	query := `
-		UPDATE todos
+		UPDATE todo.todo
 		SET title = $2, description = $3, status = $4, priority = $5, due_date = $6, updated_at = $7
 		WHERE id = $1
 	`
@@ -242,7 +242,7 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) 
 
 // Delete removes a todo from the database
 func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID) error {
-	query := `DELETE FROM todos WHERE id = $1`
+	query := `DELETE FROM todo.todo WHERE id = $1`
 
 	result, err := r.pool.Exec(ctx, query, id.String())
 	if err != nil {
