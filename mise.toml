@@ -249,7 +249,7 @@ run = """
 [tasks."db:migrate:up"]
 # depends = ["db:migrate:build"]
 description = "Run database migrations up"
-run = "go run cmd/migration/migrate.go up"
+run = "go run cmd/migration/*.go up"
 
 [tasks."db:migrate:down"]
 depends = ["db:migrate:build"]
@@ -258,23 +258,23 @@ run = "${BUILD_DIR}/migrate down"
 
 [tasks."db:migrate:create"]
 description = "Create new SQL/Go migration"
-run = "go run cmd/migration/migrate.go create -d {{vars.MIGRATIONS_DIR}}"
+run = "go run cmd/migration/*.go create -d {{vars.MIGRATIONS_DIR}}"
 
 [tasks."db:migrate:version"]
 description = "Show current migration version"
-run = "go run cmd/migration/migrate.go version"
+run = "go run cmd/migration/*.go version"
 
 [tasks."db:migrate:fix"]
 description = "Fix the order of migrations"
-run = "go run cmd/migration/migrate.go fix"
+run = "go run cmd/migration/*.go fix"
 
 [tasks."db:migrate:reset"]
 description = "Down all the migrations"
-run = "go run cmd/migration/migrate.go reset"
+run = "go run cmd/migration/*.go reset"
 
 [tasks."db:migrate:status"]
 description = "Show current migration statud"
-run = "go run cmd/migration/migrate.go status"
+run = "go run cmd/migration/*.go status"
 
 # Docker tasks
 [tasks."docker:build"]

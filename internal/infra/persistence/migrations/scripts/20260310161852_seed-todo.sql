@@ -54,7 +54,7 @@ VALUES
     );
 
 -- Insert corresponding domain events
-INSERT INTO event.event (event_type, payload, occurred_at, published_at)
+INSERT INTO todo.event (event_type, payload, occurred_at, published_at)
 VALUES
     (
         'TodoCreated',

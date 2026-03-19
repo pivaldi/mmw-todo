@@ -24,7 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const relayTableName = "event.event"
+const relayTableName = "todo.event"
 
 type App struct {
 	appName string
@@ -62,7 +62,7 @@ func New(cfg *config.Config, dbPool *pgxpool.Pool, eventBus oglevents.SystemEven
 	return &App{
 		appName: cfg.AppName,
 		relay:   ogloutbox.NewEnventsRelay(dbPool, eventBus, logger, relayTableName),
-		server:  oglserver.NewHTTPServer("todo-api", cfg.Environment.String(), cfg.Server, mux, logger),
+		server:  oglserver.NewHTTPServer(cfg.AppName, cfg.Environment.String(), cfg.Server, mux, logger),
 		logger:  logger,
 	}, nil
 }

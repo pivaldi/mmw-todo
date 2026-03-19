@@ -29,11 +29,8 @@ CREATE INDEX idx_todo_priority ON todo.todo(priority);
 -- Add a comment to the table
 COMMENT ON TABLE todo.todo IS 'Stores todo items with their properties and status';
 
--- Create schema event for transactional events
-CREATE SCHEMA event;
-
 -- Create outbox events table for transactional event publishing via workers
-CREATE TABLE IF NOT EXISTS event.event (
+CREATE TABLE IF NOT EXISTS todo.event (
     id BIGSERIAL PRIMARY KEY,
     event_type VARCHAR(100) NOT NULL,
     payload JSONB NOT NULL,
@@ -42,15 +39,15 @@ CREATE TABLE IF NOT EXISTS event.event (
 );
 
 -- Index for finding unpublished events (used by outbox relay worker)
-CREATE INDEX idx_unpublished ON event.event(occurred_at ASC) WHERE published_at IS NULL;
+CREATE INDEX idx_unpublished ON todo.event(occurred_at ASC) WHERE published_at IS NULL;
 
 -- Index for published events cleanup
-CREATE INDEX idx_published ON event.event(published_at) WHERE published_at IS NOT NULL;
+CREATE INDEX idx_published ON todo.event(published_at) WHERE published_at IS NOT NULL;
 
 -- Add comments
-COMMENT ON TABLE event.event IS 'Transactional outbox for event publishing via workers';
-COMMENT ON COLUMN event.event.payload IS 'Event payload';
-COMMENT ON COLUMN event.event.published_at IS 'NULL indicates unpublished event, non-NULL means published';
+COMMENT ON TABLE todo.event IS 'Transactional outbox for event publishing via workers';
+COMMENT ON COLUMN todo.event.payload IS 'Event payload';
+COMMENT ON COLUMN todo.event.published_at IS 'NULL indicates unpublished event, non-NULL means published';
 
 -- +goose StatementEnd
 
@@ -65,6 +62,6 @@ DROP TABLE IF EXISTS todo;
 
 DROP INDEX IF EXISTS idx_published;
 DROP INDEX IF EXISTS idx_unpublished;
-DROP TABLE IF EXISTS event.event;
+DROP TABLE IF EXISTS todo.event;
 
 -- +goose StatementEnd
