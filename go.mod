@@ -7,7 +7,7 @@ require (
 	github.com/ThreeDotsLabs/watermill v1.5.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/ovya/ogl v0.0.0-20260315182932-66f9e6efaef0
+	github.com/ovya/ogl v0.0.0-20260319180015-237c847c1f31
 	github.com/pivaldi/mmw/contracts v0.0.0-20260219143251-c15d21c7ad4c
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/rotisserie/eris v0.5.4
