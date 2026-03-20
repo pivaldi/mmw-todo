@@ -7,6 +7,8 @@ package mocks
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	"github.com/pivaldi/mmw/todo/internal/domain/todo"
 	mock "github.com/stretchr/testify/mock"
@@ -40,19 +42,20 @@ func (_m *MockTodoRepository) EXPECT() *MockTodoRepository_Expecter {
 }
 
 // Delete provides a mock function for the type MockTodoRepository
-func (_mock *MockTodoRepository) Delete(ctx context.Context, id domain.TodoID) error {
-	ret := _mock.Called(ctx, id)
+func (_mock *MockTodoRepository) Delete(ctx context.Context, id domain.TodoID, userID uuid.UUID) error {
+	ret := _mock.Called(ctx, id, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.TodoID) error); ok {
-		r0 = returnFunc(ctx, id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.TodoID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, id, userID)
 	} else {
 		r0 = ret.Error(0)
 	}
+
 	return r0
 }
 
@@ -64,11 +67,12 @@ type MockTodoRepository_Delete_Call struct {
 // Delete is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id domain.TodoID
-func (_e *MockTodoRepository_Expecter) Delete(ctx interface{}, id interface{}) *MockTodoRepository_Delete_Call {
-	return &MockTodoRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+//   - userID uuid.UUID
+func (_e *MockTodoRepository_Expecter) Delete(ctx interface{}, id interface{}, userID interface{}) *MockTodoRepository_Delete_Call {
+	return &MockTodoRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, id, userID)}
 }
 
-func (_c *MockTodoRepository_Delete_Call) Run(run func(ctx context.Context, id domain.TodoID)) *MockTodoRepository_Delete_Call {
+func (_c *MockTodoRepository_Delete_Call) Run(run func(ctx context.Context, id domain.TodoID, userID uuid.UUID)) *MockTodoRepository_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -78,21 +82,29 @@ func (_c *MockTodoRepository_Delete_Call) Run(run func(ctx context.Context, id d
 		if args[1] != nil {
 			arg1 = args[1].(domain.TodoID)
 		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
+
 	return _c
 }
 
 func (_c *MockTodoRepository_Delete_Call) Return(err error) *MockTodoRepository_Delete_Call {
 	_c.Call.Return(err)
+
 	return _c
 }
 
-func (_c *MockTodoRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, id domain.TodoID) error) *MockTodoRepository_Delete_Call {
+func (_c *MockTodoRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, id domain.TodoID, userID uuid.UUID) error) *MockTodoRepository_Delete_Call {
 	_c.Call.Return(run)
+
 	return _c
 }
 
@@ -121,6 +133,7 @@ func (_mock *MockTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 	} else {
 		r1 = ret.Error(1)
 	}
+
 	return r0, r1
 }
 
@@ -151,22 +164,25 @@ func (_c *MockTodoRepository_FindAll_Call) Run(run func(ctx context.Context, fil
 			arg1,
 		)
 	})
+
 	return _c
 }
 
 func (_c *MockTodoRepository_FindAll_Call) Return(todos []*domain.Todo, err error) *MockTodoRepository_FindAll_Call {
 	_c.Call.Return(todos, err)
+
 	return _c
 }
 
 func (_c *MockTodoRepository_FindAll_Call) RunAndReturn(run func(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error)) *MockTodoRepository_FindAll_Call {
 	_c.Call.Return(run)
+
 	return _c
 }
 
 // FindByID provides a mock function for the type MockTodoRepository
-func (_mock *MockTodoRepository) FindByID(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
-	ret := _mock.Called(ctx, id)
+func (_mock *MockTodoRepository) FindByID(ctx context.Context, id domain.TodoID, userID uuid.UUID) (*domain.Todo, error) {
+	ret := _mock.Called(ctx, id, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByID")
@@ -174,21 +190,22 @@ func (_mock *MockTodoRepository) FindByID(ctx context.Context, id domain.TodoID)
 
 	var r0 *domain.Todo
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.TodoID) (*domain.Todo, error)); ok {
-		return returnFunc(ctx, id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.TodoID, uuid.UUID) (*domain.Todo, error)); ok {
+		return returnFunc(ctx, id, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.TodoID) *domain.Todo); ok {
-		r0 = returnFunc(ctx, id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.TodoID, uuid.UUID) *domain.Todo); ok {
+		r0 = returnFunc(ctx, id, userID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*domain.Todo)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.TodoID) error); ok {
-		r1 = returnFunc(ctx, id)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.TodoID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, id, userID)
 	} else {
 		r1 = ret.Error(1)
 	}
+
 	return r0, r1
 }
 
@@ -200,11 +217,12 @@ type MockTodoRepository_FindByID_Call struct {
 // FindByID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id domain.TodoID
-func (_e *MockTodoRepository_Expecter) FindByID(ctx interface{}, id interface{}) *MockTodoRepository_FindByID_Call {
-	return &MockTodoRepository_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id)}
+//   - userID uuid.UUID
+func (_e *MockTodoRepository_Expecter) FindByID(ctx interface{}, id interface{}, userID interface{}) *MockTodoRepository_FindByID_Call {
+	return &MockTodoRepository_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id, userID)}
 }
 
-func (_c *MockTodoRepository_FindByID_Call) Run(run func(ctx context.Context, id domain.TodoID)) *MockTodoRepository_FindByID_Call {
+func (_c *MockTodoRepository_FindByID_Call) Run(run func(ctx context.Context, id domain.TodoID, userID uuid.UUID)) *MockTodoRepository_FindByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -214,21 +232,29 @@ func (_c *MockTodoRepository_FindByID_Call) Run(run func(ctx context.Context, id
 		if args[1] != nil {
 			arg1 = args[1].(domain.TodoID)
 		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
+
 	return _c
 }
 
 func (_c *MockTodoRepository_FindByID_Call) Return(todo *domain.Todo, err error) *MockTodoRepository_FindByID_Call {
 	_c.Call.Return(todo, err)
+
 	return _c
 }
 
-func (_c *MockTodoRepository_FindByID_Call) RunAndReturn(run func(ctx context.Context, id domain.TodoID) (*domain.Todo, error)) *MockTodoRepository_FindByID_Call {
+func (_c *MockTodoRepository_FindByID_Call) RunAndReturn(run func(ctx context.Context, id domain.TodoID, userID uuid.UUID) (*domain.Todo, error)) *MockTodoRepository_FindByID_Call {
 	_c.Call.Return(run)
+
 	return _c
 }
 
@@ -246,6 +272,7 @@ func (_mock *MockTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 	} else {
 		r0 = ret.Error(0)
 	}
+
 	return r0
 }
 
@@ -276,33 +303,37 @@ func (_c *MockTodoRepository_Save_Call) Run(run func(ctx context.Context, todo *
 			arg1,
 		)
 	})
+
 	return _c
 }
 
 func (_c *MockTodoRepository_Save_Call) Return(err error) *MockTodoRepository_Save_Call {
 	_c.Call.Return(err)
+
 	return _c
 }
 
 func (_c *MockTodoRepository_Save_Call) RunAndReturn(run func(ctx context.Context, todo *domain.Todo) error) *MockTodoRepository_Save_Call {
 	_c.Call.Return(run)
+
 	return _c
 }
 
 // Update provides a mock function for the type MockTodoRepository
-func (_mock *MockTodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
-	ret := _mock.Called(ctx, todo)
+func (_mock *MockTodoRepository) Update(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error {
+	ret := _mock.Called(ctx, todo, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.Todo) error); ok {
-		r0 = returnFunc(ctx, todo)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.Todo, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, todo, userID)
 	} else {
 		r0 = ret.Error(0)
 	}
+
 	return r0
 }
 
@@ -314,11 +345,12 @@ type MockTodoRepository_Update_Call struct {
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - todo *domain.Todo
-func (_e *MockTodoRepository_Expecter) Update(ctx interface{}, todo interface{}) *MockTodoRepository_Update_Call {
-	return &MockTodoRepository_Update_Call{Call: _e.mock.On("Update", ctx, todo)}
+//   - userID uuid.UUID
+func (_e *MockTodoRepository_Expecter) Update(ctx interface{}, todo interface{}, userID interface{}) *MockTodoRepository_Update_Call {
+	return &MockTodoRepository_Update_Call{Call: _e.mock.On("Update", ctx, todo, userID)}
 }
 
-func (_c *MockTodoRepository_Update_Call) Run(run func(ctx context.Context, todo *domain.Todo)) *MockTodoRepository_Update_Call {
+func (_c *MockTodoRepository_Update_Call) Run(run func(ctx context.Context, todo *domain.Todo, userID uuid.UUID)) *MockTodoRepository_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -328,20 +360,28 @@ func (_c *MockTodoRepository_Update_Call) Run(run func(ctx context.Context, todo
 		if args[1] != nil {
 			arg1 = args[1].(*domain.Todo)
 		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
+
 	return _c
 }
 
 func (_c *MockTodoRepository_Update_Call) Return(err error) *MockTodoRepository_Update_Call {
 	_c.Call.Return(err)
+
 	return _c
 }
 
-func (_c *MockTodoRepository_Update_Call) RunAndReturn(run func(ctx context.Context, todo *domain.Todo) error) *MockTodoRepository_Update_Call {
+func (_c *MockTodoRepository_Update_Call) RunAndReturn(run func(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error) *MockTodoRepository_Update_Call {
 	_c.Call.Return(run)
+
 	return _c
 }

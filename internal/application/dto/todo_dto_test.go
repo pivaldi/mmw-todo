@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
 
@@ -14,7 +16,7 @@ func TestMapTodoToResponse(t *testing.T) {
 	futureDate := time.Now().Add(24 * time.Hour)
 	dueDate, _ := domain.NewDueDate(futureDate)
 
-	todo := domain.NewTodo(title, "Test description", domain.PriorityHigh, &dueDate)
+	todo := domain.NewTodo(title, "Test description", domain.PriorityHigh, &dueDate, uuid.Nil)
 
 	// Map to response
 	response := MapTodoToResponse(todo)
@@ -58,7 +60,7 @@ func TestMapTodoToResponse(t *testing.T) {
 // TestMapTodoToResponse_WithoutDueDate tests mapping when DueDate is nil
 func TestMapTodoToResponse_WithoutDueDate(t *testing.T) {
 	title, _ := domain.NewTaskTitle("Todo without due date")
-	todo := domain.NewTodo(title, "No deadline", domain.PriorityLow, nil)
+	todo := domain.NewTodo(title, "No deadline", domain.PriorityLow, nil, uuid.Nil)
 
 	response := MapTodoToResponse(todo)
 
@@ -83,7 +85,7 @@ func TestMapTodoToResponse_WithoutDueDate(t *testing.T) {
 // TestMapTodoToResponse_WithCompletedStatus tests mapping a completed todo
 func TestMapTodoToResponse_WithCompletedStatus(t *testing.T) {
 	title, _ := domain.NewTaskTitle("Completed Todo")
-	todo := domain.NewTodo(title, "Done", domain.PriorityMedium, nil)
+	todo := domain.NewTodo(title, "Done", domain.PriorityMedium, nil, uuid.Nil)
 
 	// Complete the todo
 	_ = todo.Complete()
@@ -110,9 +112,9 @@ func TestMapTodosToResponse(t *testing.T) {
 	title3, _ := domain.NewTaskTitle("Todo 3")
 
 	todos := []*domain.Todo{
-		domain.NewTodo(title1, "First", domain.PriorityLow, nil),
-		domain.NewTodo(title2, "Second", domain.PriorityMedium, nil),
-		domain.NewTodo(title3, "Third", domain.PriorityHigh, nil),
+		domain.NewTodo(title1, "First", domain.PriorityLow, nil, uuid.Nil),
+		domain.NewTodo(title2, "Second", domain.PriorityMedium, nil, uuid.Nil),
+		domain.NewTodo(title3, "Third", domain.PriorityHigh, nil, uuid.Nil),
 	}
 
 	// Map to responses
@@ -170,8 +172,8 @@ func TestMapTodosToResponse_WithMixedDueDates(t *testing.T) {
 	title2, _ := domain.NewTaskTitle("Without due date")
 
 	todos := []*domain.Todo{
-		domain.NewTodo(title1, "Has deadline", domain.PriorityUrgent, &dueDate),
-		domain.NewTodo(title2, "No deadline", domain.PriorityLow, nil),
+		domain.NewTodo(title1, "Has deadline", domain.PriorityUrgent, &dueDate, uuid.Nil),
+		domain.NewTodo(title2, "No deadline", domain.PriorityLow, nil, uuid.Nil),
 	}
 
 	responses := MapTodosToResponse(todos)
@@ -199,7 +201,7 @@ func TestMapTodoToResponse_PreservesAllPriorities(t *testing.T) {
 	for _, priority := range priorities {
 		t.Run(priority.String(), func(t *testing.T) {
 			title, _ := domain.NewTaskTitle("Test")
-			todo := domain.NewTodo(title, "Test", priority, nil)
+			todo := domain.NewTodo(title, "Test", priority, nil, uuid.Nil)
 
 			response := MapTodoToResponse(todo)
 
@@ -242,7 +244,7 @@ func TestMapTodoToResponse_PreservesAllStatuses(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			title, _ := domain.NewTaskTitle("Test")
-			todo := domain.NewTodo(title, "Test", domain.PriorityMedium, nil)
+			todo := domain.NewTodo(title, "Test", domain.PriorityMedium, nil, uuid.Nil)
 			tt.setup(todo)
 			todo.ClearEvents()
 
@@ -258,7 +260,7 @@ func TestMapTodoToResponse_PreservesAllStatuses(t *testing.T) {
 // TestMapTodoToResponse_TimestampsArePreserved tests CreatedAt and UpdatedAt are mapped
 func TestMapTodoToResponse_TimestampsArePreserved(t *testing.T) {
 	title, _ := domain.NewTaskTitle("Test Todo")
-	todo := domain.NewTodo(title, "Test", domain.PriorityMedium, nil)
+	todo := domain.NewTodo(title, "Test", domain.PriorityMedium, nil, uuid.Nil)
 
 	// Get original timestamps
 	originalCreatedAt := todo.CreatedAt()
@@ -278,7 +280,7 @@ func TestMapTodoToResponse_TimestampsArePreserved(t *testing.T) {
 // TestMapTodoToResponse_DescriptionCanBeEmpty tests empty description is handled
 func TestMapTodoToResponse_DescriptionCanBeEmpty(t *testing.T) {
 	title, _ := domain.NewTaskTitle("Todo with no description")
-	todo := domain.NewTodo(title, "", domain.PriorityMedium, nil)
+	todo := domain.NewTodo(title, "", domain.PriorityMedium, nil, uuid.Nil)
 
 	response := MapTodoToResponse(todo)
 

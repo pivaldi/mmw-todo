@@ -3,6 +3,8 @@ package ports
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
 
@@ -14,16 +16,16 @@ type TodoRepository interface {
 
 	// FindByID retrieves a todo by its ID
 	// Returns ErrTodoNotFound if not found
-	FindByID(ctx context.Context, id domain.TodoID) (*domain.Todo, error)
+	FindByID(ctx context.Context, id domain.TodoID, userID uuid.UUID) (*domain.Todo, error)
 
 	// FindAll retrieves todos matching the given filters
 	FindAll(ctx context.Context, filters Filters) ([]*domain.Todo, error)
 
 	// Update updates an existing todo
-	Update(ctx context.Context, todo *domain.Todo) error
+	Update(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error
 
 	// Delete removes a todo
-	Delete(ctx context.Context, id domain.TodoID) error
+	Delete(ctx context.Context, id domain.TodoID, userID uuid.UUID) error
 }
 
 // Filters represents query filters for finding todos
@@ -32,6 +34,9 @@ type Filters struct {
 	Priority *domain.Priority
 	Limit    *int
 	Offset   *int
+	// UserID scopes results to a specific user.
+	// nil = no user filter (reserved for future admin use; not reachable from current call paths).
+	UserID *uuid.UUID
 }
 
 // UnitOfWork defines the contract for atomic operations

@@ -20,7 +20,7 @@ func main() {
 		return
 	}
 
-	if err := dbpgcli.Migrate(conf.Database.URL(), migrationsFS); err != nil {
+	if err := dbpgcli.Migrate(conf.Database.URL(), "todo", migrationsFS); err != nil {
 		logError("command failed", err)
 
 		return

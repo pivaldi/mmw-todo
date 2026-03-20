@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 
 -- Create schema todo
-CREATE SCHEMA todo;
+CREATE SCHEMA IF NOT EXISTS todo;
 
 -- Create table todo.todo
 CREATE TABLE IF NOT EXISTS todo.todo (

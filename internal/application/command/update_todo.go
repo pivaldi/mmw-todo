@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -33,6 +34,11 @@ func (c *UpdateTodoCommand) Execute(
 	id string,
 	req *dto.UpdateTodoRequest,
 ) (*dto.TodoResponse, error) {
+	userID, err := authctx.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("update todo: %w", err)
+	}
+
 	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
@@ -40,7 +46,7 @@ func (c *UpdateTodoCommand) Execute(
 	}
 
 	// Retrieve existing todo
-	todo, err := c.repository.FindByID(ctx, todoID)
+	todo, err := c.repository.FindByID(ctx, todoID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("finding todo: %w", err)
 	}
@@ -97,7 +103,7 @@ func (c *UpdateTodoCommand) Execute(
 	}
 
 	// Persist changes
-	if err := c.repository.Update(ctx, todo); err != nil {
+	if err := c.repository.Update(ctx, todo, userID); err != nil {
 		return nil, fmt.Errorf("updating todo: %w", err)
 	}
 

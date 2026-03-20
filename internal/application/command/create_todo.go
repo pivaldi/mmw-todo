@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -35,6 +36,11 @@ func (c *CreateTodoCommand) Execute(
 	ctx context.Context,
 	req *dto.CreateTodoRequest,
 ) (*dto.TodoResponse, error) {
+	userID, err := authctx.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("create todo: %w", err)
+	}
+
 	// 1. Create value objects from request (Pure Domain Logic - no UoW needed yet)
 	title, err := domain.NewTaskTitle(req.Title)
 	if err != nil {
@@ -54,7 +60,7 @@ func (c *CreateTodoCommand) Execute(
 		dueDate = &dd
 	}
 
-	todo := domain.NewTodo(title, req.Description, req.Priority, dueDate)
+	todo := domain.NewTodo(title, req.Description, req.Priority, dueDate, userID)
 
 	// Execute Infrastructure operations within the Unit of Work so with transaction.
 	err = c.unitOfWork.WithTransaction(ctx, func(txCtx context.Context) error {

@@ -59,7 +59,6 @@ run = "scripts/common/install-tools-ss.sh"
 description = "Install/Update needed tools"
 run = "UPDATE=true scripts/common/install-tools-ss.sh"
 
-
 [tasks.pre-commit]
 depends = ["arch:check"]
 description = "Pre-commit checks (can be run manually or as git hook)"

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -14,6 +16,7 @@ import (
 func executeStatusChange(
 	ctx context.Context,
 	id string,
+	userID uuid.UUID,
 	repository ports.TodoRepository,
 	eventDispatcher ports.EventDispatcher,
 	action func(*domain.Todo) error,
@@ -26,7 +29,7 @@ func executeStatusChange(
 	}
 
 	// Retrieve existing todo
-	todo, err := repository.FindByID(ctx, todoID)
+	todo, err := repository.FindByID(ctx, todoID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("finding todo: %w", err)
 	}
@@ -37,7 +40,7 @@ func executeStatusChange(
 	}
 
 	// Persist changes
-	if err := repository.Update(ctx, todo); err != nil {
+	if err := repository.Update(ctx, todo, userID); err != nil {
 		return nil, fmt.Errorf("updating todo: %w", err)
 	}
 

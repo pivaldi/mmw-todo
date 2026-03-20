@@ -27,7 +27,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 	}
 
 	batch := &pgx.Batch{}
-	query := `INSERT INTO todo.event (event_type, payload, occurred_at) VALUES ($2, $3::jsonb, $4)`
+	query := `INSERT INTO todo.event (event_type, payload, occurred_at) VALUES ($1, $2::jsonb, $3)`
 
 	// Queue all events into the batch
 	for _, event := range events {
@@ -36,7 +36,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 			return eris.Wrapf(err, "failed to marshal event %s", event.EventType())
 		}
 
-		batch.Queue(query, event.AggregateID(), event.EventType(), string(payload), event.OccurredAt())
+		batch.Queue(query, event.EventType(), string(payload), event.OccurredAt())
 	}
 
 	// uses the transaction from the Oglpguow context!

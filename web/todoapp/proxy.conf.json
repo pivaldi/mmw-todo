@@ -1,11 +1,20 @@
 {
-  "/api": {
+  "/api/auth": {
+    "target": "http://localhost:8091",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/api/auth": ""
+    }
+  },
+  "/api/todo": {
     "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",
     "pathRewrite": {
-      "^/api": ""
+      "^/api/todo": ""
     }
   }
 }

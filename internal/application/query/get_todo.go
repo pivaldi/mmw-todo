@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -24,6 +25,11 @@ func (q *GetTodoQuery) Execute(
 	ctx context.Context,
 	id string,
 ) (*dto.TodoResponse, error) {
+	userID, err := authctx.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get todo: %w", err)
+	}
+
 	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
@@ -31,7 +37,7 @@ func (q *GetTodoQuery) Execute(
 	}
 
 	// Retrieve from repository
-	todo, err := q.repository.FindByID(ctx, todoID)
+	todo, err := q.repository.FindByID(ctx, todoID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("finding todo: %w", err)
 	}

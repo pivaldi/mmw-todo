@@ -3,6 +3,9 @@ package domain
 import (
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 // Helper functions for tests
@@ -10,7 +13,8 @@ import (
 func createValidTodo(t *testing.T) *Todo {
 	t.Helper()
 	title, _ := NewTaskTitle("Test Todo")
-	return NewTodo(title, "Test description", PriorityMedium, nil)
+
+	return NewTodo(title, "Test description", PriorityMedium, nil, uuid.Nil)
 }
 
 func createTodoWithStatus(t *testing.T, status TaskStatus) *Todo {
@@ -34,7 +38,7 @@ func TestNewTodo(t *testing.T) {
 	futureDate := time.Now().Add(24 * time.Hour)
 	dueDate, _ := NewDueDate(futureDate)
 
-	todo := NewTodo(title, description, priority, &dueDate)
+	todo := NewTodo(title, description, priority, &dueDate, uuid.Nil)
 
 	// Verify initial state
 	if todo.ID().IsEmpty() {
@@ -471,7 +475,7 @@ func TestTodo_IsDue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			title, _ := NewTaskTitle("Test")
-			todo := NewTodo(title, "", PriorityMedium, tt.dueDate)
+			todo := NewTodo(title, "", PriorityMedium, tt.dueDate, uuid.Nil)
 
 			if got := todo.IsDue(); got != tt.want {
 				t.Errorf("IsDue() = %v, want %v", got, tt.want)
@@ -517,7 +521,7 @@ func TestTodo_IsDueSoon(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			title, _ := NewTaskTitle("Test")
-			todo := NewTodo(title, "", PriorityMedium, tt.dueDate)
+			todo := NewTodo(title, "", PriorityMedium, tt.dueDate, uuid.Nil)
 
 			if got := todo.IsDueSoon(tt.within); got != tt.want {
 				t.Errorf("IsDueSoon() = %v, want %v", got, tt.want)
@@ -541,6 +545,22 @@ func TestTodo_ClearEvents(t *testing.T) {
 	}
 }
 
+// In package domain — no import qualifier needed for domain symbols.
+func TestNewTodo_StoresUserID(t *testing.T) {
+	userID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	title, _ := NewTaskTitle("Test")
+	todo := NewTodo(title, "", PriorityMedium, nil, userID)
+	assert.Equal(t, userID, todo.UserID())
+}
+
+func TestReconstituteTodo_StoresUserID(t *testing.T) {
+	userID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	id := NewTodoID()
+	title, _ := NewTaskTitle("Test")
+	todo := ReconstituteTodo(id, title, "", TaskStatusPending, PriorityMedium, nil, time.Now(), time.Now(), nil, userID)
+	assert.Equal(t, userID, todo.UserID())
+}
+
 // TestReconstituteTodo tests reconstituting a todo from stored data
 func TestReconstituteTodo(t *testing.T) {
 	id, _ := ParseTodoID("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
@@ -561,6 +581,7 @@ func TestReconstituteTodo(t *testing.T) {
 		createdAt,
 		updatedAt,
 		nil,
+		uuid.Nil,
 	)
 
 	// Verify all fields

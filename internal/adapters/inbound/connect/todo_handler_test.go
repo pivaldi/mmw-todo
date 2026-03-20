@@ -10,53 +10,58 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	todov1 "github.com/pivaldi/mmw/contracts/gen/go/todo/v1"
-	"github.com/pivaldi/mmw/todo/internal/application"
+	dto "github.com/pivaldi/mmw/todo/internal/application/dto"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
 
 // MockTodoService is a mock implementation of application.TodoService
 type MockTodoService struct {
-	CreateTodoFunc   func(ctx context.Context, req application.CreateTodoRequest) (*application.TodoResponse, error)
-	GetTodoFunc      func(ctx context.Context, id string) (*application.TodoResponse, error)
-	UpdateTodoFunc   func(ctx context.Context, id string, req application.UpdateTodoRequest) (*application.TodoResponse, error)
-	CompleteTodoFunc func(ctx context.Context, id string) (*application.TodoResponse, error)
-	ReopenTodoFunc   func(ctx context.Context, id string) (*application.TodoResponse, error)
+	CreateTodoFunc   func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error)
+	GetTodoFunc      func(ctx context.Context, id string) (*dto.TodoResponse, error)
+	UpdateTodoFunc   func(ctx context.Context, id string, req *dto.UpdateTodoRequest) (*dto.TodoResponse, error)
+	CompleteTodoFunc func(ctx context.Context, id string) (*dto.TodoResponse, error)
+	ReopenTodoFunc   func(ctx context.Context, id string) (*dto.TodoResponse, error)
 	DeleteTodoFunc   func(ctx context.Context, id string) error
-	ListTodosFunc    func(ctx context.Context, filters application.ListFilters) (*application.ListTodosResponse, error)
+	ListTodosFunc    func(ctx context.Context, filters *dto.ListFilters) (*dto.ListTodosResponse, error)
 }
 
-func (m *MockTodoService) CreateTodo(ctx context.Context, req application.CreateTodoRequest) (*application.TodoResponse, error) {
+func (m *MockTodoService) CreateTodo(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
 	if m.CreateTodoFunc != nil {
 		return m.CreateTodoFunc(ctx, req)
 	}
+
 	return nil, errors.New("not implemented")
 }
 
-func (m *MockTodoService) GetTodo(ctx context.Context, id string) (*application.TodoResponse, error) {
+func (m *MockTodoService) GetTodo(ctx context.Context, id string) (*dto.TodoResponse, error) {
 	if m.GetTodoFunc != nil {
 		return m.GetTodoFunc(ctx, id)
 	}
+
 	return nil, errors.New("not implemented")
 }
 
-func (m *MockTodoService) UpdateTodo(ctx context.Context, id string, req application.UpdateTodoRequest) (*application.TodoResponse, error) {
+func (m *MockTodoService) UpdateTodo(ctx context.Context, id string, req *dto.UpdateTodoRequest) (*dto.TodoResponse, error) {
 	if m.UpdateTodoFunc != nil {
 		return m.UpdateTodoFunc(ctx, id, req)
 	}
+
 	return nil, errors.New("not implemented")
 }
 
-func (m *MockTodoService) CompleteTodo(ctx context.Context, id string) (*application.TodoResponse, error) {
+func (m *MockTodoService) CompleteTodo(ctx context.Context, id string) (*dto.TodoResponse, error) {
 	if m.CompleteTodoFunc != nil {
 		return m.CompleteTodoFunc(ctx, id)
 	}
+
 	return nil, errors.New("not implemented")
 }
 
-func (m *MockTodoService) ReopenTodo(ctx context.Context, id string) (*application.TodoResponse, error) {
+func (m *MockTodoService) ReopenTodo(ctx context.Context, id string) (*dto.TodoResponse, error) {
 	if m.ReopenTodoFunc != nil {
 		return m.ReopenTodoFunc(ctx, id)
 	}
+
 	return nil, errors.New("not implemented")
 }
 
@@ -64,19 +69,21 @@ func (m *MockTodoService) DeleteTodo(ctx context.Context, id string) error {
 	if m.DeleteTodoFunc != nil {
 		return m.DeleteTodoFunc(ctx, id)
 	}
+
 	return errors.New("not implemented")
 }
 
-func (m *MockTodoService) ListTodos(ctx context.Context, filters application.ListFilters) (*application.ListTodosResponse, error) {
+func (m *MockTodoService) ListTodos(ctx context.Context, filters *dto.ListFilters) (*dto.ListTodosResponse, error) {
 	if m.ListTodosFunc != nil {
 		return m.ListTodosFunc(ctx, filters)
 	}
+
 	return nil, errors.New("not implemented")
 }
 
 func TestTodoHandler_CreateTodo_Success(t *testing.T) {
 	mockService := &MockTodoService{
-		CreateTodoFunc: func(ctx context.Context, req application.CreateTodoRequest) (*application.TodoResponse, error) {
+		CreateTodoFunc: func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
 			// Verify request mapping
 			if req.Title != "Test Todo" {
 				t.Errorf("Title = %v, want %v", req.Title, "Test Todo")
@@ -85,7 +92,7 @@ func TestTodoHandler_CreateTodo_Success(t *testing.T) {
 				t.Errorf("Priority = %v, want %v", req.Priority, "medium")
 			}
 
-			return &application.TodoResponse{
+			return &dto.TodoResponse{
 				ID:          "123",
 				Title:       "Test Todo",
 				Description: "Test description",
@@ -124,12 +131,12 @@ func TestTodoHandler_CreateTodo_WithDueDate_Success(t *testing.T) {
 	dueDate := time.Now().Add(24 * time.Hour)
 
 	mockService := &MockTodoService{
-		CreateTodoFunc: func(ctx context.Context, req application.CreateTodoRequest) (*application.TodoResponse, error) {
+		CreateTodoFunc: func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
 			if req.DueDate == nil {
 				t.Error("Expected due date to be set")
 			}
 
-			return &application.TodoResponse{
+			return &dto.TodoResponse{
 				ID:          "123",
 				Title:       "Test Todo",
 				Description: "Test description",
@@ -164,12 +171,12 @@ func TestTodoHandler_CreateTodo_WithDueDate_Success(t *testing.T) {
 
 func TestTodoHandler_GetTodo_Success(t *testing.T) {
 	mockService := &MockTodoService{
-		GetTodoFunc: func(ctx context.Context, id string) (*application.TodoResponse, error) {
+		GetTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
 			if id != "123" {
 				t.Errorf("ID = %v, want %v", id, "123")
 			}
 
-			return &application.TodoResponse{
+			return &dto.TodoResponse{
 				ID:          "123",
 				Title:       "Test Todo",
 				Description: "Test description",
@@ -200,7 +207,7 @@ func TestTodoHandler_GetTodo_Success(t *testing.T) {
 
 func TestTodoHandler_GetTodo_NotFound_ReturnsNotFoundError(t *testing.T) {
 	mockService := &MockTodoService{
-		GetTodoFunc: func(ctx context.Context, id string) (*application.TodoResponse, error) {
+		GetTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
 			return nil, domain.ErrTodoNotFound
 		},
 	}
@@ -231,12 +238,12 @@ func TestTodoHandler_UpdateTodo_Success(t *testing.T) {
 	newTitle := "Updated Title"
 
 	mockService := &MockTodoService{
-		UpdateTodoFunc: func(ctx context.Context, id string, req application.UpdateTodoRequest) (*application.TodoResponse, error) {
+		UpdateTodoFunc: func(ctx context.Context, id string, req *dto.UpdateTodoRequest) (*dto.TodoResponse, error) {
 			if req.Title == nil || *req.Title != newTitle {
 				t.Error("Title not updated correctly")
 			}
 
-			return &application.TodoResponse{
+			return &dto.TodoResponse{
 				ID:          id,
 				Title:       newTitle,
 				Description: "Test description",
@@ -268,8 +275,8 @@ func TestTodoHandler_UpdateTodo_Success(t *testing.T) {
 
 func TestTodoHandler_CompleteTodo_Success(t *testing.T) {
 	mockService := &MockTodoService{
-		CompleteTodoFunc: func(ctx context.Context, id string) (*application.TodoResponse, error) {
-			return &application.TodoResponse{
+		CompleteTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
+			return &dto.TodoResponse{
 				ID:          id,
 				Title:       "Test Todo",
 				Description: "Test description",
@@ -300,8 +307,8 @@ func TestTodoHandler_CompleteTodo_Success(t *testing.T) {
 
 func TestTodoHandler_ReopenTodo_Success(t *testing.T) {
 	mockService := &MockTodoService{
-		ReopenTodoFunc: func(ctx context.Context, id string) (*application.TodoResponse, error) {
-			return &application.TodoResponse{
+		ReopenTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
+			return &dto.TodoResponse{
 				ID:          id,
 				Title:       "Test Todo",
 				Description: "Test description",
@@ -355,13 +362,13 @@ func TestTodoHandler_DeleteTodo_Success(t *testing.T) {
 
 func TestTodoHandler_ListTodos_Success(t *testing.T) {
 	mockService := &MockTodoService{
-		ListTodosFunc: func(ctx context.Context, filters application.ListFilters) (*application.ListTodosResponse, error) {
+		ListTodosFunc: func(ctx context.Context, filters *dto.ListFilters) (*dto.ListTodosResponse, error) {
 			// Verify filters
 			if filters.Status != nil && *filters.Status != "pending" {
 				t.Errorf("Status filter = %v, want %v", *filters.Status, "pending")
 			}
 
-			todo1 := &application.TodoResponse{
+			todo1 := &dto.TodoResponse{
 				ID:          "1",
 				Title:       "Todo 1",
 				Description: "Description 1",
@@ -371,7 +378,7 @@ func TestTodoHandler_ListTodos_Success(t *testing.T) {
 				UpdatedAt:   time.Now(),
 			}
 
-			todo2 := &application.TodoResponse{
+			todo2 := &dto.TodoResponse{
 				ID:          "2",
 				Title:       "Todo 2",
 				Description: "Description 2",
@@ -381,8 +388,8 @@ func TestTodoHandler_ListTodos_Success(t *testing.T) {
 				UpdatedAt:   time.Now(),
 			}
 
-			return &application.ListTodosResponse{
-				Todos:      []*application.TodoResponse{todo1, todo2},
+			return &dto.ListTodosResponse{
+				Todos:      []*dto.TodoResponse{todo1, todo2},
 				TotalCount: 2,
 			}, nil
 		},
@@ -416,7 +423,7 @@ func TestTodoHandler_ListTodos_Success(t *testing.T) {
 
 func TestTodoHandler_ValidationError_ReturnsInvalidArgument(t *testing.T) {
 	mockService := &MockTodoService{
-		CreateTodoFunc: func(ctx context.Context, req application.CreateTodoRequest) (*application.TodoResponse, error) {
+		CreateTodoFunc: func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
 			return nil, &domain.ValidationError{
 				Field:   "title",
 				Message: "title is required",
@@ -449,7 +456,7 @@ func TestTodoHandler_ValidationError_ReturnsInvalidArgument(t *testing.T) {
 
 func TestTodoHandler_BusinessRuleError_ReturnsFailedPrecondition(t *testing.T) {
 	mockService := &MockTodoService{
-		CompleteTodoFunc: func(ctx context.Context, id string) (*application.TodoResponse, error) {
+		CompleteTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
 			return nil, &domain.BusinessRuleError{
 				Rule:    "complete_cancelled",
 				Message: "cannot complete a cancelled task",

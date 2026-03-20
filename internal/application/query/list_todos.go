@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -24,10 +25,16 @@ func (q *ListTodosQuery) Execute(
 	ctx context.Context,
 	filters *dto.ListFilters,
 ) (*dto.ListTodosResponse, error) {
+	userID, err := authctx.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list todos: %w", err)
+	}
+
 	// Convert application filters to repository filters
 	repoFilters := ports.Filters{
 		Limit:  filters.Limit,
 		Offset: filters.Offset,
+		UserID: &userID,
 	}
 
 	if filters.Status != nil {

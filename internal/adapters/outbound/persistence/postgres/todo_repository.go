@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	ogluow "github.com/ovya/ogl/pg/uow"
@@ -29,6 +30,7 @@ type todoRow struct {
 	DueDate     *time.Time `db:"due_date"`
 	CreatedAt   time.Time  `db:"created_at"`
 	UpdatedAt   time.Time  `db:"updated_at"`
+	UserID      string     `db:"user_id"`
 }
 
 // NewPostgresTodoRepository creates a new PostgreSQL repository
@@ -41,8 +43,8 @@ func NewPostgresTodoRepository(pool *pgxpool.Pool) *PostgresTodoRepository {
 // Save persists a new todo to the database.
 func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) error {
 	query := `
-		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 
 	var dueDate *time.Time
@@ -63,6 +65,7 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 		dueDate,
 		todo.CreatedAt(),
 		todo.UpdatedAt(),
+		todo.UserID().String(),
 	)
 
 	if err != nil {
@@ -81,8 +84,8 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 
 	batch := &pgx.Batch{}
 	query := `
-		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 
 	// 1. Queue all the queries into the batch locally in memory
@@ -102,6 +105,7 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 			dueDate,
 			todo.CreatedAt(),
 			todo.UpdatedAt(),
+			todo.UserID().String(),
 		)
 	}
 
@@ -125,15 +129,15 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 	return nil
 }
 
-// FindByID retrieves a todo by its ID
-func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
+// FindByID retrieves a todo by its ID scoped to the given user
+func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID, userID uuid.UUID) (*domain.Todo, error) {
 	query := `
-		SELECT id, title, description, status, priority, due_date, created_at, updated_at
+		SELECT id, title, description, status, priority, due_date, created_at, updated_at, user_id
 		FROM todo.todo
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
 
-	rows, err := r.pool.Query(ctx, query, id.String())
+	rows, err := r.pool.Query(ctx, query, id.String(), userID.String())
 	if err != nil {
 		return nil, fmt.Errorf("querying todo: %w", err)
 	}
@@ -154,12 +158,19 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID)
 // FindAll retrieves todos matching the given filters
 func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error) {
 	query := `
-		SELECT id, title, description, status, priority, due_date, created_at, updated_at
+		SELECT id, title, description, status, priority, due_date, created_at, updated_at, user_id
 		FROM todo.todo
 		WHERE 1=1
 	`
 	args := []any{}
 	argIndex := 1
+
+	// Apply user_id filter (must come first to keep $N numbering consistent)
+	if filters.UserID != nil {
+		query += fmt.Sprintf(" AND user_id = $%d", argIndex)
+		args = append(args, filters.UserID.String())
+		argIndex++
+	}
 
 	// Apply status filter
 	if filters.Status != nil {
@@ -205,12 +216,12 @@ func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 	return todos, nil
 }
 
-// Update updates an existing todo
-func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
+// Update updates an existing todo scoped to the given user
+func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error {
 	query := `
 		UPDATE todo.todo
-		SET title = $2, description = $3, status = $4, priority = $5, due_date = $6, updated_at = $7
-		WHERE id = $1
+		SET title = $3, description = $4, status = $5, priority = $6, due_date = $7, updated_at = $8
+		WHERE id = $1 AND user_id = $2
 	`
 
 	var dueDate *time.Time
@@ -221,6 +232,7 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) 
 
 	result, err := r.pool.Exec(ctx, query,
 		todo.ID().String(),
+		userID.String(),
 		todo.Title().String(),
 		todo.Description(),
 		todo.Status().String(),
@@ -240,11 +252,12 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) 
 	return nil
 }
 
-// Delete removes a todo from the database
-func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID) error {
-	query := `DELETE FROM todo.todo WHERE id = $1`
-
-	result, err := r.pool.Exec(ctx, query, id.String())
+// Delete removes a todo from the database scoped to the given user
+func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID, userID uuid.UUID) error {
+	result, err := r.pool.Exec(ctx,
+		`DELETE FROM todo.todo WHERE id = $1 AND user_id = $2`,
+		id.String(), userID.String(),
+	)
 	if err != nil {
 		return fmt.Errorf("deleting todo: %w", err)
 	}
@@ -293,7 +306,7 @@ func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
 		dd := domain.DueDate{}
 		// We need to use reflection or create a helper method
 		// For now, we'll just store the time directly if it's past
-		// In production, you might want to add a reconstitution method to DueDate
+		// TODO: In production, you might want to add a reconstitution method to DueDate
 		if dbRow.DueDate.After(time.Now()) {
 			dd, err = domain.NewDueDate(*dbRow.DueDate)
 			if err == nil {
@@ -302,6 +315,11 @@ func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
 		}
 		// If due date is in the past, we'll set it to nil for now
 		// A better approach would be to have a separate reconstitution method
+	}
+
+	userID, err := uuid.Parse(dbRow.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user_id: %w", err)
 	}
 
 	// Reconstitute the aggregate
@@ -314,7 +332,8 @@ func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
 		domainDueDate,
 		dbRow.CreatedAt,
 		dbRow.UpdatedAt,
-		nil, // completedAt - we don't track this in current schema
+		nil,    // completedAt - we don't track this in current schema
+		userID, // parsed from DB
 	)
 
 	return todo, nil

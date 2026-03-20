@@ -15,7 +15,7 @@ import {
   providedIn: 'root'
 })
 export class TodoService {
-  private apiUrl = `${environment.apiUrl}/todo.v1.TodoService`;
+  private apiUrl = `${environment.apiUrl}/todo/todo.v1.TodoService`;
   private headers = new HttpHeaders({
     'Content-Type': 'application/json'
   });

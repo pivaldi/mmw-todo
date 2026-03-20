@@ -16,6 +16,7 @@ import (
 	oglcore "github.com/ovya/ogl/platform/core"
 	oglevents "github.com/ovya/ogl/platform/events"
 	oglserver "github.com/ovya/ogl/platform/server"
+	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
 	"github.com/pivaldi/mmw/contracts/gen/go/todo/v1/todov1connect"
 	connecthandler "github.com/pivaldi/mmw/todo/internal/adapters/inbound/connect"
 	"github.com/pivaldi/mmw/todo/internal/adapters/outbound/events"
@@ -52,18 +53,27 @@ func GetConfig(ctx context.Context, envprefix string, envs map[string]string) (*
 	return conf, nil
 }
 
-func New(cfg *config.Config, dbPool *pgxpool.Pool, eventBus oglevents.SystemEventBus, logger *slog.Logger) (*App, error) {
+type Infrastructure struct {
+	DBPool   *pgxpool.Pool
+	EventBus oglevents.SystemEventBus
+	AuthSvc  defauth.AuthService
+	Logger   *slog.Logger
+}
+
+func New(cfg *config.Config, infra Infrastructure) (*App, error) {
 	// Don't use GetConfig here because we do not know the prefix.
 	mux := http.NewServeMux()
-	path, handler := todov1connect.NewTodoServiceHandler(newTodoHandler(dbPool))
-	mux.Handle(path, handler)
+	path, handler := todov1connect.NewTodoServiceHandler(newTodoHandler(infra.DBPool))
+
+	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
+	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, handler))
 
 	// Initialize everything internal to Todo here!
 	return &App{
 		appName: cfg.AppName,
-		relay:   ogloutbox.NewEnventsRelay(dbPool, eventBus, logger, relayTableName),
-		server:  oglserver.NewHTTPServer(cfg.AppName, cfg.Environment.String(), cfg.Server, mux, logger),
-		logger:  logger,
+		relay:   ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
+		server:  oglserver.NewHTTPServer(cfg.AppName, cfg.Environment.String(), cfg.Server, mux, infra.Logger),
+		logger:  infra.Logger,
 	}, nil
 }
 

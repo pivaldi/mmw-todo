@@ -5,6 +5,9 @@
         <span class="logo">✓</span>
         {{ title }}
       </a>
+      <button *ngIf="auth.isLoggedIn()" (click)="logout()" class="logout-btn">
+        Logout
+      </button>
     </div>
   </nav>
 

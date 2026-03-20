@@ -2,7 +2,9 @@ package command
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
@@ -30,9 +32,15 @@ func (c *CompleteTodoCommand) Execute(
 	ctx context.Context,
 	id string,
 ) (*dto.TodoResponse, error) {
+	userID, err := authctx.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("complete todo: %w", err)
+	}
+
 	return executeStatusChange(
 		ctx,
 		id,
+		userID,
 		c.repository,
 		c.eventDispatcher,
 		(*domain.Todo).Complete,

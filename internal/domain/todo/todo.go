@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Todo is the aggregate root for the todo domain
 // It enforces all business rules and maintains consistency
@@ -15,10 +19,11 @@ type Todo struct {
 	updatedAt   time.Time
 	completedAt *time.Time
 	events      []DomainEvent
+	userID      uuid.UUID
 }
 
 // NewTodo creates a new Todo aggregate with validation
-func NewTodo(title TaskTitle, description string, priority Priority, dueDate *DueDate) *Todo {
+func NewTodo(title TaskTitle, description string, priority Priority, dueDate *DueDate, userID uuid.UUID) *Todo {
 	id := NewTodoID()
 	now := time.Now()
 
@@ -32,6 +37,7 @@ func NewTodo(title TaskTitle, description string, priority Priority, dueDate *Du
 		createdAt:   now,
 		updatedAt:   now,
 		events:      []DomainEvent{},
+		userID:      userID,
 	}
 
 	// Emit TodoCreated event
@@ -50,6 +56,7 @@ func ReconstituteTodo(
 	dueDate *DueDate,
 	createdAt, updatedAt time.Time,
 	completedAt *time.Time,
+	userID uuid.UUID,
 ) *Todo {
 	return &Todo{
 		id:          id,
@@ -62,6 +69,7 @@ func ReconstituteTodo(
 		updatedAt:   updatedAt,
 		completedAt: completedAt,
 		events:      []DomainEvent{},
+		userID:      userID,
 	}
 }
 
@@ -110,6 +118,11 @@ func (t *Todo) UpdatedAt() time.Time {
 // CompletedAt returns when the todo was completed (nil if not completed)
 func (t *Todo) CompletedAt() *time.Time {
 	return t.completedAt
+}
+
+// UserID returns the ID of the user who owns this todo
+func (t *Todo) UserID() uuid.UUID {
+	return t.userID
 }
 
 // Events returns the unpublished domain events

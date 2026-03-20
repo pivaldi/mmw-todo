@@ -33,14 +33,14 @@ func (h *TodoHandler) CreateTodo(
 ) (*connect.Response[todov1.CreateTodoResponse], error) {
 	// Convert protobuf request to application DTO
 	appReq := dto.CreateTodoRequest{
-		Title:       req.Msg.Title,
-		Description: req.Msg.Description,
-		Priority:    mapPriorityFromProto(req.Msg.Priority),
+		Title:       req.Msg.GetTitle(),
+		Description: req.Msg.GetDescription(),
+		Priority:    mapPriorityFromProto(req.Msg.GetPriority()),
 	}
 
 	// Handle optional due date
-	if req.Msg.DueDate != nil {
-		dueDate := req.Msg.DueDate.AsTime()
+	if req.Msg.GetDueDate() != nil {
+		dueDate := req.Msg.GetDueDate().AsTime()
 		appReq.DueDate = &dueDate
 	}
 
@@ -63,7 +63,7 @@ func (h *TodoHandler) GetTodo(
 	ctx context.Context,
 	req *connect.Request[todov1.GetTodoRequest],
 ) (*connect.Response[todov1.GetTodoResponse], error) {
-	todo, err := h.service.GetTodo(ctx, req.Msg.Id)
+	todo, err := h.service.GetTodo(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -92,22 +92,22 @@ func (h *TodoHandler) UpdateTodo(
 	}
 
 	if req.Msg.Priority != nil {
-		priority := mapPriorityFromProto(*req.Msg.Priority)
+		priority := mapPriorityFromProto(req.Msg.GetPriority())
 		appReq.Priority = &priority
 	}
 
 	if req.Msg.Status != nil {
-		status := mapStatusFromProto(*req.Msg.Status)
+		status := mapStatusFromProto(req.Msg.GetStatus())
 		appReq.Status = &status
 	}
 
-	if req.Msg.DueDate != nil {
-		dueDate := req.Msg.DueDate.AsTime()
+	if req.Msg.GetDueDate() != nil {
+		dueDate := req.Msg.GetDueDate().AsTime()
 		appReq.DueDate = &dueDate
 	}
 
 	// Call application service
-	todo, err := h.service.UpdateTodo(ctx, req.Msg.Id, &appReq)
+	todo, err := h.service.UpdateTodo(ctx, req.Msg.GetId(), &appReq)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -124,7 +124,7 @@ func (h *TodoHandler) CompleteTodo(
 	ctx context.Context,
 	req *connect.Request[todov1.CompleteTodoRequest],
 ) (*connect.Response[todov1.CompleteTodoResponse], error) {
-	todo, err := h.service.CompleteTodo(ctx, req.Msg.Id)
+	todo, err := h.service.CompleteTodo(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -141,7 +141,7 @@ func (h *TodoHandler) ReopenTodo(
 	ctx context.Context,
 	req *connect.Request[todov1.ReopenTodoRequest],
 ) (*connect.Response[todov1.ReopenTodoResponse], error) {
-	todo, err := h.service.ReopenTodo(ctx, req.Msg.Id)
+	todo, err := h.service.ReopenTodo(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -158,7 +158,7 @@ func (h *TodoHandler) DeleteTodo(
 	ctx context.Context,
 	req *connect.Request[todov1.DeleteTodoRequest],
 ) (*connect.Response[todov1.DeleteTodoResponse], error) {
-	err := h.service.DeleteTodo(ctx, req.Msg.Id)
+	err := h.service.DeleteTodo(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -178,22 +178,22 @@ func (h *TodoHandler) ListTodos(
 
 	// Convert int32 pointers to int pointers
 	if req.Msg.Limit != nil {
-		limit := int(*req.Msg.Limit)
+		limit := int(req.Msg.GetLimit())
 		filters.Limit = &limit
 	}
 
 	if req.Msg.Offset != nil {
-		offset := int(*req.Msg.Offset)
+		offset := int(req.Msg.GetOffset())
 		filters.Offset = &offset
 	}
 
 	if req.Msg.Status != nil {
-		status := mapStatusFromProto(*req.Msg.Status)
+		status := mapStatusFromProto(req.Msg.GetStatus())
 		filters.Status = &status
 	}
 
 	if req.Msg.Priority != nil {
-		priority := mapPriorityFromProto(*req.Msg.Priority)
+		priority := mapPriorityFromProto(req.Msg.GetPriority())
 		filters.Priority = &priority
 	}
 

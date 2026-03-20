@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
@@ -30,6 +31,11 @@ func (c *DeleteTodoCommand) Execute(
 	ctx context.Context,
 	id string,
 ) error {
+	userID, err := authctx.UserIDFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("delete todo: %w", err)
+	}
+
 	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
@@ -37,7 +43,7 @@ func (c *DeleteTodoCommand) Execute(
 	}
 
 	// Delete from repository
-	if err := c.repository.Delete(ctx, todoID); err != nil {
+	if err := c.repository.Delete(ctx, todoID, userID); err != nil {
 		return fmt.Errorf("deleting todo: %w", err)
 	}
 

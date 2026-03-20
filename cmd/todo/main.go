@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,6 +17,9 @@ import (
 	oglevents "github.com/ovya/ogl/platform/events"
 	oglrunner "github.com/ovya/ogl/platform/runner"
 	oglslog "github.com/ovya/ogl/slog"
+	"github.com/pivaldi/mmw/auth"
+	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
+	"github.com/pivaldi/mmw/contracts/gen/go/auth/v1/authv1connect"
 	"github.com/pivaldi/mmw/todo"
 	"github.com/rotisserie/eris"
 )
@@ -41,7 +45,9 @@ func main() {
 
 	var err error
 
-	conf, err := todo.GetConfig(ctx, "", oglos.EnvMap())
+	envMap := oglos.EnvMap()
+
+	todoConf, err := todo.GetConfig(ctx, "", envMap)
 	if err != nil {
 		exitCode = 1
 		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
@@ -49,7 +55,15 @@ func main() {
 		return
 	}
 
-	logger, err = oglslog.New(conf.Environment.String(), conf.LogLevel.SlogLevel())
+	authConf, err := auth.GetConfig(ctx, "AUTH_", envMap)
+	if err != nil {
+		exitCode = 1
+		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
+
+		return
+	}
+
+	logger, err = oglslog.New(todoConf.Environment.String(), todoConf.LogLevel.SlogLevel())
 	if err != nil {
 		exitCode = 1
 		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
@@ -58,11 +72,11 @@ func main() {
 	}
 
 	todoLogger := logger.With("module", "todo")
+	authLogger := logger.With("app", "auth")
 
 	watermillLogger := watermill.NewSlogLogger(todoLogger)
 	rawBus := gochannel.NewGoChannel(
 		gochannel.Config{
-			// Output channel buffer size
 			OutputChannelBuffer: outputChannelBufferSize,
 			// Persistent guarantees the channel won't drop messages if no subscriber is attached yet
 			Persistent: true,
@@ -79,14 +93,31 @@ func main() {
 	// Wrap the raw infrastructure in the Adapter.
 	// systemBus := oglevents.NewWatermillBus(rawBus)
 
-	dbPool, err = getDatabasePoolConnexion(ctx, todoLogger, conf.Database.URL())
+	dbPool, err = getDatabasePoolConnexion(ctx, todoLogger, todoConf.Database.URL())
 	if err != nil {
 		logError("creating database pool", err)
 
 		return
 	}
 
-	todoApp, err := todo.New(conf, dbPool, systemBus, todoLogger)
+	// Create authApp first (todo depends on it)
+	authApp := auth.New(authConf, dbPool, systemBus, authLogger)
+
+	// authGrpc := authv1connect.NewAuthServiceClient(httpClient connect.HTTPClient)
+	authHttpClient := authv1connect.NewAuthServiceClient(
+		&http.Client{}, // no TLS needed for localhost
+		authConf.Server.URL("", nil),
+	)
+	authSvc := defauth.NewHttpClient(authHttpClient)
+	// authInproc := defauth.NewInprocClient(authApp)
+
+	todoApp, err := todo.New(todoConf, todo.Infrastructure{
+		DBPool:   dbPool,
+		EventBus: systemBus,
+		Logger:   todoLogger,
+		AuthSvc:  authSvc,
+	})
+
 	if err != nil {
 		logError("creating app failed", err)
 		return
@@ -95,6 +126,7 @@ func main() {
 	// notifLogger := logger.With("module", "notifications")
 	modules := []oglcore.Module{
 		todoApp,
+		authApp,
 		// Use RabitMQ consummer instead
 		// notifications.Build(rawBus, notifLogger),
 	}
