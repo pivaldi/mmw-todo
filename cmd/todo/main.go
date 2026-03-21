@@ -19,7 +19,7 @@ import (
 	authConfig "github.com/pivaldi/mmw-auth/config"
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
 	"github.com/pivaldi/mmw-contracts/gen/go/auth/v1/authv1connect"
-	"github.com/pivaldi/mmw-todo"
+	todo "github.com/pivaldi/mmw-todo"
 	"github.com/pivaldi/mmw-todo/config"
 	"github.com/rotisserie/eris"
 )
