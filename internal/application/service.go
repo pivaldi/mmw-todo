@@ -27,8 +27,8 @@ type TodoService interface {
 type TodoApplicationService struct {
 	createTodoCmd   *command.CreateTodoCommand
 	updateTodoCmd   *command.UpdateTodoCommand
-	completeTodoCmd *command.CompleteTodoCommand
-	reopenTodoCmd   *command.ReopenTodoCommand
+	completeTodoCmd *command.TodoStatusChangeCommand
+	reopenTodoCmd   *command.TodoStatusChangeCommand
 	deleteTodoCmd   *command.DeleteTodoCommand
 	getTodoQuery    *query.GetTodoQuery
 	listTodosQuery  *query.ListTodosQuery

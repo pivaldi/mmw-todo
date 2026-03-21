@@ -6,13 +6,60 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 	"github.com/pivaldi/mmw/todo/internal/application/dto"
 	"github.com/pivaldi/mmw/todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
 )
 
-// executeStatusChange is a helper to avoid code duplication for status change operations
-// It handles the common flow of: retrieve todo -> execute action -> update -> dispatch events
+// TodoStatusChangeCommand handles todo status transitions (complete, reopen, etc.).
+type TodoStatusChangeCommand struct {
+	repository      ports.TodoRepository
+	eventDispatcher ports.EventDispatcher
+	action          func(*domain.Todo) error
+	actionLabel     string
+	errorPrefix     string
+}
+
+// NewCompleteTodoCommand creates a command that marks a todo as completed.
+func NewCompleteTodoCommand(
+	repository ports.TodoRepository,
+	eventDispatcher ports.EventDispatcher,
+) *TodoStatusChangeCommand {
+	return &TodoStatusChangeCommand{
+		repository:      repository,
+		eventDispatcher: eventDispatcher,
+		action:          (*domain.Todo).Complete,
+		actionLabel:     "completing todo",
+		errorPrefix:     "complete todo",
+	}
+}
+
+// NewReopenTodoCommand creates a command that reopens a completed or cancelled todo.
+func NewReopenTodoCommand(
+	repository ports.TodoRepository,
+	eventDispatcher ports.EventDispatcher,
+) *TodoStatusChangeCommand {
+	return &TodoStatusChangeCommand{
+		repository:      repository,
+		eventDispatcher: eventDispatcher,
+		action:          (*domain.Todo).Reopen,
+		actionLabel:     "reopening todo",
+		errorPrefix:     "reopen todo",
+	}
+}
+
+// Execute runs the status change for the given todo ID.
+func (c *TodoStatusChangeCommand) Execute(ctx context.Context, id string) (*dto.TodoResponse, error) {
+	userID, err := authctx.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", c.errorPrefix, err)
+	}
+
+	return executeStatusChange(ctx, id, userID, c.repository, c.eventDispatcher, c.action, c.actionLabel)
+}
+
+// executeStatusChange handles the common flow: retrieve todo -> execute action -> update -> dispatch events.
 func executeStatusChange(
 	ctx context.Context,
 	id string,
@@ -22,36 +69,29 @@ func executeStatusChange(
 	action func(*domain.Todo) error,
 	actionName string,
 ) (*dto.TodoResponse, error) {
-	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid todo ID: %w", err)
 	}
 
-	// Retrieve existing todo
 	todo, err := repository.FindByID(ctx, todoID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("finding todo: %w", err)
 	}
 
-	// Execute the action
 	if err := action(todo); err != nil {
 		return nil, fmt.Errorf("%s: %w", actionName, err)
 	}
 
-	// Persist changes
 	if err := repository.Update(ctx, todo, userID); err != nil {
 		return nil, fmt.Errorf("updating todo: %w", err)
 	}
 
-	// Dispatch domain events
 	if err := eventDispatcher.Dispatch(ctx, todo.Events()); err != nil {
 		return nil, fmt.Errorf("dispatching events: %w", err)
 	}
 
-	// Clear events after dispatching
 	todo.ClearEvents()
 
-	// Map to response DTO
 	return dto.MapTodoToResponse(todo), nil
 }

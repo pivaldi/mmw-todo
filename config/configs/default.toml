@@ -6,6 +6,7 @@ user = "postgres"
 host = "localhost"
 port = 5435
 name = "mmw"
+sslmode = "disable"
 
 [server]
 port = 8090

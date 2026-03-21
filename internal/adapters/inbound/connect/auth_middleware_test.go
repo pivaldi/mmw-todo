@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
-	todoapp "github.com/pivaldi/mmw/todo/internal/application"
 	. "github.com/pivaldi/mmw/todo/internal/adapters/inbound/connect"
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 )
 
 type mockAuthService struct {
@@ -35,7 +35,7 @@ func TestAuthMiddleware_ValidToken_CallsNext(t *testing.T) {
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
-		id, err := todoapp.UserIDFromContext(r.Context())
+		id, err := authctx.UserIDFromContext(r.Context())
 		require.NoError(t, err)
 		assert.Equal(t, userID, id)
 		w.WriteHeader(http.StatusOK)

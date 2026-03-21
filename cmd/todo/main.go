@@ -12,15 +12,15 @@ import (
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/pubsub/gochannel"
 	"github.com/jackc/pgx/v5/pgxpool"
-	oglos "github.com/ovya/ogl/os"
 	oglcore "github.com/ovya/ogl/platform/core"
 	oglevents "github.com/ovya/ogl/platform/events"
 	oglrunner "github.com/ovya/ogl/platform/runner"
 	oglslog "github.com/ovya/ogl/slog"
-	"github.com/pivaldi/mmw/auth"
+	authConfig "github.com/pivaldi/mmw/auth/config"
 	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
 	"github.com/pivaldi/mmw/contracts/gen/go/auth/v1/authv1connect"
 	"github.com/pivaldi/mmw/todo"
+	"github.com/pivaldi/mmw/todo/config"
 	"github.com/rotisserie/eris"
 )
 
@@ -45,9 +45,7 @@ func main() {
 
 	var err error
 
-	envMap := oglos.EnvMap()
-
-	todoConf, err := todo.GetConfig(ctx, "", envMap)
+	todoConf, err := config.Load(ctx, "")
 	if err != nil {
 		exitCode = 1
 		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
@@ -55,7 +53,7 @@ func main() {
 		return
 	}
 
-	authConf, err := auth.GetConfig(ctx, "AUTH_", envMap)
+	authConf, err := authConfig.Load(ctx, "AUTH_")
 	if err != nil {
 		exitCode = 1
 		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
@@ -72,7 +70,6 @@ func main() {
 	}
 
 	todoLogger := logger.With("module", "todo")
-	authLogger := logger.With("app", "auth")
 
 	watermillLogger := watermill.NewSlogLogger(todoLogger)
 	rawBus := gochannel.NewGoChannel(
@@ -100,9 +97,6 @@ func main() {
 		return
 	}
 
-	// Create authApp first (todo depends on it)
-	authApp := auth.New(authConf, dbPool, systemBus, authLogger)
-
 	// authGrpc := authv1connect.NewAuthServiceClient(httpClient connect.HTTPClient)
 	authHttpClient := authv1connect.NewAuthServiceClient(
 		&http.Client{}, // no TLS needed for localhost
@@ -111,7 +105,7 @@ func main() {
 	authSvc := defauth.NewHttpClient(authHttpClient)
 	// authInproc := defauth.NewInprocClient(authApp)
 
-	todoApp, err := todo.New(todoConf, todo.Infrastructure{
+	todoApp, err := todo.New(todo.Infrastructure{
 		DBPool:   dbPool,
 		EventBus: systemBus,
 		Logger:   todoLogger,
@@ -124,9 +118,8 @@ func main() {
 	}
 
 	// notifLogger := logger.With("module", "notifications")
-	modules := []oglcore.Module{
+	modules := []oglcore.App{
 		todoApp,
-		authApp,
 		// Use RabitMQ consummer instead
 		// notifications.Build(rawBus, notifLogger),
 	}

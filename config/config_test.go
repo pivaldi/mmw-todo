@@ -105,7 +105,6 @@ host = "test-host"
 	envs := map[string]string{
 		"DB_PASSWORD": "secret123",
 		"APP_ENV":     "testing",
-		"APP_NAME":    "TestApp",
 	}
 
 	config, err := Load(ctx, envs)
@@ -115,7 +114,6 @@ host = "test-host"
 	require.NotNil(t, config.Database)
 
 	// Verify config was loaded and merged
-	assert.Equal(t, "TestApp", config.AppName)
 	assert.Equal(t, "9090", config.Port) // From testing.toml
 	assert.Equal(t, EnvironmentTesting, config.Environment)
 
@@ -189,7 +187,6 @@ name = "defaultdb"
 	envs := map[string]string{
 		"DB_PASSWORD": "password",
 		"APP_ENV":     "production", // No production.toml exists
-		"APP_NAME":    "DefaultApp",
 	}
 
 	config, err := Load(ctx, envs)
@@ -198,7 +195,6 @@ name = "defaultdb"
 	require.NotNil(t, config)
 
 	// Should use default config values
-	assert.Equal(t, "DefaultApp", config.AppName)
 	assert.Equal(t, "8080", config.Port)
 	assert.Equal(t, EnvironmentProduction, config.Environment)
 }

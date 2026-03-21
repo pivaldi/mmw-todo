@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
-	todoapp "github.com/pivaldi/mmw/todo/internal/application"
+	"github.com/pivaldi/mmw/todo/internal/application/authctx"
 )
 
 // NewAuthMiddleware returns an HTTP handler that validates the Bearer token
-// by calling authSvc.ValidateToken in-process, then injects the userID into
+// by calling authSvc.ValidateToken, then injects the userID into
 // the request context before delegating to next.
 func NewAuthMiddleware(authSvc defauth.AuthService, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,7 @@ func NewAuthMiddleware(authSvc defauth.AuthService, next http.Handler) http.Hand
 			return
 		}
 
-		ctx := todoapp.WithUserID(r.Context(), userID)
+		ctx := authctx.WithUserID(r.Context(), userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

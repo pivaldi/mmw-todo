@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/pivaldi/mmw/todo/internal/infra/config"
+	"github.com/pivaldi/mmw/todo/config"
 	"github.com/rotisserie/eris"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -26,42 +26,39 @@ import (
 )
 
 const relayTableName = "todo.event"
+const AppName = "Auth"
 
 type App struct {
-	appName string
-	relay   *ogloutbox.EventsRelay
-	server  *oglserver.HTTPServer
-	logger  *slog.Logger
+	relay  *ogloutbox.EventsRelay
+	server *oglserver.HTTPServer
+	logger *slog.Logger
 }
 
 // Ensure Module implements oglcore.Module
-var _ oglcore.Module = (*App)(nil)
-
-var conf *config.Config
-
-func GetConfig(ctx context.Context, envprefix string, envs map[string]string) (*config.Config, error) {
-	if conf != nil {
-		return conf, nil
-	}
-
-	var err error // IMPORTANT!!
-	conf, err = config.Load(ctx, envprefix, envs)
-	if err != nil {
-		return nil, eris.Wrap(err, "failed to load todo configuration")
-	}
-
-	return conf, nil
-}
+var _ oglcore.App = (*App)(nil)
 
 type Infrastructure struct {
 	DBPool   *pgxpool.Pool
 	EventBus oglevents.SystemEventBus
 	AuthSvc  defauth.AuthService
 	Logger   *slog.Logger
+	cfg      *config.Config
 }
 
-func New(cfg *config.Config, infra Infrastructure) (*App, error) {
-	// Don't use GetConfig here because we do not know the prefix.
+func (i *Infrastructure) WithConfig(cfg *config.Config) Infrastructure {
+	i.cfg = cfg
+	return *i
+}
+
+func New(infra Infrastructure) (*App, error) {
+	var cfg = infra.cfg
+	if cfg == nil {
+		var err error
+		cfg, err = config.Load(context.Background(), "")
+		if err != nil {
+			return nil, eris.Wrap(err, "app failed to load config")
+		}
+	}
 	mux := http.NewServeMux()
 	path, handler := todov1connect.NewTodoServiceHandler(newTodoHandler(infra.DBPool))
 
@@ -70,10 +67,9 @@ func New(cfg *config.Config, infra Infrastructure) (*App, error) {
 
 	// Initialize everything internal to Todo here!
 	return &App{
-		appName: cfg.AppName,
-		relay:   ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
-		server:  oglserver.NewHTTPServer(cfg.AppName, cfg.Environment.String(), cfg.Server, mux, infra.Logger),
-		logger:  infra.Logger,
+		relay:  ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
+		server: oglserver.NewHTTPServer(cfg.Environment.String(), cfg.Server, mux, infra.Logger),
+		logger: infra.Logger,
 	}, nil
 }
 
@@ -87,11 +83,6 @@ func (m *App) Close() error {
 	m.logger.Info("shutting down module internal resources")
 
 	return nil
-}
-
-// TODO; remove this and pass the name of the app where needed
-func (m *App) GetName() string {
-	return m.appName
 }
 
 func (m *App) Start(ctx context.Context) error {
@@ -112,7 +103,7 @@ func (m *App) Start(ctx context.Context) error {
 
 	err := g.Wait()
 
-	return eris.Wrapf(err, "%s failure", m.GetName())
+	return eris.Wrapf(err, "%s failure", AppName)
 }
 
 func newTodoHandler(dbPool *pgxpool.Pool) *connecthandler.TodoHandler {

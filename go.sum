@@ -300,6 +300,8 @@ github.com/ovya/ogl v0.0.0-20260320083919-53eb23a4e594 h1:Yu7OW0J7lSA4Epf4ga2hUF
 github.com/ovya/ogl v0.0.0-20260320083919-53eb23a4e594/go.mod h1:h+7BTX8lkRVARJSChjEHWvDBsoN8U/zpB8wpj1zLY1E=
 github.com/ovya/ogl v0.0.0-20260320193604-defdc6e93854 h1:6vZ6p2Or0638FvRQJ/FL9kWrbph0f5IHsbftMsRtCJ4=
 github.com/ovya/ogl v0.0.0-20260320193604-defdc6e93854/go.mod h1:h+7BTX8lkRVARJSChjEHWvDBsoN8U/zpB8wpj1zLY1E=
+github.com/ovya/ogl v0.0.0-20260321143034-879a52497e75 h1:BrNRsIYTQHv6FVmbdtd2PWYCZEMMNlllWmK5b8v99Pk=
+github.com/ovya/ogl v0.0.0-20260321143034-879a52497e75/go.mod h1:h+7BTX8lkRVARJSChjEHWvDBsoN8U/zpB8wpj1zLY1E=
 github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 h1:onHthvaw9LFnH4t2DcNVpwGmV9E1BkGknEliJkfwQj0=
 github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58/go.mod h1:DXv8WO4yhMYhSNPKjeNKa5WY9YCIEBRbNzFFPJbWO6Y=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=

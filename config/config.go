@@ -58,32 +58,38 @@ func (l LogLevel) IsValid() bool {
 type Config struct {
 	Database    *oglpfconfig.Database `mapstructure:"database"`
 	Environment Environment           `env:"APP_ENV, required" mapstructure:"environment"`
-	AppName     string                `env:"APP_NAME"`
-	Server      *oglpfconfig.Server   `mapstructure:"server"`
-	LogLevel    LogLevel              `mapstructure:"log-level"`
+	AppName     string
+	Server      *oglpfconfig.Server `mapstructure:"server"`
+	LogLevel    LogLevel            `mapstructure:"log-level"`
 }
 
 func (c *Config) GetAppEnv() fmt.Stringer {
 	return c.Environment
 }
 
+var conf *Config
+
 // Load reads the TOML files and automatically overrides them with Env Vars
 // Load loads the configurations from embedded files:
 // - configs/default.toml
 // - configs/<APP_ENV>.toml if exist
 // If envs is not nil, automatically overrides them with Env Vars.
-func Load(ctx context.Context, envprefix string, envs map[string]string) (*Config, error) {
-	config := new(Config)
+func Load(ctx context.Context, envPrefix string) (*Config, error) {
+	if conf != nil {
+		return conf, nil
+	}
 
+	conf := new(Config)
 	configFS := getConfigFS()
-	err := oglconfig.NewContext(ctx, envprefix, configFS, envs).Fill(config)
+
+	err := oglconfig.NewContext(ctx, configFS, envPrefix).Fill(conf)
 	if err != nil {
 		return nil, eris.Wrap(err, "error filling config")
 	}
 
-	if config.Database.Password == "" {
+	if conf.Database.Password == "" {
 		return nil, eris.New("database password is empty")
 	}
 
-	return config, nil
+	return conf, nil
 }
