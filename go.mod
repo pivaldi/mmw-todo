@@ -1,6 +1,6 @@
 module github.com/pivaldi/mmw-todo
 
-go 1.25.0
+go 1.26.1
 
 require (
 	connectrpc.com/connect v1.19.1
@@ -8,12 +8,16 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/ovya/ogl v0.0.0-20260321143034-879a52497e75
-	github.com/pivaldi/mmw-contracts v0.0.0-20260219143251-c15d21c7ad4c
+	github.com/pivaldi/mmw-auth v0.0.0-20260321170503-9a5c20132c89
+	github.com/pivaldi/mmw-contracts v0.0.0-20260321163605-264690edbe4e
+	github.com/pivaldi/mmw-contracts/definitions/auth v0.0.0-20260321163605-264690edbe4e
+	github.com/pivaldi/mmw-contracts/definitions/todo v0.0.0-20260321163605-264690edbe4e
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/rotisserie/eris v0.5.4
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0
+	golang.org/x/sync v0.20.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -123,8 +127,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/net v0.50.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260109210033-bd525da824e2 // indirect
 	golang.org/x/term v0.40.0 // indirect

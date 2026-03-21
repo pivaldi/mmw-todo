@@ -40,30 +40,32 @@ dependenciesRules:
         - '**.ports'
     description: 'Application layer depends on domain and ports only'
 
-  # Handler Adapters (Primary/Inbound) - HTTP/gRPC handlers
-  - package: '**.adapters.handler.**'
+  # Application Sub-packages - Commands, queries, DTOs, context helpers
+  - package: '**.application.**'
+    shouldOnlyDependsOn:
+      internal:
+        - '**.domain.**'
+        - '**.application.**'
+        - '**.ports'
+    description: 'Application sub-packages depend on domain, ports, and other application packages'
+
+  # Inbound Adapters (Primary) - HTTP/gRPC handlers and event consumers
+  - package: '**.adapters.inbound.**'
     shouldOnlyDependsOn:
       internal:
         - '**.application'
+        - '**.application.**'
         - '**.domain.**'
         - '**.ports'
-    description: 'Handler adapters depend on application, domain, and ports only'
+    description: 'Inbound adapters depend on application, domain, and ports only'
 
-  # Repository Adapters (Secondary/Outbound) - Database access
-  - package: '**.adapters.repository.**'
+  # Outbound Adapters (Secondary) - Repositories, event publishers, external clients
+  - package: '**.adapters.outbound.**'
     shouldOnlyDependsOn:
       internal:
         - '**.domain.**'
         - '**.ports'
-    description: 'Repository adapters implement ports, depend only on domain and ports'
-
-  # Event Adapters - Event publishing/handling
-  - package: '**.adapters.events.**'
-    shouldOnlyDependsOn:
-      internal:
-        - '**.domain.**'
-        - '**.ports'
-    description: 'Event adapters depend only on domain and ports'
+    description: 'Outbound adapters implement ports, depend only on domain and ports'
 
   # Infrastructure Layer - Configuration and cross-cutting concerns
   - package: '**.infra.**'
@@ -72,6 +74,12 @@ dependenciesRules:
         - '**.domain.**'
     description: 'Infrastructure layer should only depend on domain for type definitions'
 
+  # Config Package - Cross-cutting configuration concern
+  - package: '**.config'
+    shouldNotDependsOn:
+      internal: []
+    description: 'Config package has no internal dependencies'
+
   # Command Layer (Entry Points) - Can orchestrate and depend on everything
   - package: '**.cmd.**'
     shouldNotDependsOn:
@@ -79,7 +87,7 @@ dependenciesRules:
     description: 'Command layer is entry point and can depend on all internal packages'
 
   # Root Package (Module Interface) - Exposes module to orchestrator
-  - package: 'github.com/pivaldi/mmw/todo'
+  - package: 'github.com/pivaldi/mmw-todo'
     shouldNotDependsOn:
       internal: []
     description: 'Root package exposes module interface and can depend on all internal packages'
