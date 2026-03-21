@@ -3,25 +3,25 @@ package todo
 
 import (
 	"context"
-
 	"log/slog"
 	"net/http"
 
-	"github.com/pivaldi/mmw-todo/config"
-	"github.com/rotisserie/eris"
-
+	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
 	ogloutbox "github.com/ovya/ogl/db/outbox"
 	ogluow "github.com/ovya/ogl/pg/uow"
+	oglconnect "github.com/ovya/ogl/platform/connect"
 	oglcore "github.com/ovya/ogl/platform/core"
 	oglevents "github.com/ovya/ogl/platform/events"
 	oglserver "github.com/ovya/ogl/platform/server"
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
 	"github.com/pivaldi/mmw-contracts/gen/go/todo/v1/todov1connect"
+	"github.com/pivaldi/mmw-todo/config"
 	connecthandler "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
+	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,10 +60,13 @@ func New(infra Infrastructure) (*App, error) {
 		}
 	}
 	mux := http.NewServeMux()
-	path, handler := todov1connect.NewTodoServiceHandler(newTodoHandler(infra.DBPool))
+	path, handler := todov1connect.NewTodoServiceHandler(
+		newTodoHandler(infra.DBPool),
+		connect.WithInterceptors(oglconnect.NewErrorLoggingInterceptor(infra.Logger)),
+	)
 
 	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
-	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, handler))
+	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, handler))
 
 	// Initialize everything internal to Todo here!
 	return &App{

@@ -7,9 +7,10 @@ require (
 	github.com/ThreeDotsLabs/watermill v1.5.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
-	github.com/ovya/ogl v0.0.0-20260321143034-879a52497e75
+	github.com/ovya/ogl v0.0.0-20260321231833-7dcb9ea09c73
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pivaldi/mmw-auth v0.0.0-20260321170503-9a5c20132c89
-	github.com/pivaldi/mmw-contracts v0.0.0-20260321163605-264690edbe4e
+	github.com/pivaldi/mmw-contracts v0.0.0-20260321181528-8db6a825b479
 	github.com/pivaldi/mmw-contracts/definitions/auth v0.0.0-20260321163605-264690edbe4e
 	github.com/pivaldi/mmw-contracts/definitions/todo v0.0.0-20260321163605-264690edbe4e
 	github.com/pressly/goose/v3 v3.27.0
@@ -92,7 +93,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect

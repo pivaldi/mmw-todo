@@ -1,8 +1,11 @@
 package connect
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/rotisserie/eris"
 
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
@@ -11,7 +14,7 @@ import (
 // NewAuthMiddleware returns an HTTP handler that validates the Bearer token
 // by calling authSvc.ValidateToken, then injects the userID into
 // the request context before delegating to next.
-func NewAuthMiddleware(authSvc defauth.AuthService, next http.Handler) http.Handler {
+func NewAuthMiddleware(authSvc defauth.AuthService, logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := extractBearer(r)
 		if token == "" {
@@ -22,6 +25,7 @@ func NewAuthMiddleware(authSvc defauth.AuthService, next http.Handler) http.Hand
 
 		userID, err := authSvc.ValidateToken(r.Context(), token)
 		if err != nil {
+			logger.Error("token validation failed", "err", eris.ToString(err, true), "path", r.URL.Path)
 			writeUnauthorized(w)
 
 			return

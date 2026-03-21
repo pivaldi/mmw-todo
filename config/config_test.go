@@ -12,190 +12,88 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDatabase_URL(t *testing.T) {
-	tests := []struct {
-		name     string
-		db       *Database
-		expected string
-	}{
-		{
-			name: "with user and password",
-			db: &Database{
-				User:     "testuser",
-				password: "testpass",
-				Host:     "localhost",
-				Port:     "5432",
-				Name:     "testdb",
-			},
-			expected: "postgres://testuser:testpass@localhost:5432/testdb",
-		},
-		{
-			name: "with user only",
-			db: &Database{
-				User:     "testuser",
-				password: "",
-				Host:     "localhost",
-				Port:     "5432",
-				Name:     "testdb",
-			},
-			expected: "postgres://testuser@localhost:5432/testdb",
-		},
-		{
-			name: "without credentials",
-			db: &Database{
-				User:     "",
-				password: "",
-				Host:     "localhost",
-				Port:     "5432",
-				Name:     "testdb",
-			},
-			expected: "postgres://localhost:5432/testdb",
-		},
-		{
-			name: "with special characters in password",
-			db: &Database{
-				User:     "user",
-				password: "p@ss:word",
-				Host:     "db.example.com",
-				Port:     "5432",
-				Name:     "mydb",
-			},
-			expected: "postgres://user:p%40ss%3Aword@db.example.com:5432/mydb",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := tt.db.URL()
-			assert.Equal(t, tt.expected, got)
-		})
-	}
-}
-
-func TestLoad_Success(t *testing.T) {
-	// Save and restore original getConfigFS
-	origFS := getConfigFS
-	defer func() { getConfigFS = origFS }()
-
-	// Mock filesystem with config files
-	getConfigFS = func() fs.FS {
-		return fstest.MapFS{
-			"configs/default.toml": &fstest.MapFile{
-				Data: []byte(`app-name = "TestApp"
-port = "8080"
-
+// testDefaultTOML is a minimal default config used across Load tests.
+// Database port is an integer to match oglpfconfig.Database.Port (Port int16).
+const testDefaultTOML = `
 [database]
 user = "rcv"
 host = "localhost"
-port = "5432"
+port = 5432
 name = "testdb"
-`),
-			},
-			"configs/testing.toml": &fstest.MapFile{
-				Data: []byte(`port = "9090"
+`
 
+func TestLoad_Success(t *testing.T) {
+	origFS := getConfigFS
+	defer func() { getConfigFS = origFS }()
+
+	getConfigFS = func() fs.FS {
+		return fstest.MapFS{
+			"configs/default.toml": {Data: []byte(testDefaultTOML)},
+			"configs/testing.toml": {Data: []byte(`
 [database]
 host = "test-host"
-`),
-			},
+`)},
 		}
 	}
 
-	ctx := context.Background()
-	envs := map[string]string{
-		"DB_PASSWORD": "secret123",
-		"APP_ENV":     "testing",
-	}
+	t.Setenv("APP_ENV", "testing")
+	t.Setenv("DB_PASSWORD", "secret123")
 
-	config, err := Load(ctx, envs)
+	ctx := context.Background()
+	config, err := Load(ctx, "")
 
 	require.NoError(t, err)
 	require.NotNil(t, config)
 	require.NotNil(t, config.Database)
 
-	// Verify config was loaded and merged
-	assert.Equal(t, "9090", config.Port) // From testing.toml
 	assert.Equal(t, EnvironmentTesting, config.Environment)
-
-	// Verify database config
 	assert.Equal(t, "rcv", config.Database.User)
-	assert.Equal(t, "test-host", config.Database.Host) // From testing.toml
-	assert.Equal(t, "5432", config.Database.Port)
-	assert.Equal(t, "testdb", config.Database.Name)
+	assert.Equal(t, "test-host", config.Database.Host)
 
-	// Verify URL generation includes password
 	url := config.Database.URL()
 	assert.Contains(t, url, "secret123")
 	assert.Contains(t, url, "test-host")
 }
 
 func TestLoad_MissingPasswordEnv(t *testing.T) {
-	// Save and restore original getConfigFS
 	origFS := getConfigFS
 	defer func() { getConfigFS = origFS }()
 
-	// Mock filesystem
 	getConfigFS = func() fs.FS {
 		return fstest.MapFS{
-			"configs/default.toml": &fstest.MapFile{
-				Data: []byte(`[database]
-user = "rcv"
-host = "localhost"
-port = "5432"
-name = "testdb"
-`),
-			},
+			"configs/default.toml": {Data: []byte(testDefaultTOML)},
 		}
 	}
 
-	ctx := context.Background()
-	envs := map[string]string{
-		"APP_ENV": "development",
-		// DB_PASSWORD is missing
-	}
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("DB_PASSWORD", "")
 
-	config, err := Load(ctx, envs)
+	ctx := context.Background()
+	config, err := Load(ctx, "")
 
 	assert.Error(t, err)
 	assert.Nil(t, config)
-	assert.Contains(t, err.Error(), "DB_PASSWORD")
+	assert.Contains(t, err.Error(), "database password is empty")
 }
 
 func TestLoad_WithDefaultConfigOnly(t *testing.T) {
-	// Save and restore original getConfigFS
 	origFS := getConfigFS
 	defer func() { getConfigFS = origFS }()
 
-	// Mock filesystem with only default config
 	getConfigFS = func() fs.FS {
 		return fstest.MapFS{
-			"configs/default.toml": &fstest.MapFile{
-				Data: []byte(`app-name = "DefaultApp"
-port = "8080"
-
-[database]
-user = "admin"
-host = "localhost"
-port = "5432"
-name = "defaultdb"
-`),
-			},
+			"configs/default.toml": {Data: []byte(testDefaultTOML)},
 		}
 	}
 
-	ctx := context.Background()
-	envs := map[string]string{
-		"DB_PASSWORD": "password",
-		"APP_ENV":     "production", // No production.toml exists
-	}
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("DB_PASSWORD", "password")
 
-	config, err := Load(ctx, envs)
+	ctx := context.Background()
+	config, err := Load(ctx, "")
 
 	require.NoError(t, err)
 	require.NotNil(t, config)
-
-	// Should use default config values
-	assert.Equal(t, "8080", config.Port)
 	assert.Equal(t, EnvironmentProduction, config.Environment)
 }
 
@@ -209,159 +107,146 @@ func TestConfig_GetAppEnv(t *testing.T) {
 	assert.Equal(t, "staging", env.String())
 }
 
-func TestPort_String(t *testing.T) {
+func TestLoad_WithDebugLevel(t *testing.T) {
+	origFS := getConfigFS
+	defer func() { getConfigFS = origFS }()
+
+	getConfigFS = func() fs.FS {
+		return fstest.MapFS{
+			"configs/default.toml": {Data: []byte(`
+log-level = "debug"
+
+[database]
+user = "rcv"
+host = "localhost"
+port = 5432
+name = "testdb"
+`)},
+		}
+	}
+
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("DB_PASSWORD", "secret123")
+
+	ctx := context.Background()
+	config, err := Load(ctx, "")
+
+	require.NoError(t, err)
+	require.NotNil(t, config)
+	assert.Equal(t, LogLevel("debug"), config.LogLevel)
+	assert.Equal(t, slog.LevelDebug, config.LogLevel.SlogLevel())
+}
+
+func TestLoad_WithDifferentDebugLevels(t *testing.T) {
 	tests := []struct {
-		name     string
-		port     Port
-		expected string
+		name          string
+		levelString   string
+		expectedLevel slog.Level
 	}{
 		{
-			name:     "standard port 80",
-			port:     80,
-			expected: ":80",
+			name:          "debug level",
+			levelString:   "debug",
+			expectedLevel: slog.LevelDebug,
 		},
 		{
-			name:     "standard port 443",
-			port:     443,
-			expected: ":443",
+			name:          "info level",
+			levelString:   "info",
+			expectedLevel: slog.LevelInfo,
 		},
 		{
-			name:     "custom port 8080",
-			port:     8080,
-			expected: ":8080",
+			name:          "warn level",
+			levelString:   "warn",
+			expectedLevel: slog.LevelWarn,
 		},
 		{
-			name:     "port 0",
-			port:     0,
-			expected: ":0",
-		},
-		{
-			name:     "negative port",
-			port:     -1,
-			expected: ":-1",
+			name:          "error level",
+			levelString:   "error",
+			expectedLevel: slog.LevelError,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.port.String()
-			assert.Equal(t, tt.expected, got)
+			origFS := getConfigFS
+			defer func() { getConfigFS = origFS }()
+
+			getConfigFS = func() fs.FS {
+				return fstest.MapFS{
+					"configs/default.toml": {Data: fmt.Appendf(nil, `
+log-level = "%s"
+
+[database]
+user = "rcv"
+host = "localhost"
+port = 5432
+name = "testdb"
+`, tt.levelString)},
+				}
+			}
+
+			t.Setenv("APP_ENV", "development")
+			t.Setenv("DB_PASSWORD", "secret123")
+
+			ctx := context.Background()
+			config, err := Load(ctx, "")
+
+			require.NoError(t, err)
+			require.NotNil(t, config)
+			assert.Equal(t, LogLevel(tt.levelString), config.LogLevel)
+			assert.Equal(t, tt.expectedLevel, config.LogLevel.SlogLevel())
 		})
 	}
 }
 
-func TestServer_URL(t *testing.T) {
+func TestLoad_AllEnvironments(t *testing.T) {
 	tests := []struct {
-		name     string
-		server   Server
-		path     string
-		queries  map[string]string
-		expected string
+		name        string
+		appEnv      string
+		expectedEnv Environment
 	}{
 		{
-			name: "http with default port 80 - port omitted",
-			server: Server{
-				Scheme: "http",
-				Host:   "example.com",
-				Port:   80,
-			},
-			path:     "/api/users",
-			queries:  nil,
-			expected: "http://example.com/api/users",
+			name:        "development environment",
+			appEnv:      "development",
+			expectedEnv: EnvironmentDevelopment,
 		},
 		{
-			name: "https with default port 443 - port omitted",
-			server: Server{
-				Scheme: "https",
-				Host:   "example.com",
-				Port:   443,
-			},
-			path:     "/api/users",
-			queries:  nil,
-			expected: "https://example.com/api/users",
+			name:        "staging environment",
+			appEnv:      "staging",
+			expectedEnv: EnvironmentStaging,
 		},
 		{
-			name: "http with custom port 8080",
-			server: Server{
-				Scheme: "http",
-				Host:   "localhost",
-				Port:   8080,
-			},
-			path:     "/health",
-			queries:  nil,
-			expected: "http://localhost:8080/health",
+			name:        "production environment",
+			appEnv:      "production",
+			expectedEnv: EnvironmentProduction,
 		},
 		{
-			name: "https with custom port 8443",
-			server: Server{
-				Scheme: "https",
-				Host:   "api.example.com",
-				Port:   8443,
-			},
-			path:     "/v1/resource",
-			queries:  nil,
-			expected: "https://api.example.com:8443/v1/resource",
-		},
-		{
-			name: "with single query parameter",
-			server: Server{
-				Scheme: "https",
-				Host:   "example.com",
-				Port:   443,
-			},
-			path: "/search",
-			queries: map[string]string{
-				"q": "test",
-			},
-			expected: "https://example.com/search?q=test",
-		},
-		{
-			name: "with multiple query parameters",
-			server: Server{
-				Scheme: "http",
-				Host:   "localhost",
-				Port:   3000,
-			},
-			path: "/api/items",
-			queries: map[string]string{
-				"page":  "1",
-				"limit": "10",
-				"sort":  "name",
-			},
-			expected: "http://localhost:3000/api/items?limit=10&page=1&sort=name",
-		},
-		{
-			name: "empty path with queries",
-			server: Server{
-				Scheme: "https",
-				Host:   "example.com",
-				Port:   443,
-			},
-			path: "",
-			queries: map[string]string{
-				"key": "value",
-			},
-			expected: "https://example.com?key=value",
-		},
-		{
-			name: "special characters in query values",
-			server: Server{
-				Scheme: "https",
-				Host:   "api.example.com",
-				Port:   443,
-			},
-			path: "/search",
-			queries: map[string]string{
-				"q": "hello world",
-			},
-			expected: "https://api.example.com/search?q=hello+world",
+			name:        "testing environment",
+			appEnv:      "testing",
+			expectedEnv: EnvironmentTesting,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.server.URL(tt.path, tt.queries)
-			assert.Equal(t, tt.expected, got)
+			origFS := getConfigFS
+			defer func() { getConfigFS = origFS }()
+
+			getConfigFS = func() fs.FS {
+				return fstest.MapFS{
+					"configs/default.toml": {Data: []byte(testDefaultTOML)},
+				}
+			}
+
+			t.Setenv("APP_ENV", tt.appEnv)
+			t.Setenv("DB_PASSWORD", "secret123")
+
+			ctx := context.Background()
+			config, err := Load(ctx, "")
+
+			require.NoError(t, err)
+			require.NotNil(t, config)
+			assert.Equal(t, tt.expectedEnv, config.Environment)
+			assert.Equal(t, tt.appEnv, config.Environment.String())
 		})
 	}
 }
@@ -551,178 +436,6 @@ func TestEnvironmentValues(t *testing.T) {
 	assert.Contains(t, values, EnvironmentStaging)
 	assert.Contains(t, values, EnvironmentProduction)
 	assert.Contains(t, values, EnvironmentTesting)
-}
-
-func TestLoad_WithDebugLevel(t *testing.T) {
-	// Save and restore original getConfigFS
-	origFS := getConfigFS
-	defer func() { getConfigFS = origFS }()
-
-	// Mock filesystem with config files
-	getConfigFS = func() fs.FS {
-		return fstest.MapFS{
-			"configs/default.toml": &fstest.MapFile{
-				Data: []byte(`log-level = "debug"
-port = "8080"
-
-[database]
-user = "rcv"
-host = "localhost"
-port = "5432"
-name = "testdb"
-`),
-			},
-		}
-	}
-
-	ctx := context.Background()
-	envs := map[string]string{
-		"DB_PASSWORD": "secret123",
-		"APP_ENV":     "production",
-		"APP_NAME":    "TestApp",
-	}
-
-	config, err := Load(ctx, envs)
-
-	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, LogLevel("debug"), config.LogLevel)
-	assert.Equal(t, slog.LevelDebug, config.LogLevel.SlogLevel())
-}
-
-func TestLoad_WithDifferentDebugLevels(t *testing.T) {
-	tests := []struct {
-		name          string
-		levelString   string
-		expectedLevel slog.Level
-	}{
-		{
-			name:          "debug level",
-			levelString:   "debug",
-			expectedLevel: slog.LevelDebug,
-		},
-		{
-			name:          "info level",
-			levelString:   "info",
-			expectedLevel: slog.LevelInfo,
-		},
-		{
-			name:          "warn level",
-			levelString:   "warn",
-			expectedLevel: slog.LevelWarn,
-		},
-		{
-			name:          "error level",
-			levelString:   "error",
-			expectedLevel: slog.LevelError,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Save and restore original getConfigFS
-			origFS := getConfigFS
-			defer func() { getConfigFS = origFS }()
-
-			// Mock filesystem
-			getConfigFS = func() fs.FS {
-				return fstest.MapFS{
-					"configs/default.toml": &fstest.MapFile{
-						Data: fmt.Appendf(nil, `log-level = "%s"
-port = "8080"
-
-[database]
-user = "rcv"
-host = "localhost"
-port = "5432"
-name = "testdb"
-`, tt.levelString),
-					},
-				}
-			}
-
-			ctx := context.Background()
-			envs := map[string]string{
-				"DB_PASSWORD": "secret123",
-				"APP_ENV":     "development",
-				"APP_NAME":    "TestApp",
-			}
-
-			config, err := Load(ctx, envs)
-
-			require.NoError(t, err)
-			require.NotNil(t, config)
-			assert.Equal(t, LogLevel(tt.levelString), config.LogLevel)
-			assert.Equal(t, tt.expectedLevel, config.LogLevel.SlogLevel())
-		})
-	}
-}
-
-func TestLoad_AllEnvironments(t *testing.T) {
-	tests := []struct {
-		name        string
-		appEnv      string
-		expectedEnv Environment
-	}{
-		{
-			name:        "development environment",
-			appEnv:      "development",
-			expectedEnv: EnvironmentDevelopment,
-		},
-		{
-			name:        "staging environment",
-			appEnv:      "staging",
-			expectedEnv: EnvironmentStaging,
-		},
-		{
-			name:        "production environment",
-			appEnv:      "production",
-			expectedEnv: EnvironmentProduction,
-		},
-		{
-			name:        "testing environment",
-			appEnv:      "testing",
-			expectedEnv: EnvironmentTesting,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Save and restore original getConfigFS
-			origFS := getConfigFS
-			defer func() { getConfigFS = origFS }()
-
-			// Mock filesystem
-			getConfigFS = func() fs.FS {
-				return fstest.MapFS{
-					"configs/default.toml": &fstest.MapFile{
-						Data: []byte(`port = "8080"
-
-[database]
-user = "rcv"
-host = "localhost"
-port = "5432"
-name = "testdb"
-`),
-					},
-				}
-			}
-
-			ctx := context.Background()
-			envs := map[string]string{
-				"DB_PASSWORD": "secret123",
-				"APP_ENV":     tt.appEnv,
-				"APP_NAME":    "TestApp",
-			}
-
-			config, err := Load(ctx, envs)
-
-			require.NoError(t, err)
-			require.NotNil(t, config)
-			assert.Equal(t, tt.expectedEnv, config.Environment)
-			assert.Equal(t, tt.appEnv, config.Environment.String())
-		})
-	}
 }
 
 func TestLogLevel_String(t *testing.T) {

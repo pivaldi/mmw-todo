@@ -2,7 +2,8 @@ package command
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
@@ -33,24 +34,24 @@ func (c *DeleteTodoCommand) Execute(
 ) error {
 	userID, err := authctx.UserIDFromContext(ctx)
 	if err != nil {
-		return fmt.Errorf("delete todo: %w", err)
+		return eris.Wrap(err, "delete todo")
 	}
 
 	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
-		return fmt.Errorf("invalid todo ID: %w", err)
+		return eris.Wrap(err, "invalid todo ID")
 	}
 
 	// Delete from repository
 	if err := c.repository.Delete(ctx, todoID, userID); err != nil {
-		return fmt.Errorf("deleting todo: %w", err)
+		return eris.Wrap(err, "deleting todo")
 	}
 
 	// Create and dispatch deleted event
 	deletedEvent := domain.NewTodoDeletedEvent(todoID)
 	if err := c.eventDispatcher.Dispatch(ctx, []domain.DomainEvent{deletedEvent}); err != nil {
-		return fmt.Errorf("dispatching events: %w", err)
+		return eris.Wrap(err, "dispatching events")
 	}
 
 	return nil

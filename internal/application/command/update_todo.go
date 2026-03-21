@@ -2,8 +2,9 @@ package command
 
 import (
 	"context"
-	"fmt"
 	"time"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
@@ -36,36 +37,36 @@ func (c *UpdateTodoCommand) Execute(
 ) (*dto.TodoResponse, error) {
 	userID, err := authctx.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("update todo: %w", err)
+		return nil, eris.Wrap(err, "update todo")
 	}
 
 	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
-		return nil, fmt.Errorf("invalid todo ID: %w", err)
+		return nil, eris.Wrap(err, "invalid todo ID")
 	}
 
 	// Retrieve existing todo
 	todo, err := c.repository.FindByID(ctx, todoID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("finding todo: %w", err)
+		return nil, eris.Wrap(err, "finding todo")
 	}
 
 	// Update title if provided
 	if req.Title != nil {
 		title, err := domain.NewTaskTitle(*req.Title)
 		if err != nil {
-			return nil, fmt.Errorf("invalid title: %w", err)
+			return nil, eris.Wrap(err, "invalid title")
 		}
 		if err := todo.UpdateTitle(title); err != nil {
-			return nil, fmt.Errorf("updating title: %w", err)
+			return nil, eris.Wrap(err, "updating title")
 		}
 	}
 
 	// Update description if provided
 	if req.Description != nil {
 		if err := todo.UpdateDescription(*req.Description); err != nil {
-			return nil, fmt.Errorf("updating description: %w", err)
+			return nil, eris.Wrap(err, "updating description")
 		}
 	}
 
@@ -73,10 +74,10 @@ func (c *UpdateTodoCommand) Execute(
 	if req.Priority != nil {
 		// Validate priority enum
 		if !req.Priority.IsValid() {
-			return nil, fmt.Errorf("invalid priority: %w", domain.ErrInvalidPriority)
+			return nil, eris.Wrap(domain.ErrInvalidPriority, "invalid priority")
 		}
 		if err := todo.UpdatePriority(*req.Priority); err != nil {
-			return nil, fmt.Errorf("updating priority: %w", err)
+			return nil, eris.Wrap(err, "updating priority")
 		}
 	}
 
@@ -86,30 +87,30 @@ func (c *UpdateTodoCommand) Execute(
 		if *req.DueDate != (time.Time{}) {
 			dd, err := domain.NewDueDate(*req.DueDate)
 			if err != nil {
-				return nil, fmt.Errorf("invalid due date: %w", err)
+				return nil, eris.Wrap(err, "invalid due date")
 			}
 			dueDate = &dd
 		}
 		if err := todo.UpdateDueDate(dueDate); err != nil {
-			return nil, fmt.Errorf("updating due date: %w", err)
+			return nil, eris.Wrap(err, "updating due date")
 		}
 	}
 
 	// Update status if provided
 	if req.Status != nil {
 		if err := todo.UpdateStatus(*req.Status); err != nil {
-			return nil, fmt.Errorf("updating status: %w", err)
+			return nil, eris.Wrap(err, "updating status")
 		}
 	}
 
 	// Persist changes
 	if err := c.repository.Update(ctx, todo, userID); err != nil {
-		return nil, fmt.Errorf("updating todo: %w", err)
+		return nil, eris.Wrap(err, "updating todo")
 	}
 
 	// Dispatch domain events
 	if err := c.eventDispatcher.Dispatch(ctx, todo.Events()); err != nil {
-		return nil, fmt.Errorf("dispatching events: %w", err)
+		return nil, eris.Wrap(err, "dispatching events")
 	}
 
 	// Clear events after dispatching

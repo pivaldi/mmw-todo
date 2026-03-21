@@ -2,7 +2,8 @@ package command
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
@@ -38,24 +39,24 @@ func (c *CreateTodoCommand) Execute(
 ) (*dto.TodoResponse, error) {
 	userID, err := authctx.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("create todo: %w", err)
+		return nil, eris.Wrap(err, "create todo")
 	}
 
 	// 1. Create value objects from request (Pure Domain Logic - no UoW needed yet)
 	title, err := domain.NewTaskTitle(req.Title)
 	if err != nil {
-		return nil, fmt.Errorf("invalid title: %w", err)
+		return nil, eris.Wrap(err, "invalid title")
 	}
 
 	if !req.Priority.IsValid() {
-		return nil, fmt.Errorf("invalid priority: %w", domain.ErrInvalidPriority)
+		return nil, eris.Wrap(domain.ErrInvalidPriority, "invalid priority")
 	}
 
 	var dueDate *domain.DueDate
 	if req.DueDate != nil {
 		dd, err := domain.NewDueDate(*req.DueDate)
 		if err != nil {
-			return nil, fmt.Errorf("invalid due date: %w", err)
+			return nil, eris.Wrap(err, "invalid due date")
 		}
 		dueDate = &dd
 	}
@@ -66,12 +67,12 @@ func (c *CreateTodoCommand) Execute(
 	err = c.unitOfWork.WithTransaction(ctx, func(txCtx context.Context) error {
 		// Use txCtx here so the repository uses the transaction if any!
 		if err := c.repository.Save(txCtx, todo); err != nil {
-			return fmt.Errorf("saving todo: %w", err)
+			return eris.Wrap(err, "saving todo")
 		}
 
 		// Dispatch events using txCtx (e.g., saving to an Outbox table in the same DB)
 		if err := c.eventDispatcher.Dispatch(txCtx, todo.Events()); err != nil {
-			return fmt.Errorf("dispatching events: %w", err)
+			return eris.Wrap(err, "dispatching events")
 		}
 
 		return nil
@@ -79,7 +80,7 @@ func (c *CreateTodoCommand) Execute(
 
 	// Handle UoW failure => Rollback already happened automatically
 	if err != nil {
-		return nil, fmt.Errorf("uow execution failed: %w", err)
+		return nil, eris.Wrap(err, "uow execution failed")
 	}
 
 	// 5. Cleanup and Return

@@ -2,7 +2,8 @@ package query
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
@@ -27,7 +28,7 @@ func (q *ListTodosQuery) Execute(
 ) (*dto.ListTodosResponse, error) {
 	userID, err := authctx.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list todos: %w", err)
+		return nil, eris.Wrap(err, "list todos")
 	}
 
 	// Convert application filters to repository filters
@@ -44,7 +45,7 @@ func (q *ListTodosQuery) Execute(
 	if filters.Priority != nil {
 		// Validate priority enum
 		if !filters.Priority.IsValid() {
-			return nil, fmt.Errorf("invalid priority filter: %w", domain.ErrInvalidPriority)
+			return nil, eris.Wrap(domain.ErrInvalidPriority, "invalid priority filter")
 		}
 		repoFilters.Priority = filters.Priority
 	}
@@ -52,7 +53,7 @@ func (q *ListTodosQuery) Execute(
 	// Retrieve todos from repository
 	todos, err := q.repository.FindAll(ctx, repoFilters)
 	if err != nil {
-		return nil, fmt.Errorf("finding todos: %w", err)
+		return nil, eris.Wrap(err, "finding todos")
 	}
 
 	// Map to response DTOs

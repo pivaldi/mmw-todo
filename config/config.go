@@ -1,4 +1,4 @@
-// services/todo/internal/infra/config/config.go
+// services/todo/config/config.go
 package config
 
 import (

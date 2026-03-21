@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	ogluow "github.com/ovya/ogl/pg/uow"
+	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
 	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
@@ -69,7 +70,7 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 	)
 
 	if err != nil {
-		return fmt.Errorf("saving todo: %w", err)
+		return eris.Wrap(err, "saving todo")
 	}
 
 	return nil
@@ -122,7 +123,7 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 	for i := range todos {
 		_, err := br.Exec()
 		if err != nil {
-			return fmt.Errorf("batch insert failed at index %d: %w", i, err)
+			return eris.Wrapf(err, "batch insert failed at index %d", i)
 		}
 	}
 
@@ -139,7 +140,7 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID,
 
 	rows, err := r.pool.Query(ctx, query, id.String(), userID.String())
 	if err != nil {
-		return nil, fmt.Errorf("querying todo: %w", err)
+		return nil, eris.Wrap(err, "querying todo")
 	}
 	defer rows.Close()
 
@@ -149,7 +150,7 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID,
 			return nil, domain.ErrTodoNotFound
 		}
 
-		return nil, fmt.Errorf("collecting todo: %w", err)
+		return nil, eris.Wrap(err, "collecting todo")
 	}
 
 	return todo, nil
@@ -204,13 +205,13 @@ func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("querying todos: %w", err)
+		return nil, eris.Wrap(err, "querying todos")
 	}
 	defer rows.Close()
 
 	todos, err := pgx.CollectRows(rows, todoRowScanner)
 	if err != nil {
-		return nil, fmt.Errorf("collecting todos: %w", err)
+		return nil, eris.Wrap(err, "collecting todos")
 	}
 
 	return todos, nil
@@ -242,7 +243,7 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo, 
 	)
 
 	if err != nil {
-		return fmt.Errorf("updating todo: %w", err)
+		return eris.Wrap(err, "updating todo")
 	}
 
 	if result.RowsAffected() == 0 {
@@ -259,7 +260,7 @@ func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID, u
 		id.String(), userID.String(),
 	)
 	if err != nil {
-		return fmt.Errorf("deleting todo: %w", err)
+		return eris.Wrap(err, "deleting todo")
 	}
 
 	if result.RowsAffected() == 0 {
@@ -274,29 +275,29 @@ func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
 	// Use pgx.RowToStructByName to automatically map columns to struct fields
 	dbRow, err := pgx.RowToStructByName[todoRow](row)
 	if err != nil {
-		return nil, fmt.Errorf("scanning row: %w", err)
+		return nil, eris.Wrap(err, "scanning row")
 	}
 
 	// Parse domain ID
 	todoID, err := domain.ParseTodoID(dbRow.ID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid todo ID: %w", err)
+		return nil, eris.Wrap(err, "invalid todo ID")
 	}
 
 	// Create value objects
 	taskTitle, err := domain.NewTaskTitle(dbRow.Title)
 	if err != nil {
-		return nil, fmt.Errorf("invalid title: %w", err)
+		return nil, eris.Wrap(err, "invalid title")
 	}
 
 	taskStatus, err := domain.ParseTaskStatus(dbRow.Status)
 	if err != nil {
-		return nil, fmt.Errorf("invalid status: %w", err)
+		return nil, eris.Wrap(err, "invalid status")
 	}
 
 	taskPriority, err := domain.ParsePriority(dbRow.Priority)
 	if err != nil {
-		return nil, fmt.Errorf("invalid priority: %w", err)
+		return nil, eris.Wrap(err, "invalid priority")
 	}
 
 	var domainDueDate *domain.DueDate
@@ -319,7 +320,7 @@ func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
 
 	userID, err := uuid.Parse(dbRow.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user_id: %w", err)
+		return nil, eris.Wrap(err, "invalid user_id")
 	}
 
 	// Reconstitute the aggregate

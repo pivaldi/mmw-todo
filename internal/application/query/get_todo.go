@@ -2,7 +2,8 @@ package query
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
@@ -27,19 +28,19 @@ func (q *GetTodoQuery) Execute(
 ) (*dto.TodoResponse, error) {
 	userID, err := authctx.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get todo: %w", err)
+		return nil, eris.Wrap(err, "get todo")
 	}
 
 	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
-		return nil, fmt.Errorf("invalid todo ID: %w", err)
+		return nil, eris.Wrap(err, "invalid todo ID")
 	}
 
 	// Retrieve from repository
 	todo, err := q.repository.FindByID(ctx, todoID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("finding todo: %w", err)
+		return nil, eris.Wrap(err, "finding todo")
 	}
 
 	// Map to response DTO

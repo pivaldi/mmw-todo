@@ -3,6 +3,7 @@ package connect_test
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,7 +42,7 @@ func TestAuthMiddleware_ValidToken_CallsNext(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := NewAuthMiddleware(svc, next)
+	handler := NewAuthMiddleware(svc, slog.Default(), next)
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	req.Header.Set("Authorization", "Bearer valid-token")
 	rr := httptest.NewRecorder()
@@ -57,7 +58,7 @@ func TestAuthMiddleware_MissingToken_Returns401(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := NewAuthMiddleware(svc, next)
+	handler := NewAuthMiddleware(svc, slog.Default(), next)
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -71,7 +72,7 @@ func TestAuthMiddleware_InvalidToken_Returns401(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := NewAuthMiddleware(svc, next)
+	handler := NewAuthMiddleware(svc, slog.Default(), next)
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	req.Header.Set("Authorization", "Bearer bad-token")
 	rr := httptest.NewRecorder()

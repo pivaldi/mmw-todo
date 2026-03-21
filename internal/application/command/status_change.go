@@ -2,9 +2,9 @@ package command
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
@@ -53,7 +53,7 @@ func NewReopenTodoCommand(
 func (c *TodoStatusChangeCommand) Execute(ctx context.Context, id string) (*dto.TodoResponse, error) {
 	userID, err := authctx.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", c.errorPrefix, err)
+		return nil, eris.Wrapf(err, "%s", c.errorPrefix)
 	}
 
 	return executeStatusChange(ctx, id, userID, c.repository, c.eventDispatcher, c.action, c.actionLabel)
@@ -71,24 +71,24 @@ func executeStatusChange(
 ) (*dto.TodoResponse, error) {
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
-		return nil, fmt.Errorf("invalid todo ID: %w", err)
+		return nil, eris.Wrap(err, "invalid todo ID")
 	}
 
 	todo, err := repository.FindByID(ctx, todoID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("finding todo: %w", err)
+		return nil, eris.Wrap(err, "finding todo")
 	}
 
 	if err := action(todo); err != nil {
-		return nil, fmt.Errorf("%s: %w", actionName, err)
+		return nil, eris.Wrapf(err, "%s", actionName)
 	}
 
 	if err := repository.Update(ctx, todo, userID); err != nil {
-		return nil, fmt.Errorf("updating todo: %w", err)
+		return nil, eris.Wrap(err, "updating todo")
 	}
 
 	if err := eventDispatcher.Dispatch(ctx, todo.Events()); err != nil {
-		return nil, fmt.Errorf("dispatching events: %w", err)
+		return nil, eris.Wrap(err, "dispatching events")
 	}
 
 	todo.ClearEvents()

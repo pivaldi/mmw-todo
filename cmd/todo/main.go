@@ -53,6 +53,7 @@ func main() {
 		return
 	}
 
+	// TODO: add todo config entry for the URL
 	authConf, err := authConfig.Load(ctx, "AUTH_")
 	if err != nil {
 		exitCode = 1
