@@ -19,8 +19,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/pivaldi/mmw/todo/internal/application/ports"
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/application/ports"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 var testDB *pgxpool.Pool

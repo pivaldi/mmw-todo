@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 // LogEventDispatcher is a simple event dispatcher that logs events

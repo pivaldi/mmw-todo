@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	ogluow "github.com/ovya/ogl/pg/uow"
 
-	"github.com/pivaldi/mmw/todo/internal/application/ports"
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/application/ports"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 // PostgresTodoRepository implements the TodoRepository port using PostgreSQL

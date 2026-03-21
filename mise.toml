@@ -40,8 +40,12 @@ run = """
   set -euo pipefail
 
   cd {{config_root}} || exit 1
-
   source scripts/common/libs/st.bash
+
+  st.h1 'Fix GOPRIVATE for this project'
+  st.doing go env -w "GOPRIVATE=github.com/pivaldi/mmw-*"
+  st.done
+
   st.h1 'Update Repo Deps'
   st.doing "Go Mod Tidy"
   st.do go mod tidy

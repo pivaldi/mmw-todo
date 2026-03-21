@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
-	. "github.com/pivaldi/mmw/todo/internal/adapters/inbound/connect"
-	"github.com/pivaldi/mmw/todo/internal/application/authctx"
+	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	. "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
+	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 )
 
 type mockAuthService struct {

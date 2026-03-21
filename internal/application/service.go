@@ -3,10 +3,10 @@ package application
 import (
 	"context"
 
-	"github.com/pivaldi/mmw/todo/internal/application/command"
-	"github.com/pivaldi/mmw/todo/internal/application/dto"
-	"github.com/pivaldi/mmw/todo/internal/application/ports"
-	"github.com/pivaldi/mmw/todo/internal/application/query"
+	"github.com/pivaldi/mmw-todo/internal/application/command"
+	"github.com/pivaldi/mmw-todo/internal/application/dto"
+	"github.com/pivaldi/mmw-todo/internal/application/ports"
+	"github.com/pivaldi/mmw-todo/internal/application/query"
 	"github.com/rotisserie/eris"
 )
 

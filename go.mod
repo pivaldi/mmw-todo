@@ -1,4 +1,4 @@
-module github.com/pivaldi/mmw/todo
+module github.com/pivaldi/mmw-todo
 
 go 1.25.0
 
@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/ovya/ogl v0.0.0-20260321143034-879a52497e75
-	github.com/pivaldi/mmw/contracts v0.0.0-20260219143251-c15d21c7ad4c
+	github.com/pivaldi/mmw-contracts v0.0.0-20260219143251-c15d21c7ad4c
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/rotisserie/eris v0.5.4
 	github.com/stretchr/testify v1.11.1

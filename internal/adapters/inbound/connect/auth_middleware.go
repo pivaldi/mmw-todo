@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
-	"github.com/pivaldi/mmw/todo/internal/application/authctx"
+	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 )
 
 // NewAuthMiddleware returns an HTTP handler that validates the Bearer token

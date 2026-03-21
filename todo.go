@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/pivaldi/mmw/todo/config"
+	"github.com/pivaldi/mmw-todo/config"
 	"github.com/rotisserie/eris"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,12 +16,12 @@ import (
 	oglcore "github.com/ovya/ogl/platform/core"
 	oglevents "github.com/ovya/ogl/platform/events"
 	oglserver "github.com/ovya/ogl/platform/server"
-	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
-	"github.com/pivaldi/mmw/contracts/gen/go/todo/v1/todov1connect"
-	connecthandler "github.com/pivaldi/mmw/todo/internal/adapters/inbound/connect"
-	"github.com/pivaldi/mmw/todo/internal/adapters/outbound/events"
-	"github.com/pivaldi/mmw/todo/internal/adapters/outbound/persistence/postgres"
-	"github.com/pivaldi/mmw/todo/internal/application"
+	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	"github.com/pivaldi/mmw-contracts/gen/go/todo/v1/todov1connect"
+	connecthandler "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
+	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
+	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
+	"github.com/pivaldi/mmw-todo/internal/application"
 	"golang.org/x/sync/errgroup"
 )
 

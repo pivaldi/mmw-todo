@@ -3,8 +3,8 @@ package inproc
 import (
 	"context"
 
-	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
-	"github.com/pivaldi/mmw/todo/internal/application/ports"
+	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	"github.com/pivaldi/mmw-todo/internal/application/ports"
 )
 
 // Client adapts the public contract to the Todo application's specific port

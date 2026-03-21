@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pivaldi/mmw/todo/internal/application/authctx"
-	"github.com/pivaldi/mmw/todo/internal/application/dto"
-	"github.com/pivaldi/mmw/todo/internal/application/ports"
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/application/authctx"
+	"github.com/pivaldi/mmw-todo/internal/application/dto"
+	"github.com/pivaldi/mmw-todo/internal/application/ports"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 // UpdateTodoCommand handles updating existing todos

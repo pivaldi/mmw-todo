@@ -7,10 +7,10 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	todov1 "github.com/pivaldi/mmw/contracts/gen/go/todo/v1"
-	"github.com/pivaldi/mmw/todo/internal/application"
-	"github.com/pivaldi/mmw/todo/internal/application/dto"
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
+	"github.com/pivaldi/mmw-todo/internal/application"
+	"github.com/pivaldi/mmw-todo/internal/application/dto"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 // TodoHandler implements the Connect TodoServiceHandler interface

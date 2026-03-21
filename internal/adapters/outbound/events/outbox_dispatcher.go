@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	oglpguow "github.com/ovya/ogl/pg/uow"
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 	"github.com/rotisserie/eris"
 )
 

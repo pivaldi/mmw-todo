@@ -7,7 +7,7 @@ import (
 	"time"
 
 	oglevnets "github.com/ovya/ogl/platform/events"
-	deftodo "github.com/pivaldi/mmw/contracts/definitions/todo"
+	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/rotisserie/eris"
 )
 

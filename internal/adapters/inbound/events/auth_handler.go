@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/ThreeDotsLabs/watermill/message"
-	defauth "github.com/pivaldi/mmw/contracts/definitions/auth"
-	"github.com/pivaldi/mmw/todo/internal/application/command"
+	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	"github.com/pivaldi/mmw-todo/internal/application/command"
 	"github.com/rotisserie/eris"
 )
 

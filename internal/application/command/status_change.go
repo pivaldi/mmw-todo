@@ -6,10 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/pivaldi/mmw/todo/internal/application/authctx"
-	"github.com/pivaldi/mmw/todo/internal/application/dto"
-	"github.com/pivaldi/mmw/todo/internal/application/ports"
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/application/authctx"
+	"github.com/pivaldi/mmw-todo/internal/application/dto"
+	"github.com/pivaldi/mmw-todo/internal/application/ports"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 // TodoStatusChangeCommand handles todo status transitions (complete, reopen, etc.).

@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 // CreateTodoRequest represents the data needed to create a new todo

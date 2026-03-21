@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	domain "github.com/pivaldi/mmw/todo/internal/domain/todo"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 )
 
 func TestInMemoryEventDispatcher_Dispatch_Success(t *testing.T) {
