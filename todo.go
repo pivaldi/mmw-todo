@@ -60,18 +60,33 @@ func New(infra Infrastructure) (*App, error) {
 		}
 	}
 	mux := http.NewServeMux()
+
+	todoRepo := postgres.NewPostgresTodoRepository(infra.DBPool)
+	eventDispatcher := events.NewPostgresOutboxDispatcher(infra.DBPool)
+	todoService := application.NewTodoApplicationService(todoRepo, ogluow.NewUnitOfWork(infra.DBPool), eventDispatcher)
+
 	path, handler := todov1connect.NewTodoServiceHandler(
-		newTodoHandler(infra.DBPool),
+		connecthandler.NewTodoHandler(todoService),
 		connect.WithInterceptors(oglconnect.NewErrorLoggingInterceptor(infra.Logger)),
 	)
 
 	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
 	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, nil, handler))
 
+	httpInfra := oglserver.HTTPServerInfra{
+		Config:      cfg.Server,
+		Handler:     mux,
+		Logger:      infra.Logger,
+		HealthFns:   oglserver.HealthFns{"database-message": todoRepo.Health},
+		LogPayloads: true,
+	}
+
+	withDebug := cfg.Environment == config.EnvironmentDevelopment
+	httpServer := oglserver.NewHTTPServer2(withDebug, httpInfra)
 	// Initialize everything internal to Todo here!
 	return &App{
 		relay:  ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
-		server: oglserver.NewHTTPServer(cfg.Environment.String(), cfg.Server, mux, infra.Logger),
+		server: httpServer,
 		logger: infra.Logger,
 	}, nil
 }
@@ -107,12 +122,4 @@ func (m *App) Start(ctx context.Context) error {
 	err := g.Wait()
 
 	return eris.Wrapf(err, "%s failure", AppName)
-}
-
-func newTodoHandler(dbPool *pgxpool.Pool) *connecthandler.TodoHandler {
-	todoRepository := postgres.NewPostgresTodoRepository(dbPool)
-	eventDispatcher := events.NewPostgresOutboxDispatcher(dbPool)
-	todoService := application.NewTodoApplicationService(todoRepository, ogluow.NewUnitOfWork(dbPool), eventDispatcher)
-
-	return connecthandler.NewTodoHandler(todoService)
 }

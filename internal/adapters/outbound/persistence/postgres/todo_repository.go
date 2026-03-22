@@ -270,6 +270,16 @@ func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID, u
 	return nil
 }
 
+func (r *PostgresTodoRepository) Health(ctx context.Context) (any, error) {
+	row := r.pool.QueryRow(ctx, "SELECT count(*) FROM todo.todo")
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, eris.Wrap(err, "scan row")
+	}
+
+	return count, nil
+}
+
 // todoRowScanner is a pgx.RowToFunc that scans a row and reconstitutes a domain Todo
 func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
 	// Use pgx.RowToStructByName to automatically map columns to struct fields
