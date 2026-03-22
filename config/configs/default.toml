@@ -13,3 +13,8 @@ port = 8090
 scheme = "https"
 host = "localhost"
 allowed-origins = ["*"] # IMPORTANT; Change this in production !
+
+[auth-server]
+port = 8091
+scheme = "http"
+host = "localhost"

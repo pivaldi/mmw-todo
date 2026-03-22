@@ -61,6 +61,7 @@ type Config struct {
 	AppName     string
 	Server      *oglpfconfig.Server `mapstructure:"server"`
 	LogLevel    LogLevel            `mapstructure:"log-level"`
+	AuthServer  *oglpfconfig.Server `mapstructure:"auth-server"`
 }
 
 func (c *Config) GetAppEnv() fmt.Stringer {

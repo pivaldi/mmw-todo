@@ -16,7 +16,6 @@ import (
 	oglevents "github.com/ovya/ogl/platform/events"
 	oglrunner "github.com/ovya/ogl/platform/runner"
 	oglslog "github.com/ovya/ogl/slog"
-	authConfig "github.com/pivaldi/mmw-auth/config"
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
 	"github.com/pivaldi/mmw-contracts/gen/go/auth/v1/authv1connect"
 	todo "github.com/pivaldi/mmw-todo"
@@ -46,15 +45,6 @@ func main() {
 	var err error
 
 	todoConf, err := config.Load(ctx, "")
-	if err != nil {
-		exitCode = 1
-		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
-
-		return
-	}
-
-	// TODO: add todo config entry for the URL
-	authConf, err := authConfig.Load(ctx, "AUTH_")
 	if err != nil {
 		exitCode = 1
 		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
@@ -101,7 +91,7 @@ func main() {
 	// authGrpc := authv1connect.NewAuthServiceClient(httpClient connect.HTTPClient)
 	authHttpClient := authv1connect.NewAuthServiceClient(
 		&http.Client{}, // no TLS needed for localhost
-		authConf.Server.URL("", nil),
+		todoConf.AuthServer.URL("", nil),
 	)
 	authSvc := defauth.NewHttpClient(authHttpClient)
 	// authInproc := defauth.NewInprocClient(authApp)
