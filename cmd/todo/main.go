@@ -52,7 +52,7 @@ func main() {
 		return
 	}
 
-	logger, err = oglslog.New(todoConf.Environment.String(), todoConf.LogLevel.SlogLevel())
+	logger, err = oglslog.New(oglslog.HandlerText, todoConf.LogLevel.SlogLevel())
 	if err != nil {
 		exitCode = 1
 		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")

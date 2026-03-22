@@ -44,7 +44,7 @@
       <label for="priority">Priority *</label>
       <select id="priority" formControlName="priority" class="form-control">
         <option *ngFor="let priority of priorities" [value]="priority">
-          {{ priority | titlecase }}
+          {{ priorityLabels[priority] }}
         </option>
       </select>
     </div>

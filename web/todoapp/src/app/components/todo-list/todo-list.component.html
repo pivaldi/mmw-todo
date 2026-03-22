@@ -64,10 +64,10 @@
         <h3 class="todo-title">{{ todo.title }}</h3>
         <div class="todo-badges">
           <span class="badge" [ngClass]="getPriorityClass(todo.priority)">
-            {{ todo.priority }}
+            {{ priorityLabels[todo.priority] }}
           </span>
           <span class="badge" [ngClass]="getStatusClass(todo.status)">
-            {{ todo.status }}
+            {{ statusLabels[todo.status] }}
           </span>
         </div>
       </div>
@@ -82,12 +82,12 @@
           <span
             [class.overdue]="isDue(todo)"
             [class.due-soon]="isDueSoon(todo)">
-            {{ todo.dueDate | date:'short' }}
+            {{ todo.dueDate | timestamp | date:'short' }}
           </span>
         </div>
         <div class="created-at">
           <span class="icon">🕐</span>
-          <span>{{ todo.createdAt | date:'short' }}</span>
+          <span>{{ todo.createdAt | timestamp | date:'short' }}</span>
         </div>
       </div>
 

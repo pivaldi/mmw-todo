@@ -1,106 +1,68 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { environment } from '../../environments/environment';
+import { createClient, ConnectError, Code } from '@connectrpc/connect';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { TodoService as TodoServiceDef } from '@contracts/todo/v1/todo_pb';
 import {
   Todo,
+  ListTodosRequest,
+  ListTodosResponse,
   CreateTodoRequest,
   UpdateTodoRequest,
-  ListTodosRequest,
-  ListTodosResponse
-} from '../models/todo.model';
+} from '@contracts/todo/v1/todo_pb';
+import { environment } from '../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+const TOKEN_KEY = 'auth_token';
+
+const transport = createConnectTransport({
+  baseUrl: environment.apiUrl,
+  interceptors: [
+    (next) => async (req) => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) req.header.set('Authorization', `Bearer ${token}`);
+      try {
+        return await next(req);
+      } catch (err) {
+        if (err instanceof ConnectError && err.code === Code.Unauthenticated) {
+          localStorage.removeItem(TOKEN_KEY);
+          window.location.href = '/login';
+        }
+        throw err;
+      }
+    },
+  ],
+});
+
+const client = createClient(TodoServiceDef, transport);
+
+@Injectable({ providedIn: 'root' })
 export class TodoService {
-  private apiUrl = `${environment.apiUrl}/todo/todo.v1.TodoService`;
-  private headers = new HttpHeaders({
-    'Content-Type': 'application/json'
-  });
-
-  constructor(private http: HttpClient) {}
-
-  /**
-   * Get all todos with optional filters
-   */
   listTodos(request?: ListTodosRequest): Observable<ListTodosResponse> {
-    // Connect protocol uses POST for all operations
-    const body = request || {};
-
-    return this.http.post<ListTodosResponse>(`${this.apiUrl}/ListTodos`, body, { headers: this.headers }).pipe(
-      map(response => ({
-        todos: response.todos.map(todo => this.convertDates(todo)),
-        totalCount: response.totalCount
-      }))
-    );
+    return from(client.listTodos(request ?? {}));
   }
 
-  /**
-   * Get a single todo by ID
-   */
   getTodo(id: string): Observable<Todo> {
-    return this.http.post<{ todo: Todo }>(`${this.apiUrl}/GetTodo`, { id }, { headers: this.headers }).pipe(
-      map(response => this.convertDates(response.todo))
-    );
+    return from(client.getTodo({ id })).pipe(map((res) => res.todo!));
   }
 
-  /**
-   * Create a new todo
-   */
   createTodo(request: CreateTodoRequest): Observable<Todo> {
-    return this.http.post<{ todo: Todo }>(`${this.apiUrl}/CreateTodo`, request, { headers: this.headers }).pipe(
-      map(response => this.convertDates(response.todo))
-    );
+    return from(client.createTodo(request)).pipe(map((res) => res.todo!));
   }
 
-  /**
-   * Update an existing todo
-   */
-  updateTodo(id: string, request: UpdateTodoRequest): Observable<Todo> {
-    return this.http.post<{ todo: Todo }>(`${this.apiUrl}/UpdateTodo`, {
-      id,
-      ...request
-    }, { headers: this.headers }).pipe(
-      map(response => this.convertDates(response.todo))
-    );
+  updateTodo(id: string, request: Omit<UpdateTodoRequest, 'id'>): Observable<Todo> {
+    return from(client.updateTodo({ id, ...request })).pipe(map((res) => res.todo!));
   }
 
-  /**
-   * Mark a todo as completed
-   */
   completeTodo(id: string): Observable<Todo> {
-    return this.http.post<{ todo: Todo }>(`${this.apiUrl}/CompleteTodo`, { id }, { headers: this.headers }).pipe(
-      map(response => this.convertDates(response.todo))
-    );
+    return from(client.completeTodo({ id })).pipe(map((res) => res.todo!));
   }
 
-  /**
-   * Reopen a completed/cancelled todo
-   */
   reopenTodo(id: string): Observable<Todo> {
-    return this.http.post<{ todo: Todo }>(`${this.apiUrl}/ReopenTodo`, { id }, { headers: this.headers }).pipe(
-      map(response => this.convertDates(response.todo))
-    );
+    return from(client.reopenTodo({ id })).pipe(map((res) => res.todo!));
   }
 
-  /**
-   * Delete a todo
-   */
   deleteTodo(id: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/DeleteTodo`, { id }, { headers: this.headers });
-  }
-
-  /**
-   * Convert string dates to Date objects
-   */
-  private convertDates(todo: any): Todo {
-    return {
-      ...todo,
-      dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
-      createdAt: new Date(todo.createdAt),
-      updatedAt: new Date(todo.updatedAt)
-    };
+    return from(client.deleteTodo({ id })).pipe(map(() => void 0));
   }
 }

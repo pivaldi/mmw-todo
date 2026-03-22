@@ -14,8 +14,20 @@ import (
 // NewAuthMiddleware returns an HTTP handler that validates the Bearer token
 // by calling authSvc.ValidateToken, then injects the userID into
 // the request context before delegating to next.
-func NewAuthMiddleware(authSvc defauth.AuthService, logger *slog.Logger, next http.Handler) http.Handler {
+// Routes starting with any of the excludedPaths will bypass authentication.
+func NewAuthMiddleware(
+	authSvc defauth.AuthService,
+	logger *slog.Logger,
+	excludedPaths []string,
+	next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for _, path := range excludedPaths {
+			if strings.HasPrefix(r.URL.Path, path) || strings.Contains(r.URL.Path, "/debug/") {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		token := extractBearer(r)
 		if token == "" {
 			writeUnauthorized(w)

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { ConnectError, Code } from '@connectrpc/connect';
 import { AuthService } from '../auth.service';
 
 @Component({
@@ -18,8 +18,8 @@ export class RegisterComponent {
     this.errorMessage = '';
     this.auth.register(this.login, this.password).subscribe({
       next: () => this.router.navigate(['/login']),
-      error: (err: HttpErrorResponse) => {
-        this.errorMessage = err.status === 409
+      error: (err: unknown) => {
+        this.errorMessage = err instanceof ConnectError && err.code === Code.AlreadyExists
           ? 'This login is already taken'
           : 'Registration failed. Please try again.';
       }

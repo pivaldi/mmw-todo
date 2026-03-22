@@ -21,10 +21,10 @@
         <h1>{{ todo.title }}</h1>
         <div class="badges">
           <span class="badge" [ngClass]="getPriorityClass(todo.priority)">
-            {{ todo.priority }}
+            {{ priorityLabels[todo.priority] }}
           </span>
           <span class="badge" [ngClass]="getStatusClass(todo.status)">
-            {{ todo.status }}
+            {{ statusLabels[todo.status] }}
           </span>
         </div>
       </div>
@@ -63,7 +63,7 @@
           <dt>Status</dt>
           <dd>
             <span class="badge" [ngClass]="getStatusClass(todo.status)">
-              {{ todo.status }}
+              {{ statusLabels[todo.status] }}
             </span>
           </dd>
         </div>
@@ -72,7 +72,7 @@
           <dt>Priority</dt>
           <dd>
             <span class="badge" [ngClass]="getPriorityClass(todo.priority)">
-              {{ todo.priority }}
+              {{ priorityLabels[todo.priority] }}
             </span>
           </dd>
         </div>
@@ -83,7 +83,7 @@
             <span
               [class.overdue]="isDue()"
               [class.due-soon]="isDueSoon()">
-              {{ todo.dueDate | date:'full' }}
+              {{ todo.dueDate | timestamp | date:'full' }}
             </span>
             <span *ngIf="isDue()" class="warning-text"> (Overdue!)</span>
             <span *ngIf="isDueSoon() && !isDue()" class="warning-text"> (Due soon)</span>
@@ -92,12 +92,12 @@
 
         <div class="detail-item">
           <dt>Created</dt>
-          <dd>{{ todo.createdAt | date:'full' }}</dd>
+          <dd>{{ todo.createdAt | timestamp | date:'full' }}</dd>
         </div>
 
         <div class="detail-item">
           <dt>Last Updated</dt>
-          <dd>{{ todo.updatedAt | date:'full' }}</dd>
+          <dd>{{ todo.updatedAt | timestamp | date:'full' }}</dd>
         </div>
       </dl>
     </div>

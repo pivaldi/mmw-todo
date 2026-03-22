@@ -66,7 +66,7 @@ func New(infra Infrastructure) (*App, error) {
 	)
 
 	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
-	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, handler))
+	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, nil, handler))
 
 	// Initialize everything internal to Todo here!
 	return &App{

@@ -1,31 +1,28 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
+import { Observable, from } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { createClient } from '@connectrpc/connect';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { AuthService as AuthServiceDef } from '@contracts/auth/v1/auth_pb';
+import type { LoginResponse, RegisterResponse } from '@contracts/auth/v1/auth_pb';
 import { environment } from '../../environments/environment';
 
 const TOKEN_KEY = 'auth_token';
-const AUTH_API = `${environment.apiUrl}/auth/auth.v1.AuthService`;
-const JSON_HEADERS = new HttpHeaders({ 'Content-Type': 'application/json' });
+
+const transport = createConnectTransport({ baseUrl: environment.apiUrl });
+const client = createClient(AuthServiceDef, transport);
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private router: Router) {}
 
-  register(login: string, password: string): Observable<{ userId: string }> {
-    return this.http.post<{ userId: string }>(
-      `${AUTH_API}/Register`,
-      { login, password },
-      { headers: JSON_HEADERS }
-    );
+  register(login: string, password: string): Observable<RegisterResponse> {
+    return from(client.register({ login, password }));
   }
 
-  login(login: string, password: string): Observable<{ token: string; userId: string }> {
-    return this.http.post<{ token: string; userId: string }>(
-      `${AUTH_API}/Login`,
-      { login, password },
-      { headers: JSON_HEADERS }
-    ).pipe(
+  login(login: string, password: string): Observable<LoginResponse> {
+    return from(client.login({ login, password })).pipe(
       tap(res => localStorage.setItem(TOKEN_KEY, res.token))
     );
   }

@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TodoService } from '../../services/todo.service';
-import { Priority, TaskStatus } from '../../models/todo.model';
+import { create } from '@bufbuild/protobuf';
+import { Priority, TaskStatus, CreateTodoRequestSchema, UpdateTodoRequestSchema } from '@contracts/todo/v1/todo_pb';
+import { timestampToDate, dateToTimestamp } from '../../pipes/timestamp.pipe';
 
 @Component({
   selector: 'app-todo-form',
@@ -17,7 +19,15 @@ export class TodoFormComponent implements OnInit {
   error: string | null = null;
 
   // Enums for template
-  priorities = Object.values(Priority);
+  priorities = [Priority.LOW, Priority.MEDIUM, Priority.HIGH, Priority.URGENT];
+
+  readonly priorityLabels: Record<Priority, string> = {
+    [Priority.UNSPECIFIED]: '',
+    [Priority.LOW]:    'Low',
+    [Priority.MEDIUM]: 'Medium',
+    [Priority.HIGH]:   'High',
+    [Priority.URGENT]: 'Urgent',
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -52,7 +62,7 @@ export class TodoFormComponent implements OnInit {
           title: todo.title,
           description: todo.description,
           priority: todo.priority,
-          dueDate: todo.dueDate ? this.formatDateForInput(todo.dueDate) : ''
+          dueDate: todo.dueDate ? this.formatDateForInput(timestampToDate(todo.dueDate)) : ''
         });
         this.loading = false;
       },
@@ -71,17 +81,18 @@ export class TodoFormComponent implements OnInit {
     }
 
     const formValue = this.todoForm.value;
-    const request = {
+    const fields = {
       title: formValue.title.trim(),
       description: formValue.description?.trim() || '',
       priority: formValue.priority,
-      dueDate: formValue.dueDate ? new Date(formValue.dueDate) : undefined
+      dueDate: formValue.dueDate ? dateToTimestamp(new Date(formValue.dueDate)) : undefined
     };
 
     this.loading = true;
     this.error = null;
 
     if (this.isEditMode && this.todoId) {
+      const request = create(UpdateTodoRequestSchema, { id: this.todoId, ...fields });
       this.todoService.updateTodo(this.todoId, request).subscribe({
         next: () => {
           this.router.navigate(['/todos', this.todoId]);
@@ -93,6 +104,7 @@ export class TodoFormComponent implements OnInit {
         }
       });
     } else {
+      const request = create(CreateTodoRequestSchema, fields);
       this.todoService.createTodo(request).subscribe({
         next: (todo) => {
           this.router.navigate(['/todos', todo.id]);
@@ -114,14 +126,15 @@ export class TodoFormComponent implements OnInit {
     }
   }
 
-  private formatDateForInput(date: Date): string {
+  private formatDateForInput(date: Date | null): string {
+    if (!date) return '';
     const d = new Date(date);
-    const year = d.getFullYear();
+    const year  = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const day   = String(d.getDate()).padStart(2, '0');
     const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    const mins  = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${mins}`;
   }
 
   private markFormGroupTouched(formGroup: FormGroup): void {

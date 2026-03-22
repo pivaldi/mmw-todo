@@ -18,7 +18,13 @@
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
-    "lib": ["ES2022", "dom"]
+    "lib": ["ES2022", "dom"],
+    "skipLibCheck": true,
+    "paths": {
+      "@contracts/*": ["../../../../contracts/gen/ts/*"],
+      "@bufbuild/protobuf": ["node_modules/@bufbuild/protobuf/dist/esm/index"],
+      "@bufbuild/protobuf/*": ["node_modules/@bufbuild/protobuf/dist/esm/*/index"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

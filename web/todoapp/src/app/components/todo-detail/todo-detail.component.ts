@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TodoService } from '../../services/todo.service';
-import { Todo, TaskStatus, Priority } from '../../models/todo.model';
+import { Todo, TaskStatus, Priority } from '@contracts/todo/v1/todo_pb';
+import { timestampToDate } from '../../pipes/timestamp.pipe';
 
 @Component({
   selector: 'app-todo-detail',
@@ -16,6 +17,22 @@ export class TodoDetailComponent implements OnInit {
   // Enums for template
   TaskStatus = TaskStatus;
   Priority = Priority;
+
+  readonly statusLabels: Record<TaskStatus, string> = {
+    [TaskStatus.UNSPECIFIED]: '',
+    [TaskStatus.PENDING]:     'Pending',
+    [TaskStatus.IN_PROGRESS]: 'In Progress',
+    [TaskStatus.COMPLETED]:   'Completed',
+    [TaskStatus.CANCELLED]:   'Cancelled',
+  };
+
+  readonly priorityLabels: Record<Priority, string> = {
+    [Priority.UNSPECIFIED]: '',
+    [Priority.LOW]:    'Low',
+    [Priority.MEDIUM]: 'Medium',
+    [Priority.HIGH]:   'High',
+    [Priority.URGENT]: 'Urgent',
+  };
 
   constructor(
     private todoService: TodoService,
@@ -111,38 +128,35 @@ export class TodoDetailComponent implements OnInit {
 
   getStatusClass(status: TaskStatus): string {
     const classes: Record<TaskStatus, string> = {
-      [TaskStatus.PENDING]: 'status-pending',
+      [TaskStatus.UNSPECIFIED]: '',
+      [TaskStatus.PENDING]:     'status-pending',
       [TaskStatus.IN_PROGRESS]: 'status-in-progress',
-      [TaskStatus.COMPLETED]: 'status-completed',
-      [TaskStatus.CANCELLED]: 'status-cancelled'
+      [TaskStatus.COMPLETED]:   'status-completed',
+      [TaskStatus.CANCELLED]:   'status-cancelled',
     };
-    return classes[status] || '';
+    return classes[status] ?? '';
   }
 
   getPriorityClass(priority: Priority): string {
     const classes: Record<Priority, string> = {
-      [Priority.LOW]: 'priority-low',
+      [Priority.UNSPECIFIED]: '',
+      [Priority.LOW]:    'priority-low',
       [Priority.MEDIUM]: 'priority-medium',
-      [Priority.HIGH]: 'priority-high',
-      [Priority.URGENT]: 'priority-urgent'
+      [Priority.HIGH]:   'priority-high',
+      [Priority.URGENT]: 'priority-urgent',
     };
-    return classes[priority] || '';
+    return classes[priority] ?? '';
   }
 
   isDue(): boolean {
-    if (!this.todo?.dueDate) {
-      return false;
-    }
-    return new Date(this.todo.dueDate) < new Date();
+    const d = timestampToDate(this.todo?.dueDate);
+    return d !== null && d < new Date();
   }
 
   isDueSoon(): boolean {
-    if (!this.todo?.dueDate) {
-      return false;
-    }
-    const now = new Date();
-    const dueDate = new Date(this.todo.dueDate);
-    const hoursDiff = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const d = timestampToDate(this.todo?.dueDate);
+    if (!d) return false;
+    const hoursDiff = (d.getTime() - Date.now()) / (1000 * 60 * 60);
     return hoursDiff > 0 && hoursDiff <= 24;
   }
 }
