@@ -21,12 +21,15 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
+	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 )
 
 const relayTableName = "todo.event"
 const AppName = "Auth"
+
+var NotifyEvents = domain.AllEvents
 
 type App struct {
 	relay  *ogloutbox.EventsRelay
@@ -77,11 +80,11 @@ func New(infra Infrastructure) (*App, error) {
 		Config:      cfg.Server,
 		Handler:     mux,
 		Logger:      infra.Logger,
-		HealthFns:   oglserver.HealthFns{"database-message": todoRepo.Health},
+		HealthFns:   oglserver.HealthFns{"database": todoRepo.Health},
 		LogPayloads: true,
 	}
 
-	withDebug := cfg.Environment == config.EnvironmentDevelopment
+	withDebug := cfg.Environment.IsDev()
 	httpServer := oglserver.NewHTTPServer2(withDebug, httpInfra)
 	// Initialize everything internal to Todo here!
 	return &App{

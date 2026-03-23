@@ -10,9 +10,7 @@ require (
 	github.com/ovya/ogl v0.0.0-20260321231833-7dcb9ea09c73
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pivaldi/mmw-auth v0.0.0-20260321170503-9a5c20132c89
-	github.com/pivaldi/mmw-contracts v0.0.0-20260321181528-8db6a825b479
-	github.com/pivaldi/mmw-contracts/definitions/auth v0.0.0-20260321163605-264690edbe4e
-	github.com/pivaldi/mmw-contracts/definitions/todo v0.0.0-20260321163605-264690edbe4e
+	github.com/pivaldi/mmw-contracts v0.0.0-20260322143959-210ea4f160a7
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/rotisserie/eris v0.5.4
 	github.com/stretchr/testify v1.11.1
@@ -44,7 +42,7 @@ require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/docker v28.5.2+incompatible // indirect
@@ -89,12 +87,13 @@ require (
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/nikoksr/notify v1.5.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
@@ -110,7 +109,7 @@ require (
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tdewolff/parse/v2 v2.8.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect

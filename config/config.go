@@ -9,6 +9,7 @@ import (
 
 	oglconfig "github.com/ovya/ogl/config"
 	oglpfconfig "github.com/ovya/ogl/platform/config"
+	oglslog "github.com/ovya/ogl/slog"
 	"github.com/rotisserie/eris"
 )
 
@@ -22,12 +23,12 @@ var getConfigFS = func() fs.FS {
 }
 
 type Config struct {
-	Database    *oglpfconfig.Database `mapstructure:"database"`
-	Environment Environment           `env:"APP_ENV, required" mapstructure:"environment"`
-	AppName     string
-	Server      *oglpfconfig.Server `mapstructure:"server"`
-	LogLevel    oglconfig.LogLevel  `mapstructure:"log-level"`
-	AuthServer  *oglpfconfig.Server `mapstructure:"auth-server"`
+	oglpfconfig.Base
+	Database *oglpfconfig.Database `mapstructure:"database"`
+	// Environment oglconfig.Environment `env:"APP_ENV, required" mapstructure:"environment"`
+	Server     *oglpfconfig.Server `mapstructure:"server"`
+	LogLevel   oglslog.LogLevel    `mapstructure:"log-level"`
+	AuthServer *oglpfconfig.Server `mapstructure:"auth-server"`
 }
 
 func (c *Config) GetAppEnv() fmt.Stringer {

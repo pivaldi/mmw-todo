@@ -8,6 +8,9 @@ import (
 	"testing"
 	"testing/fstest"
 
+	oglconfig "github.com/ovya/ogl/config"
+	oglpfconfig "github.com/ovya/ogl/platform/config"
+	oglslog "github.com/ovya/ogl/slog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,7 +49,7 @@ host = "test-host"
 	require.NotNil(t, config)
 	require.NotNil(t, config.Database)
 
-	assert.Equal(t, EnvironmentTesting, config.Environment)
+	assert.Equal(t, oglconfig.EnvironmentTesting, config.Environment)
 	assert.Equal(t, "rcv", config.Database.User)
 	assert.Equal(t, "test-host", config.Database.Host)
 
@@ -94,12 +97,12 @@ func TestLoad_WithDefaultConfigOnly(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, config)
-	assert.Equal(t, EnvironmentProduction, config.Environment)
+	assert.Equal(t, oglconfig.EnvironmentProduction, config.Environment)
 }
 
 func TestConfig_GetAppEnv(t *testing.T) {
 	config := &Config{
-		Environment: EnvironmentStaging,
+		Base: oglpfconfig.Base{Environment: oglconfig.EnvironmentStaging},
 	}
 
 	env := config.GetAppEnv()
@@ -133,7 +136,7 @@ name = "testdb"
 
 	require.NoError(t, err)
 	require.NotNil(t, config)
-	assert.Equal(t, LogLevel("debug"), config.LogLevel)
+	assert.Equal(t, oglslog.LogLevel("debug"), config.LogLevel)
 	assert.Equal(t, slog.LevelDebug, config.LogLevel.SlogLevel())
 }
 
@@ -192,7 +195,7 @@ name = "testdb"
 
 			require.NoError(t, err)
 			require.NotNil(t, config)
-			assert.Equal(t, LogLevel(tt.levelString), config.LogLevel)
+			assert.Equal(t, oglslog.LogLevel(tt.levelString), config.LogLevel)
 			assert.Equal(t, tt.expectedLevel, config.LogLevel.SlogLevel())
 		})
 	}
@@ -202,27 +205,27 @@ func TestLoad_AllEnvironments(t *testing.T) {
 	tests := []struct {
 		name        string
 		appEnv      string
-		expectedEnv Environment
+		expectedEnv oglconfig.Environment
 	}{
 		{
 			name:        "development environment",
 			appEnv:      "development",
-			expectedEnv: EnvironmentDevelopment,
+			expectedEnv: oglconfig.EnvironmentDevelopment,
 		},
 		{
 			name:        "staging environment",
 			appEnv:      "staging",
-			expectedEnv: EnvironmentStaging,
+			expectedEnv: oglconfig.EnvironmentStaging,
 		},
 		{
 			name:        "production environment",
 			appEnv:      "production",
-			expectedEnv: EnvironmentProduction,
+			expectedEnv: oglconfig.EnvironmentProduction,
 		},
 		{
 			name:        "testing environment",
 			appEnv:      "testing",
-			expectedEnv: EnvironmentTesting,
+			expectedEnv: oglconfig.EnvironmentTesting,
 		},
 	}
 
@@ -254,27 +257,27 @@ func TestLoad_AllEnvironments(t *testing.T) {
 func TestEnvironment_IsDev(t *testing.T) {
 	tests := []struct {
 		name     string
-		env      Environment
+		env      oglconfig.Environment
 		expected bool
 	}{
 		{
 			name:     "development is dev",
-			env:      EnvironmentDevelopment,
+			env:      oglconfig.EnvironmentDevelopment,
 			expected: true,
 		},
 		{
 			name:     "staging is not dev",
-			env:      EnvironmentStaging,
+			env:      oglconfig.EnvironmentStaging,
 			expected: false,
 		},
 		{
 			name:     "production is not dev",
-			env:      EnvironmentProduction,
+			env:      oglconfig.EnvironmentProduction,
 			expected: false,
 		},
 		{
 			name:     "testing is not dev",
-			env:      EnvironmentTesting,
+			env:      oglconfig.EnvironmentTesting,
 			expected: false,
 		},
 	}
@@ -290,27 +293,27 @@ func TestEnvironment_IsDev(t *testing.T) {
 func TestEnvironment_String(t *testing.T) {
 	tests := []struct {
 		name     string
-		env      Environment
+		env      oglconfig.Environment
 		expected string
 	}{
 		{
 			name:     "development",
-			env:      EnvironmentDevelopment,
+			env:      oglconfig.EnvironmentDevelopment,
 			expected: "development",
 		},
 		{
 			name:     "staging",
-			env:      EnvironmentStaging,
+			env:      oglconfig.EnvironmentStaging,
 			expected: "staging",
 		},
 		{
 			name:     "production",
-			env:      EnvironmentProduction,
+			env:      oglconfig.EnvironmentProduction,
 			expected: "production",
 		},
 		{
 			name:     "testing",
-			env:      EnvironmentTesting,
+			env:      oglconfig.EnvironmentTesting,
 			expected: "testing",
 		},
 	}
@@ -326,37 +329,37 @@ func TestEnvironment_String(t *testing.T) {
 func TestEnvironment_IsValid(t *testing.T) {
 	tests := []struct {
 		name     string
-		env      Environment
+		env      oglconfig.Environment
 		expected bool
 	}{
 		{
 			name:     "valid development",
-			env:      EnvironmentDevelopment,
+			env:      oglconfig.EnvironmentDevelopment,
 			expected: true,
 		},
 		{
 			name:     "valid staging",
-			env:      EnvironmentStaging,
+			env:      oglconfig.EnvironmentStaging,
 			expected: true,
 		},
 		{
 			name:     "valid production",
-			env:      EnvironmentProduction,
+			env:      oglconfig.EnvironmentProduction,
 			expected: true,
 		},
 		{
 			name:     "valid testing",
-			env:      EnvironmentTesting,
+			env:      oglconfig.EnvironmentTesting,
 			expected: true,
 		},
 		{
 			name:     "invalid environment",
-			env:      Environment("invalid"),
+			env:      oglconfig.Environment("invalid"),
 			expected: false,
 		},
 		{
 			name:     "empty environment",
-			env:      Environment(""),
+			env:      oglconfig.Environment(""),
 			expected: false,
 		},
 	}
@@ -373,53 +376,53 @@ func TestParseEnvironment(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string
-		expected  Environment
+		expected  oglconfig.Environment
 		shouldErr bool
 	}{
 		{
 			name:      "parse development",
 			input:     "development",
-			expected:  EnvironmentDevelopment,
+			expected:  oglconfig.EnvironmentDevelopment,
 			shouldErr: false,
 		},
 		{
 			name:      "parse staging",
 			input:     "staging",
-			expected:  EnvironmentStaging,
+			expected:  oglconfig.EnvironmentStaging,
 			shouldErr: false,
 		},
 		{
 			name:      "parse production",
 			input:     "production",
-			expected:  EnvironmentProduction,
+			expected:  oglconfig.EnvironmentProduction,
 			shouldErr: false,
 		},
 		{
 			name:      "parse testing",
 			input:     "testing",
-			expected:  EnvironmentTesting,
+			expected:  oglconfig.EnvironmentTesting,
 			shouldErr: false,
 		},
 		{
 			name:      "parse invalid environment",
 			input:     "invalid",
-			expected:  Environment(""),
+			expected:  oglconfig.Environment(""),
 			shouldErr: true,
 		},
 		{
 			name:      "parse empty string",
 			input:     "",
-			expected:  Environment(""),
+			expected:  oglconfig.Environment(""),
 			shouldErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseEnvironment(tt.input)
+			got, err := oglconfig.ParseEnvironment(tt.input)
 			if tt.shouldErr {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, ErrInvalidEnvironment)
+				assert.ErrorIs(t, err, oglconfig.ErrInvalidEnvironment)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, got)
@@ -429,39 +432,39 @@ func TestParseEnvironment(t *testing.T) {
 }
 
 func TestEnvironmentValues(t *testing.T) {
-	values := EnvironmentValues()
+	values := oglconfig.EnvironmentValues()
 
 	assert.Len(t, values, 4)
-	assert.Contains(t, values, EnvironmentDevelopment)
-	assert.Contains(t, values, EnvironmentStaging)
-	assert.Contains(t, values, EnvironmentProduction)
-	assert.Contains(t, values, EnvironmentTesting)
+	assert.Contains(t, values, oglconfig.EnvironmentDevelopment)
+	assert.Contains(t, values, oglconfig.EnvironmentStaging)
+	assert.Contains(t, values, oglconfig.EnvironmentProduction)
+	assert.Contains(t, values, oglconfig.EnvironmentTesting)
 }
 
 func TestLogLevel_String(t *testing.T) {
 	tests := []struct {
 		name     string
-		level    LogLevel
+		level    oglslog.LogLevel
 		expected string
 	}{
 		{
 			name:     "debug level",
-			level:    LogLevel("debug"),
+			level:    oglslog.LogLevel("debug"),
 			expected: "debug",
 		},
 		{
 			name:     "info level",
-			level:    LogLevel("info"),
+			level:    oglslog.LogLevel("info"),
 			expected: "info",
 		},
 		{
 			name:     "warn level",
-			level:    LogLevel("warn"),
+			level:    oglslog.LogLevel("warn"),
 			expected: "warn",
 		},
 		{
 			name:     "error level",
-			level:    LogLevel("error"),
+			level:    oglslog.LogLevel("error"),
 			expected: "error",
 		},
 	}
@@ -477,42 +480,42 @@ func TestLogLevel_String(t *testing.T) {
 func TestLogLevel_IsValid(t *testing.T) {
 	tests := []struct {
 		name     string
-		level    LogLevel
+		level    oglslog.LogLevel
 		expected bool
 	}{
 		{
 			name:     "valid debug",
-			level:    LogLevel("debug"),
+			level:    oglslog.LogLevel("debug"),
 			expected: true,
 		},
 		{
 			name:     "valid info",
-			level:    LogLevel("info"),
+			level:    oglslog.LogLevel("info"),
 			expected: true,
 		},
 		{
 			name:     "valid warn",
-			level:    LogLevel("warn"),
+			level:    oglslog.LogLevel("warn"),
 			expected: true,
 		},
 		{
 			name:     "valid error",
-			level:    LogLevel("error"),
+			level:    oglslog.LogLevel("error"),
 			expected: true,
 		},
 		{
 			name:     "invalid level",
-			level:    LogLevel("invalid"),
+			level:    oglslog.LogLevel("invalid"),
 			expected: false,
 		},
 		{
 			name:     "empty string",
-			level:    LogLevel(""),
+			level:    oglslog.LogLevel(""),
 			expected: false,
 		},
 		{
 			name:     "uppercase",
-			level:    LogLevel("DEBUG"),
+			level:    oglslog.LogLevel("DEBUG"),
 			expected: false,
 		},
 	}
@@ -528,37 +531,37 @@ func TestLogLevel_IsValid(t *testing.T) {
 func TestLogLevel_Level(t *testing.T) {
 	tests := []struct {
 		name     string
-		logLevel LogLevel
+		logLevel oglslog.LogLevel
 		expected slog.Level
 	}{
 		{
 			name:     "debug level",
-			logLevel: LogLevel("debug"),
+			logLevel: oglslog.LogLevel("debug"),
 			expected: slog.LevelDebug,
 		},
 		{
 			name:     "info level",
-			logLevel: LogLevel("info"),
+			logLevel: oglslog.LogLevel("info"),
 			expected: slog.LevelInfo,
 		},
 		{
 			name:     "warn level",
-			logLevel: LogLevel("warn"),
+			logLevel: oglslog.LogLevel("warn"),
 			expected: slog.LevelWarn,
 		},
 		{
 			name:     "error level",
-			logLevel: LogLevel("error"),
+			logLevel: oglslog.LogLevel("error"),
 			expected: slog.LevelError,
 		},
 		{
 			name:     "invalid defaults to info",
-			logLevel: LogLevel("invalid"),
+			logLevel: oglslog.LogLevel("invalid"),
 			expected: slog.LevelInfo,
 		},
 		{
 			name:     "empty defaults to info",
-			logLevel: LogLevel(""),
+			logLevel: oglslog.LogLevel(""),
 			expected: slog.LevelInfo,
 		},
 	}

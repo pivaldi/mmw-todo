@@ -68,7 +68,7 @@ func TestNewTodo(t *testing.T) {
 	if len(events) != 1 {
 		t.Errorf("Expected 1 event, got %d", len(events))
 	}
-	if events[0].EventType() != "TodoCreated" {
+	if events[0].EventType() != "todo.created" {
 		t.Errorf("Expected TodoCreated event, got %s", events[0].EventType())
 	}
 }
@@ -131,10 +131,10 @@ func TestTodo_Complete(t *testing.T) {
 				if tt.wantEvent {
 					events := todo.Events()
 					if len(events) == 0 {
-						t.Error("Expected TodoCompleted event")
+						t.Error("Expected todo.completed event")
 					}
-					if events[0].EventType() != "TodoCompleted" {
-						t.Errorf("Expected TodoCompleted event, got %s", events[0].EventType())
+					if events[0].EventType() != "todo.completed" {
+						t.Errorf("Expected todo.completed event, got %s", events[0].EventType())
 					}
 				}
 			}
@@ -197,10 +197,10 @@ func TestTodo_Reopen(t *testing.T) {
 			if tt.wantEvent {
 				events := todo.Events()
 				if len(events) == 0 {
-					t.Error("Expected TodoReopened event")
+					t.Error("Expected todo.reopened event")
 				}
-				if events[0].EventType() != "TodoReopened" {
-					t.Errorf("Expected TodoReopened event, got %s", events[0].EventType())
+				if events[0].EventType() != "todo.reopened" {
+					t.Errorf("Expected todo.reopened event, got %s", events[0].EventType())
 				}
 			}
 		})

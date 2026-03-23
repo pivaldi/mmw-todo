@@ -12,6 +12,22 @@ type DomainEvent interface {
 	OccurredAt() time.Time
 }
 
+const (
+	EventCreated   = "todo.created"
+	EventUpdated   = "todo.updated"
+	EventReopened  = "todo.reopened"
+	EventDeleted   = "todo.deleted"
+	EventCompleted = "todo.completed"
+)
+
+var AllEvents = []string{
+	EventCreated,
+	EventUpdated,
+	EventReopened,
+	EventDeleted,
+	EventCompleted,
+}
+
 // BaseDomainEvent contains common fields for all domain events
 type BaseDomainEvent struct {
 	aggregateID string
@@ -39,7 +55,7 @@ type TodoCreated struct {
 
 // EventType returns the event type
 func (e *TodoCreated) EventType() string {
-	return "TodoCreated"
+	return EventCreated
 }
 
 // NewTodoCreatedEvent creates a new TodoCreated event
@@ -74,7 +90,7 @@ type TodoUpdated struct {
 
 // EventType returns the event type
 func (e *TodoUpdated) EventType() string {
-	return "TodoUpdated"
+	return EventUpdated
 }
 
 // NewTodoUpdatedEvent creates a new TodoUpdated event
@@ -95,7 +111,7 @@ type TodoCompleted struct {
 
 // EventType returns the event type
 func (e *TodoCompleted) EventType() string {
-	return "TodoCompleted"
+	return EventCompleted
 }
 
 // NewTodoCompletedEvent creates a new TodoCompleted event
@@ -117,7 +133,7 @@ type TodoReopened struct {
 
 // EventType returns the event type
 func (e *TodoReopened) EventType() string {
-	return "TodoReopened"
+	return EventReopened
 }
 
 // NewTodoReopenedEvent creates a new TodoReopened event
@@ -138,7 +154,7 @@ type TodoDeleted struct {
 
 // EventType returns the event type
 func (e *TodoDeleted) EventType() string {
-	return "TodoDeleted"
+	return EventDeleted
 }
 
 // NewTodoDeletedEvent creates a new TodoDeleted event
