@@ -192,11 +192,11 @@ description = "Run all checks (format, vet, lint)"
 depends = ["fmt", "vet", "lint", "buf-lint"]
 
 [tasks."arch:check"]
-description = "Validate architecture boundaries for this service"
+description = "Validate architecture boundaries for this module"
 run = "arch-go"
 
 [tasks."arch:graph"]
-description = "Show graph architectural dependcies for this service"
+description = "Show graph architectural dependcies for this module"
 run = """
 goda graph \
   "shared(github.com/pivaldi/mmw-todo:all, github.com/pivaldi/mmw-todo/... + github.com/pivaldi/mmw-auth/.. + github.com/pivaldi/mmw-notifications/... + github.com/pivaldi/mmw-contracts/...) - github.com/pivaldi/mmw-todo/cmd/migration  - github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations/..." \
@@ -228,16 +228,6 @@ description = "List all dependencies"
 run = """
 echo "All dependencies in workspace:"
 goda list "./..."
-"""
-
-[tasks."deps:services"]
-description = "Show dependencies between services and libs"
-run = """
-echo "Service dependencies:"
-goda graph "./services/..."
-echo ""
-echo "Library dependencies:"
-goda graph "./libs/..."
 """
 
 [tasks."deps:verify"]
@@ -282,11 +272,6 @@ run = "go run cmd/migration/*.go reset"
 [tasks."db:migrate:status"]
 description = "Show current migration statud"
 run = "go run cmd/migration/*.go status"
-
-# Docker tasks
-[tasks."docker:build"]
-description = "Build Docker image"
-run = "cd ../.. && docker build -t todo:latest -f services/todo/build/package/Dockerfile ."
 
 [tasks."docker:up"]
 description = "Start Docker Compose services"

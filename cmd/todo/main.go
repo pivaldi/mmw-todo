@@ -60,7 +60,7 @@ func main() {
 		return
 	}
 
-	todoLogger := logger.With("module", "todo")
+	todoLogger := logger.With("module", todo.ModuleName)
 
 	watermillLogger := watermill.NewSlogLogger(todoLogger)
 	rawBus := gochannel.NewGoChannel(
@@ -94,9 +94,9 @@ func main() {
 		todoConf.AuthServer.URL("", nil),
 	)
 	authSvc := defauth.NewHttpClient(authHttpClient)
-	// authInproc := defauth.NewInprocClient(authApp)
+	// authInproc := defauth.NewInprocClient(authModule)
 
-	todoApp, err := todo.New(todo.Infrastructure{
+	todoModule, err := todo.New(todo.Infrastructure{
 		DBPool:   dbPool,
 		EventBus: systemBus,
 		Logger:   todoLogger,
@@ -104,13 +104,13 @@ func main() {
 	})
 
 	if err != nil {
-		logError("creating app failed", err)
+		logError("creating module failed", err)
 		return
 	}
 
 	// notifLogger := logger.With("module", "notifications")
-	modules := []oglcore.App{
-		todoApp,
+	modules := []oglcore.Module{
+		todoModule,
 		// Use RabitMQ consummer instead
 		// notifications.Build(rawBus, notifLogger),
 	}

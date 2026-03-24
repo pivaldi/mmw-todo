@@ -27,18 +27,18 @@ import (
 )
 
 const relayTableName = "todo.event"
-const AppName = "Auth"
+const ModuleName = "Auth"
 
 var NotifyEvents = domain.AllEvents
 
-type App struct {
+type module struct {
 	relay  *ogloutbox.EventsRelay
 	server *oglserver.HTTPServer
 	logger *slog.Logger
 }
 
 // Ensure Module implements oglcore.Module
-var _ oglcore.App = (*App)(nil)
+var _ oglcore.Module = (*module)(nil)
 
 type Infrastructure struct {
 	DBPool   *pgxpool.Pool
@@ -53,7 +53,7 @@ func (i *Infrastructure) WithConfig(cfg *config.Config) Infrastructure {
 	return *i
 }
 
-func New(infra Infrastructure) (*App, error) {
+func New(infra Infrastructure) (*module, error) {
 	var cfg = infra.cfg
 	if cfg == nil {
 		var err error
@@ -87,7 +87,7 @@ func New(infra Infrastructure) (*App, error) {
 	withDebug := cfg.Environment.IsDev()
 	httpServer := oglserver.NewHTTPServer2(withDebug, httpInfra)
 	// Initialize everything internal to Todo here!
-	return &App{
+	return &module{
 		relay:  ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
 		server: httpServer,
 		logger: infra.Logger,
@@ -100,13 +100,13 @@ func New(infra Infrastructure) (*App, error) {
 //	if err := m.internalCache.Flush(); err != nil {
 //	    return err
 //	}
-func (m *App) Close() error {
+func (m *module) Close() error {
 	m.logger.Info("shutting down module internal resources")
 
 	return nil
 }
 
-func (m *App) Start(ctx context.Context) error {
+func (m *module) Start(ctx context.Context) error {
 	m.logger.Info("starting the app")
 	g, gCtx := errgroup.WithContext(ctx)
 
@@ -124,5 +124,5 @@ func (m *App) Start(ctx context.Context) error {
 
 	err := g.Wait()
 
-	return eris.Wrapf(err, "%s failure", AppName)
+	return eris.Wrapf(err, "%s failure", ModuleName)
 }
