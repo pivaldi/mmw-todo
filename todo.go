@@ -45,22 +45,12 @@ type Infrastructure struct {
 	EventBus oglevents.SystemEventBus
 	AuthSvc  defauth.AuthService
 	Logger   *slog.Logger
-	cfg      *config.Config
-}
-
-func (i *Infrastructure) WithConfig(cfg *config.Config) Infrastructure {
-	i.cfg = cfg
-	return *i
 }
 
 func New(infra Infrastructure) (*module, error) {
-	var cfg = infra.cfg
-	if cfg == nil {
-		var err error
-		cfg, err = config.Load(context.Background(), "")
-		if err != nil {
-			return nil, eris.Wrap(err, "app failed to load config")
-		}
+	cfg, err := config.Load(context.Background(), "")
+	if err != nil {
+		return nil, eris.Wrap(err, "app failed to load config")
 	}
 	mux := http.NewServeMux()
 

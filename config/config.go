@@ -4,7 +4,6 @@ package config
 import (
 	"context"
 	"embed"
-	"fmt"
 	"io/fs"
 
 	oglconfig "github.com/ovya/ogl/config"
@@ -29,10 +28,6 @@ type Config struct {
 	Server     *oglpfconfig.Server `mapstructure:"server"`
 	LogLevel   oglslog.LogLevel    `mapstructure:"log-level"`
 	AuthServer *oglpfconfig.Server `mapstructure:"auth-server"`
-}
-
-func (c *Config) GetAppEnv() fmt.Stringer {
-	return c.Environment
 }
 
 var conf *Config

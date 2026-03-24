@@ -93,14 +93,12 @@ func main() {
 		&http.Client{}, // no TLS needed for localhost
 		todoConf.AuthServer.URL("", nil),
 	)
-	authSvc := defauth.NewHttpClient(authHttpClient)
-	// authInproc := defauth.NewInprocClient(authModule)
 
 	todoModule, err := todo.New(todo.Infrastructure{
 		DBPool:   dbPool,
 		EventBus: systemBus,
 		Logger:   todoLogger,
-		AuthSvc:  authSvc,
+		AuthSvc:  defauth.NewHttpClient(authHttpClient), // defauth.NewInprocClient(authModule)
 	})
 
 	if err != nil {
