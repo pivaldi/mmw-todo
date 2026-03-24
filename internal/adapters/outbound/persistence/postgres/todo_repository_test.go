@@ -134,7 +134,6 @@ func TestPostgresTodRepository_Save_Success(t *testing.T) {
 
 	todo := createTestTodo()
 	err := repo.Save(context.Background(), todo)
-
 	if err != nil {
 		t.Fatalf("Save() unexpected error: %v", err)
 	}
@@ -160,7 +159,6 @@ func TestPostgresTodRepository_Save_WithDueDate_Success(t *testing.T) {
 
 	todo := createTestTodoWithDueDate()
 	err := repo.Save(context.Background(), todo)
-
 	if err != nil {
 		t.Fatalf("Save() unexpected error: %v", err)
 	}
@@ -261,7 +259,6 @@ func TestPostgresTodRepository_FindAll_NoFilters_ReturnsAll(t *testing.T) {
 
 	// Find all
 	todos, err := repo.FindAll(context.Background(), ports.Filters{})
-
 	if err != nil {
 		t.Fatalf("FindAll() unexpected error: %v", err)
 	}
@@ -292,7 +289,6 @@ func TestPostgresTodRepository_FindAll_WithStatusFilter_FiltersCorrectly(t *test
 	todos, err := repo.FindAll(context.Background(), ports.Filters{
 		Status: &pendingStatus,
 	})
-
 	if err != nil {
 		t.Fatalf("FindAll() unexpected error: %v", err)
 	}
@@ -329,7 +325,6 @@ func TestPostgresTodRepository_FindAll_WithPriorityFilter_FiltersCorrectly(t *te
 	todos, err := repo.FindAll(context.Background(), ports.Filters{
 		Priority: &highPriority,
 	})
-
 	if err != nil {
 		t.Fatalf("FindAll() unexpected error: %v", err)
 	}
@@ -360,7 +355,6 @@ func TestPostgresTodRepository_FindAll_WithLimit_LimitsResults(t *testing.T) {
 	todos, err := repo.FindAll(context.Background(), ports.Filters{
 		Limit: &limit,
 	})
-
 	if err != nil {
 		t.Fatalf("FindAll() unexpected error: %v", err)
 	}
@@ -391,7 +385,6 @@ func TestPostgresTodRepository_FindAll_WithOffset_OffsetsResults(t *testing.T) {
 	todos, err := repo.FindAll(context.Background(), ports.Filters{
 		Offset: &offset,
 	})
-
 	if err != nil {
 		t.Fatalf("FindAll() unexpected error: %v", err)
 	}
@@ -416,7 +409,6 @@ func TestPostgresTodRepository_Update_ExistingTodo_Success(t *testing.T) {
 	todo.UpdateTitle(newTitle)
 
 	err := repo.Update(context.Background(), todo, testUserID)
-
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}
@@ -463,7 +455,6 @@ func TestPostgresTodRepository_Update_CompleteTodo_Success(t *testing.T) {
 	todo.Complete()
 
 	err := repo.Update(context.Background(), todo, testUserID)
-
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}
@@ -491,7 +482,6 @@ func TestPostgresTodRepository_Delete_ExistingTodo_Success(t *testing.T) {
 
 	// Delete todo
 	err := repo.Delete(context.Background(), todo.ID(), testUserID)
-
 	if err != nil {
 		t.Fatalf("Delete() unexpected error: %v", err)
 	}

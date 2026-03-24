@@ -22,7 +22,6 @@ func TestInMemoryEventDispatcher_Dispatch_Success(t *testing.T) {
 
 	// Should not return error
 	err := dispatcher.Dispatch(context.Background(), events)
-
 	if err != nil {
 		t.Errorf("Dispatch() unexpected error: %v", err)
 	}
@@ -34,7 +33,6 @@ func TestInMemoryEventDispatcher_Dispatch_EmptyEvents_Success(t *testing.T) {
 
 	// Should handle empty event slice
 	err := dispatcher.Dispatch(context.Background(), []domain.DomainEvent{})
-
 	if err != nil {
 		t.Errorf("Dispatch() unexpected error for empty events: %v", err)
 	}

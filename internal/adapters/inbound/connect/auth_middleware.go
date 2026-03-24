@@ -19,7 +19,8 @@ func NewAuthMiddleware(
 	authSvc defauth.AuthService,
 	logger *slog.Logger,
 	excludedPaths []string,
-	next http.Handler) http.Handler {
+	next http.Handler,
+) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for _, path := range excludedPaths {
 			if strings.HasPrefix(r.URL.Path, path) || strings.Contains(r.URL.Path, "/debug/") {

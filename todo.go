@@ -26,8 +26,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const relayTableName = "todo.event"
-const ModuleName = "Auth"
+const (
+	relayTableName = "todo.event"
+	ModuleName     = "Auth"
+)
 
 var NotifyEvents = domain.AllEvents
 

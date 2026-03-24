@@ -375,7 +375,6 @@ func (t *Todo) MarshalJSON() ([]byte, error) {
 		CompletedAt: t.completedAt,
 		UserID:      t.userID,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}

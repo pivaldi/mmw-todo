@@ -181,7 +181,6 @@ func TestTodo_Reopen(t *testing.T) {
 			todo := createTodoWithStatus(t, tt.initialStatus)
 
 			err := todo.Reopen()
-
 			if err != nil {
 				t.Errorf("Reopen() unexpected error: %v", err)
 			}
@@ -264,7 +263,6 @@ func TestTodo_UpdateDescription(t *testing.T) {
 
 	newDescription := "New description"
 	err := todo.UpdateDescription(newDescription)
-
 	if err != nil {
 		t.Errorf("UpdateDescription() unexpected error: %v", err)
 	}
@@ -287,7 +285,6 @@ func TestTodo_UpdatePriority(t *testing.T) {
 
 	newPriority := PriorityUrgent
 	err := todo.UpdatePriority(newPriority)
-
 	if err != nil {
 		t.Errorf("UpdatePriority() unexpected error: %v", err)
 	}
@@ -312,7 +309,6 @@ func TestTodo_UpdateDueDate(t *testing.T) {
 	newDueDate, _ := NewDueDate(futureDate)
 
 	err := todo.UpdateDueDate(&newDueDate)
-
 	if err != nil {
 		t.Errorf("UpdateDueDate() unexpected error: %v", err)
 	}
@@ -435,7 +431,6 @@ func TestTodo_MarkInProgress(t *testing.T) {
 	todo.ClearEvents()
 
 	err := todo.MarkInProgress()
-
 	if err != nil {
 		t.Errorf("MarkInProgress() unexpected error: %v", err)
 	}

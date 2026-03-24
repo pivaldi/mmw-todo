@@ -68,7 +68,6 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 		todo.UpdatedAt(),
 		todo.UserID().String(),
 	)
-
 	if err != nil {
 		return eris.Wrap(err, "saving todo")
 	}
@@ -241,7 +240,6 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo, 
 		dueDate,
 		todo.UpdatedAt(),
 	)
-
 	if err != nil {
 		return eris.Wrap(err, "updating todo")
 	}

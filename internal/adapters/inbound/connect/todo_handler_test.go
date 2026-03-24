@@ -113,7 +113,6 @@ func TestTodoHandler_CreateTodo_Success(t *testing.T) {
 	})
 
 	resp, err := handler.CreateTodo(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("CreateTodo() unexpected error: %v", err)
 	}
@@ -159,7 +158,6 @@ func TestTodoHandler_CreateTodo_WithDueDate_Success(t *testing.T) {
 	})
 
 	resp, err := handler.CreateTodo(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("CreateTodo() unexpected error: %v", err)
 	}
@@ -195,7 +193,6 @@ func TestTodoHandler_GetTodo_Success(t *testing.T) {
 	})
 
 	resp, err := handler.GetTodo(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("GetTodo() unexpected error: %v", err)
 	}
@@ -263,7 +260,6 @@ func TestTodoHandler_UpdateTodo_Success(t *testing.T) {
 	})
 
 	resp, err := handler.UpdateTodo(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("UpdateTodo() unexpected error: %v", err)
 	}
@@ -295,7 +291,6 @@ func TestTodoHandler_CompleteTodo_Success(t *testing.T) {
 	})
 
 	resp, err := handler.CompleteTodo(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("CompleteTodo() unexpected error: %v", err)
 	}
@@ -327,7 +322,6 @@ func TestTodoHandler_ReopenTodo_Success(t *testing.T) {
 	})
 
 	resp, err := handler.ReopenTodo(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("ReopenTodo() unexpected error: %v", err)
 	}
@@ -354,7 +348,6 @@ func TestTodoHandler_DeleteTodo_Success(t *testing.T) {
 	})
 
 	_, err := handler.DeleteTodo(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("DeleteTodo() unexpected error: %v", err)
 	}
@@ -407,7 +400,6 @@ func TestTodoHandler_ListTodos_Success(t *testing.T) {
 	})
 
 	resp, err := handler.ListTodos(context.Background(), req)
-
 	if err != nil {
 		t.Fatalf("ListTodos() unexpected error: %v", err)
 	}

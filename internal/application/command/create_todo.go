@@ -77,7 +77,6 @@ func (c *CreateTodoCommand) Execute(
 
 		return nil
 	})
-
 	// Handle UoW failure => Rollback already happened automatically
 	if err != nil {
 		return nil, eris.Wrap(err, "uow execution failed")
