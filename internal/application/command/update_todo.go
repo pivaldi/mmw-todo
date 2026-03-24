@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"time"
 
 	"github.com/rotisserie/eris"
 
@@ -53,54 +52,9 @@ func (c *UpdateTodoCommand) Execute(
 	}
 
 	// Update title if provided
-	if req.Title != nil {
-		title, err := domain.NewTaskTitle(*req.Title)
-		if err != nil {
-			return nil, eris.Wrap(err, "invalid title")
-		}
-		if err := todo.UpdateTitle(title); err != nil {
-			return nil, eris.Wrap(err, "updating title")
-		}
-	}
-
-	// Update description if provided
-	if req.Description != nil {
-		if err := todo.UpdateDescription(*req.Description); err != nil {
-			return nil, eris.Wrap(err, "updating description")
-		}
-	}
-
-	// Update priority if provided
-	if req.Priority != nil {
-		// Validate priority enum
-		if !req.Priority.IsValid() {
-			return nil, eris.Wrap(domain.ErrInvalidPriority, "invalid priority")
-		}
-		if err := todo.UpdatePriority(*req.Priority); err != nil {
-			return nil, eris.Wrap(err, "updating priority")
-		}
-	}
-
-	// Update due date if provided
-	if req.DueDate != nil {
-		var dueDate *domain.DueDate
-		if *req.DueDate != (time.Time{}) {
-			dd, err := domain.NewDueDate(*req.DueDate)
-			if err != nil {
-				return nil, eris.Wrap(err, "invalid due date")
-			}
-			dueDate = &dd
-		}
-		if err := todo.UpdateDueDate(dueDate); err != nil {
-			return nil, eris.Wrap(err, "updating due date")
-		}
-	}
-
-	// Update status if provided
-	if req.Status != nil {
-		if err := todo.UpdateStatus(*req.Status); err != nil {
-			return nil, eris.Wrap(err, "updating status")
-		}
+	err = todo.Update(req.Title, req.Description, req.Priority, req.DueDate, req.Status)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to update")
 	}
 
 	// Persist changes

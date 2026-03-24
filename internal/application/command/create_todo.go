@@ -61,7 +61,7 @@ func (c *CreateTodoCommand) Execute(
 		dueDate = &dd
 	}
 
-	todo := domain.NewTodo(title, req.Description, req.Priority, dueDate, userID)
+	todo := domain.New(title, req.Description, req.Priority, dueDate, userID)
 
 	// Execute Infrastructure operations within the Unit of Work so with transaction.
 	err = c.unitOfWork.WithTransaction(ctx, func(txCtx context.Context) error {

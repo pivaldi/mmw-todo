@@ -21,16 +21,9 @@ func NewLogEventDispatcher(logger *slog.Logger) *LogEventDispatcher {
 }
 
 // Dispatch publishes domain events
-// Currently logs events; in production would publish to message broker
 func (d *LogEventDispatcher) Dispatch(_ context.Context, events []domain.DomainEvent) error {
 	for _, event := range events {
-		// Serialize event data for logging
-		eventData, err := json.Marshal(
-			map[string]any{
-				"type":         event.EventType(),
-				"aggregate_id": event.AggregateID(),
-				"occurred_at":  event.OccurredAt(),
-			})
+		eventData, err := json.Marshal(event)
 		if err != nil {
 			d.logger.Error("failed to marshal event",
 				"error", err,
@@ -40,13 +33,7 @@ func (d *LogEventDispatcher) Dispatch(_ context.Context, events []domain.DomainE
 			continue
 		}
 
-		// Log the event
-		d.logger.Info("domain event dispatched",
-			"event_type", event.EventType(),
-			"aggregate_id", event.AggregateID(),
-			"occurred_at", event.OccurredAt(),
-			"event_data", string(eventData),
-		)
+		d.logger.Info("domain event dispatched", "data", eventData)
 	}
 
 	return nil

@@ -36,7 +36,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 			return eris.Wrapf(err, "failed to marshal event %s", event.EventType())
 		}
 
-		batch.Queue(query, event.EventType(), string(payload), event.OccurredAt())
+		batch.Queue(query, event.EventType(), string(payload), event.GetOccurredAt())
 	}
 
 	// uses the transaction from the Oglpguow context!

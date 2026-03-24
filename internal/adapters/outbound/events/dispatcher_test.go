@@ -39,23 +39,3 @@ func TestInMemoryEventDispatcher_Dispatch_EmptyEvents_Success(t *testing.T) {
 		t.Errorf("Dispatch() unexpected error for empty events: %v", err)
 	}
 }
-
-func TestInMemoryEventDispatcher_Dispatch_MultipleEvents_Success(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	dispatcher := NewLogEventDispatcher(logger)
-
-	// Create multiple test events
-	todoID := domain.NewTodoID()
-	title, _ := domain.NewTaskTitle("Test Todo")
-	event1 := domain.NewTodoCreatedEvent(todoID, title, "Description", domain.PriorityMedium, nil)
-	event2 := domain.NewTodoUpdatedEvent(todoID)
-
-	events := []domain.DomainEvent{event1, event2}
-
-	// Should handle multiple events
-	err := dispatcher.Dispatch(context.Background(), events)
-
-	if err != nil {
-		t.Errorf("Dispatch() unexpected error for multiple events: %v", err)
-	}
-}

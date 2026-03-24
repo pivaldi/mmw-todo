@@ -6,10 +6,10 @@ import "time"
 type DomainEvent interface {
 	// EventType returns the type of the event
 	EventType() string
-	// AggregateID returns the ID of the aggregate that emitted the event
-	AggregateID() string
-	// OccurredAt returns when the event occurred
-	OccurredAt() time.Time
+	// GetAggregateID returns the ID of the aggregate that emitted the event
+	GetAggregateID() string
+	// GetOccurredAt returns when the event occurred
+	GetOccurredAt() time.Time
 }
 
 const (
@@ -30,18 +30,18 @@ var AllEvents = []string{
 
 // BaseDomainEvent contains common fields for all domain events
 type BaseDomainEvent struct {
-	aggregateID string
-	occurredAt  time.Time
+	AggregateID string
+	OccurredAt  time.Time
 }
 
-// AggregateID returns the ID of the aggregate
-func (e BaseDomainEvent) AggregateID() string {
-	return e.aggregateID
+// GetAggregateID returns the ID of the aggregate
+func (e BaseDomainEvent) GetAggregateID() string {
+	return e.AggregateID
 }
 
-// OccurredAt returns when the event occurred
-func (e BaseDomainEvent) OccurredAt() time.Time {
-	return e.occurredAt
+// GetOccurredAt returns when the event occurred
+func (e BaseDomainEvent) GetOccurredAt() time.Time {
+	return e.OccurredAt
 }
 
 // TodoCreated event is emitted when a new todo is created
@@ -68,8 +68,8 @@ func NewTodoCreatedEvent(id TodoID, title TaskTitle, description string, priorit
 
 	return &TodoCreated{
 		BaseDomainEvent: BaseDomainEvent{
-			aggregateID: id.String(),
-			occurredAt:  time.Now(),
+			AggregateID: id.String(),
+			OccurredAt:  time.Now(),
 		},
 		Title:       title.String(),
 		Description: description,
@@ -81,11 +81,7 @@ func NewTodoCreatedEvent(id TodoID, title TaskTitle, description string, priorit
 // TodoUpdated event is emitted when a todo is modified
 type TodoUpdated struct {
 	BaseDomainEvent
-	Title       *string
-	Description *string
-	Priority    *string
-	DueDate     *time.Time
-	Status      *string
+	Todo *Todo
 }
 
 // EventType returns the event type
@@ -94,12 +90,13 @@ func (e *TodoUpdated) EventType() string {
 }
 
 // NewTodoUpdatedEvent creates a new TodoUpdated event
-func NewTodoUpdatedEvent(id TodoID) *TodoUpdated {
+func NewTodoUpdatedEvent(todo *Todo) *TodoUpdated {
 	return &TodoUpdated{
 		BaseDomainEvent: BaseDomainEvent{
-			aggregateID: id.String(),
-			occurredAt:  time.Now(),
+			AggregateID: todo.id.String(),
+			OccurredAt:  time.Now(),
 		},
+		Todo: todo,
 	}
 }
 
@@ -118,8 +115,8 @@ func (e *TodoCompleted) EventType() string {
 func NewTodoCompletedEvent(id TodoID, completedAt time.Time) *TodoCompleted {
 	return &TodoCompleted{
 		BaseDomainEvent: BaseDomainEvent{
-			aggregateID: id.String(),
-			occurredAt:  time.Now(),
+			AggregateID: id.String(),
+			OccurredAt:  time.Now(),
 		},
 		CompletedAt: completedAt,
 	}
@@ -140,8 +137,8 @@ func (e *TodoReopened) EventType() string {
 func NewTodoReopenedEvent(id TodoID, previousStatus TaskStatus) *TodoReopened {
 	return &TodoReopened{
 		BaseDomainEvent: BaseDomainEvent{
-			aggregateID: id.String(),
-			occurredAt:  time.Now(),
+			AggregateID: id.String(),
+			OccurredAt:  time.Now(),
 		},
 		PreviousStatus: previousStatus.String(),
 	}
@@ -161,8 +158,8 @@ func (e *TodoDeleted) EventType() string {
 func NewTodoDeletedEvent(id TodoID) *TodoDeleted {
 	return &TodoDeleted{
 		BaseDomainEvent: BaseDomainEvent{
-			aggregateID: id.String(),
-			occurredAt:  time.Now(),
+			AggregateID: id.String(),
+			OccurredAt:  time.Now(),
 		},
 	}
 }

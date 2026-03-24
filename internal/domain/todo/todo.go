@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,8 +24,8 @@ type Todo struct {
 	userID      uuid.UUID
 }
 
-// NewTodo creates a new Todo aggregate with validation
-func NewTodo(title TaskTitle, description string, priority Priority, dueDate *DueDate, userID uuid.UUID) *Todo {
+// New creates a new Todo aggregate with validation
+func New(title TaskTitle, description string, priority Priority, dueDate *DueDate, userID uuid.UUID) *Todo {
 	id := NewTodoID()
 	now := time.Now()
 
@@ -137,6 +139,46 @@ func (t *Todo) ClearEvents() {
 
 // Business methods
 
+func (t *Todo) Update(title, description *string, priority *Priority, dueDate *time.Time, status *TaskStatus) error {
+	if title != nil {
+		taskTitle, err := NewTaskTitle(*title)
+		if err != nil {
+			return err
+		}
+
+		t.title = taskTitle
+	}
+
+	if description != nil {
+		t.description = *description
+	}
+
+	if priority != nil {
+		t.priority = *priority
+	}
+
+	if dueDate != nil {
+		var ldueDate *DueDate
+		if *dueDate != (time.Time{}) {
+			dd, err := NewDueDate(*dueDate)
+			if err != nil {
+				return err
+			}
+			ldueDate = &dd
+		}
+
+		t.dueDate = ldueDate
+	}
+
+	if status != nil {
+		t.status = *status
+	}
+
+	t.addEvent(NewTodoUpdatedEvent(t))
+
+	return nil
+}
+
 // UpdateTitle updates the todo title with validation
 func (t *Todo) UpdateTitle(newTitle TaskTitle) error {
 	if t.status.IsCompleted() {
@@ -145,7 +187,7 @@ func (t *Todo) UpdateTitle(newTitle TaskTitle) error {
 
 	t.title = newTitle
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t.id))
+	t.addEvent(NewTodoUpdatedEvent(t))
 
 	return nil
 }
@@ -158,7 +200,7 @@ func (t *Todo) UpdateDescription(newDescription string) error {
 
 	t.description = newDescription
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t.id))
+	t.addEvent(NewTodoUpdatedEvent(t))
 
 	return nil
 }
@@ -171,7 +213,7 @@ func (t *Todo) UpdatePriority(newPriority Priority) error {
 
 	t.priority = newPriority
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t.id))
+	t.addEvent(NewTodoUpdatedEvent(t))
 
 	return nil
 }
@@ -184,7 +226,7 @@ func (t *Todo) UpdateDueDate(newDueDate *DueDate) error {
 
 	t.dueDate = newDueDate
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t.id))
+	t.addEvent(NewTodoUpdatedEvent(t))
 
 	return nil
 }
@@ -200,7 +242,7 @@ func (t *Todo) UpdateStatus(newStatus TaskStatus) error {
 
 	t.status = newStatus
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t.id))
+	t.addEvent(NewTodoUpdatedEvent(t))
 
 	return nil
 }
@@ -253,7 +295,7 @@ func (t *Todo) Cancel() error {
 
 	t.status = TaskStatusCancelled
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t.id))
+	t.addEvent(NewTodoUpdatedEvent(t))
 
 	return nil
 }
@@ -270,7 +312,7 @@ func (t *Todo) MarkInProgress() error {
 
 	t.status = TaskStatusInProgress
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t.id))
+	t.addEvent(NewTodoUpdatedEvent(t))
 
 	return nil
 }
@@ -298,4 +340,45 @@ func (t *Todo) IsDueSoon(within time.Duration) bool {
 // addEvent adds a domain event to the unpublished events list
 func (t *Todo) addEvent(event DomainEvent) {
 	t.events = append(t.events, event)
+}
+
+// MarshalJSON implements json.Marshaler so that Todo serializes its private fields.
+func (t *Todo) MarshalJSON() ([]byte, error) {
+	type todoJSON struct {
+		ID          string     `json:"id"`
+		Title       string     `json:"title"`
+		Description string     `json:"description"`
+		Status      string     `json:"status"`
+		Priority    string     `json:"priority"`
+		DueDate     *time.Time `json:"dueDate,omitempty"`
+		CreatedAt   time.Time  `json:"createdAt"`
+		UpdatedAt   time.Time  `json:"updatedAt"`
+		CompletedAt *time.Time `json:"completedAt,omitempty"`
+		UserID      uuid.UUID  `json:"userId"`
+	}
+
+	var dueDate *time.Time
+	if t.dueDate != nil {
+		d := t.dueDate.Time()
+		dueDate = &d
+	}
+
+	bs, err := json.Marshal(todoJSON{
+		ID:          t.id.String(),
+		Title:       t.title.String(),
+		Description: t.description,
+		Status:      t.status.String(),
+		Priority:    t.priority.String(),
+		DueDate:     dueDate,
+		CreatedAt:   t.createdAt,
+		UpdatedAt:   t.updatedAt,
+		CompletedAt: t.completedAt,
+		UserID:      t.userID,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return bs, nil
 }
