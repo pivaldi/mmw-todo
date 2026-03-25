@@ -81,6 +81,10 @@ func (m *MockTodoService) ListTodos(ctx context.Context, filters *dto.ListFilter
 	return nil, errors.New("not implemented")
 }
 
+func (m *MockTodoService) Health(ctx context.Context) (any, error) {
+	return nil, nil
+}
+
 func TestTodoHandler_CreateTodo_Success(t *testing.T) {
 	mockService := &MockTodoService{
 		CreateTodoFunc: func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
