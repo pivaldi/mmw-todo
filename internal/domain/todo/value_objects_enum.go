@@ -87,7 +87,7 @@ func (x *Priority) AppendText(b []byte) ([]byte, error) {
 var errPriorityNilPtr = errors.New("value pointer is nil") // one per type for package clashes
 
 // Scan implements the Scanner interface.
-func (x *Priority) Scan(value interface{}) (err error) {
+func (x *Priority) Scan(value any) (err error) {
 	if value == nil {
 		*x = Priority("")
 		return
@@ -200,7 +200,7 @@ func (x *TaskStatus) AppendText(b []byte) ([]byte, error) {
 var errTaskStatusNilPtr = errors.New("value pointer is nil") // one per type for package clashes
 
 // Scan implements the Scanner interface.
-func (x *TaskStatus) Scan(value interface{}) (err error) {
+func (x *TaskStatus) Scan(value any) (err error) {
 	if value == nil {
 		*x = TaskStatus("")
 		return

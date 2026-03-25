@@ -54,7 +54,7 @@ type TodoCreated struct {
 }
 
 // EventType returns the event type
-func (e *TodoCreated) EventType() string {
+func (*TodoCreated) EventType() string {
 	return EventCreated
 }
 
@@ -85,7 +85,7 @@ type TodoUpdated struct {
 }
 
 // EventType returns the event type
-func (e *TodoUpdated) EventType() string {
+func (*TodoUpdated) EventType() string {
 	return EventUpdated
 }
 
@@ -107,7 +107,7 @@ type TodoCompleted struct {
 }
 
 // EventType returns the event type
-func (e *TodoCompleted) EventType() string {
+func (*TodoCompleted) EventType() string {
 	return EventCompleted
 }
 
@@ -129,7 +129,7 @@ type TodoReopened struct {
 }
 
 // EventType returns the event type
-func (e *TodoReopened) EventType() string {
+func (*TodoReopened) EventType() string {
 	return EventReopened
 }
 
@@ -150,7 +150,7 @@ type TodoDeleted struct {
 }
 
 // EventType returns the event type
-func (e *TodoDeleted) EventType() string {
+func (*TodoDeleted) EventType() string {
 	return EventDeleted
 }
 

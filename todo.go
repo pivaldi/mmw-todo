@@ -58,7 +58,7 @@ func New(infra Infrastructure) (*module, error) {
 
 	todoRepo := postgres.NewPostgresTodoRepository(infra.DBPool)
 	eventDispatcher := events.NewPostgresOutboxDispatcher(infra.DBPool)
-	todoService := application.NewTodoApplicationService(todoRepo, ogluow.NewUnitOfWork(infra.DBPool), eventDispatcher)
+	todoService := application.NewTodoApplicationService(todoRepo, ogluow.New(infra.DBPool), eventDispatcher)
 
 	path, handler := todov1connect.NewTodoServiceHandler(
 		connecthandler.NewTodoHandler(todoService),
@@ -72,7 +72,7 @@ func New(infra Infrastructure) (*module, error) {
 		Config:      cfg.Server,
 		Handler:     mux,
 		Logger:      infra.Logger,
-		HealthFns:   oglserver.HealthFns{"database": todoRepo.Health},
+		HealthFns:   oglserver.HealthFns{"database": todoService.Health},
 		LogPayloads: true,
 	}
 

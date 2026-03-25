@@ -21,12 +21,13 @@ r = "mise run"
 CONTRACTS_DIR = "{{config_root}}/../../contracts"
 GOTESTSUM_OPTIONS = "--format testdox"
 MIGRATIONS_DIR= "{{config_root}}/internal/infra/persistence/migrations/scripts"
-
-# Environment variables
-[env]
+COMPILE_OPTIONS="-tags no_clickhouse,no_mysql,no_mssql"
 BINARY_NAME = "todo"
 BINARY_PATH = "./cmd/todo"
 BUILD_DIR = "bin"
+
+# Environment variables
+[env]
 _.file = ".envrc"  # Load .envrc file if it exists
 APP_ENV = { required = true }
 APP_NAME = { required = true }
@@ -120,32 +121,32 @@ buf breaking --against '.git#branch=master' proto/todo
 description = "Build the application binary"
 depends = ["generate"]
 run = """
-[ -e ${BUILD_DIR} ] || mkdir -p ${BUILD_DIR}
-go build -o ${BUILD_DIR}/${BINARY_NAME} -v ${BINARY_PATH}
+[ -e {{vars.BUILD_DIR}} ] || mkdir -p {{vars.BUILD_DIR}}
+go build {{vars.COMPILE_OPTIONS}} -o {{vars.BUILD_DIR}}/{{vars.BINARY_NAME}} -v {{vars.BINARY_PATH}}
 """
 
 [tasks."build-linux"]
 description = "Build for Linux"
 depends = ["generate"]
 run = """
-mkdir -p ${BUILD_DIR}
-GOOS=linux GOARCH=amd64 go build -o ${BUILD_DIR}/${BINARY_NAME}-linux-amd64 -v ${BINARY_PATH}
+mkdir -p {{vars.BUILD_DIR}}
+GOOS=linux GOARCH=amd64 go build {{vars.COMPILE_OPTIONS}} -o {{vars.BUILD_DIR}}/{{vars.BINARY_NAME}}-linux-amd64 -v {{vars.BINARY_PATH}}
 """
 
 [tasks."build-darwin"]
 description = "Build for macOS"
 depends = ["generate"]
 run = """
-mkdir -p ${BUILD_DIR}
-GOOS=darwin GOARCH=amd64 go build -o ${BUILD_DIR}/${BINARY_NAME}-darwin-amd64 -v ${BINARY_PATH}
-GOOS=darwin GOARCH=arm64 go build -o ${BUILD_DIR}/${BINARY_NAME}-darwin-arm64 -v ${BINARY_PATH}
+mkdir -p {{vars.BUILD_DIR}}
+GOOS=darwin GOARCH=amd64 go build {{vars.COMPILE_OPTIONS}} -o {{vars.BUILD_DIR}}/{{vars.BINARY_NAME}}-darwin-amd64 -v {{vars.BINARY_PATH}}
+GOOS=darwin GOARCH=arm64 go build {{vars.COMPILE_OPTIONS}} -o {{vars.BUILD_DIR}}/{{vars.BINARY_NAME}}-darwin-arm64 -v {{vars.BINARY_PATH}}
 """
 
 [tasks.clean]
 description = "Clean build artifacts"
 run = """
 go clean
-rm -rf ${BUILD_DIR}
+rm -rf {{vars.BUILD_DIR}}
 rm -rf gen/
 """
 
@@ -239,23 +240,21 @@ run = "go mod verify"
 description = "Build the database migrations (needed to embed go migrations)"
 # sources = ["cmd/migration/*.go", "{{config_root}}/internal/infra/persistence/migrations/scripts/*.go"]
 run = """
-  go build -o ${BUILD_DIR}/ cmd/migration/migrate.go &&
-  ls -l ${BUILD_DIR}/migrate
+  go build {{vars.COMPILE_OPTIONS}} -o {{vars.BUILD_DIR}}/ cmd/migration/migrate.go &&
+  ls -l {{vars.BUILD_DIR}}/migrate
 """
 
 [tasks."db:migrate:up"]
-# depends = ["db:migrate:build"]
 description = "Run database migrations up"
-run = "go run cmd/migration/*.go up"
+run = "go run {{vars.COMPILE_OPTIONS}} cmd/migration/*.go up"
 
 [tasks."db:migrate:down"]
-depends = ["db:migrate:build"]
 description = "Run database migrations down"
-run = "${BUILD_DIR}/migrate down"
+run = "go run {{vars.COMPILE_OPTIONS}} cmd/migration/*.go down"
 
 [tasks."db:migrate:create"]
 description = "Create new SQL/Go migration"
-run = "go run cmd/migration/*.go create -d {{vars.MIGRATIONS_DIR}}"
+run = "go run {{vars.COMPILE_OPTIONS}} cmd/migration/*.go create -d {{vars.MIGRATIONS_DIR}}"
 
 [tasks."db:migrate:version"]
 description = "Show current migration version"
@@ -289,7 +288,7 @@ run = "docker-compose -f deployments/docker-compose.yml logs -f"
 [tasks.run]
 description = "Run the application"
 # depends = ["generate"] # See https://buf.build/docs/bsr/rate-limits/ for details about BSR rate limiting.
-run = "go run ${BINARY_PATH}/main.go"
+run = "go run {{vars.BINARY_PATH}}/main.go"
 
 [tasks."run:dev"]
 description = "Run with hot reload (requires air)"

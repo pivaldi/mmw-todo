@@ -25,6 +25,7 @@ var (
 // DomainError interface for type checking domain errors
 type DomainError interface {
 	error
+	// Enforce a domain error type
 	IsDomainError()
 }
 
@@ -38,7 +39,7 @@ func (e ValidationError) Error() string {
 	return e.Field + ": " + e.Message
 }
 
-func (e ValidationError) IsDomainError() {}
+func (ValidationError) IsDomainError() {}
 
 // NewValidationError creates a new validation error
 func NewValidationError(field, message string) ValidationError {
@@ -58,7 +59,7 @@ func (e BusinessRuleError) Error() string {
 	return "business rule violated (" + e.Rule + "): " + e.Message
 }
 
-func (e BusinessRuleError) IsDomainError() {}
+func (BusinessRuleError) IsDomainError() {}
 
 // NewBusinessRuleError creates a new business rule error
 func NewBusinessRuleError(rule, message string) BusinessRuleError {

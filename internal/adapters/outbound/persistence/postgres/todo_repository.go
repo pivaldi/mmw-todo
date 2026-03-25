@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	ogldb "github.com/ovya/ogl/db"
 	ogluow "github.com/ovya/ogl/pg/uow"
 	"github.com/rotisserie/eris"
 
@@ -21,53 +21,21 @@ type PostgresTodoRepository struct {
 	pool *pgxpool.Pool
 }
 
-// todoRow represents a todo row from the database
-type todoRow struct {
-	ID          string     `db:"id"`
-	Title       string     `db:"title"`
-	Description string     `db:"description"`
-	Status      string     `db:"status"`
-	Priority    string     `db:"priority"`
-	DueDate     *time.Time `db:"due_date"`
-	CreatedAt   time.Time  `db:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at"`
-	UserID      string     `db:"user_id"`
-}
-
 // NewPostgresTodoRepository creates a new PostgreSQL repository
 func NewPostgresTodoRepository(pool *pgxpool.Pool) *PostgresTodoRepository {
-	return &PostgresTodoRepository{
-		pool: pool,
-	}
+	return &PostgresTodoRepository{pool: pool}
 }
 
 // Save persists a new todo to the database.
 func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) error {
 	query := `
-		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO todo.todo (id, title, description, status, priority, due_date,
+		                       created_at, updated_at, completed_at, user_id)
+		VALUES (@id, @title, @description, @status, @priority, @due_date,
+		        @created_at, @updated_at, @completed_at, @user_id)
 	`
-
-	var dueDate *time.Time
-	if todo.DueDate() != nil {
-		t := todo.DueDate().Time()
-		dueDate = &t
-	}
-
-	// getExecutor automatically uses the Tx if it's in the ctx!
 	exec := ogluow.GetExecutor(ctx, r.pool)
-
-	_, err := exec.Exec(ctx, query,
-		todo.ID().String(),
-		todo.Title().String(),
-		todo.Description(),
-		todo.Status().String(),
-		todo.Priority().String(),
-		dueDate,
-		todo.CreatedAt(),
-		todo.UpdatedAt(),
-		todo.UserID().String(),
-	)
+	_, err := exec.Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
 	if err != nil {
 		return eris.Wrap(err, "saving todo")
 	}
@@ -75,8 +43,8 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 	return nil
 }
 
-// BatchSave persists multiple todos efficiently in a single network trip
-// Example:
+// BatchSave persists multiple todos efficiently in a single network trip.
+// Uses positional args — pgx.Batch is incompatible with pgx.NamedArgs.
 func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.Todo) error {
 	if len(todos) == 0 {
 		return nil
@@ -84,41 +52,31 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 
 	batch := &pgx.Batch{}
 	query := `
-		INSERT INTO todo.todo (id, title, description, status, priority, due_date, created_at, updated_at, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO todo.todo (id, title, description, status, priority, due_date,
+		                       created_at, updated_at, completed_at, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
-	// 1. Queue all the queries into the batch locally in memory
 	for _, todo := range todos {
-		var dueDate *time.Time
-		if todo.DueDate() != nil {
-			t := todo.DueDate().Time()
-			dueDate = &t
-		}
-
+		snap := todo.Snapshot()
 		batch.Queue(query,
-			todo.ID().String(),
-			todo.Title().String(),
-			todo.Description(),
-			todo.Status().String(),
-			todo.Priority().String(),
-			dueDate,
-			todo.CreatedAt(),
-			todo.UpdatedAt(),
-			todo.UserID().String(),
+			snap.ID.String(),
+			snap.Title,
+			snap.Description,
+			snap.Status,
+			snap.Priority,
+			snap.DueDate,
+			snap.CreatedAt,
+			snap.UpdatedAt,
+			snap.CompletedAt,
+			snap.UserID.String(),
 		)
 	}
 
-	// 2. Get the executor (magically uses the transaction if inside a Ogluow!)
 	exec := ogluow.GetExecutor(ctx, r.pool)
-
-	// 3. Send the entire batch to Postgres at once
 	br := exec.SendBatch(ctx, batch)
-
-	// You must close the BatchResults to release the connection back to the pool!
 	defer br.Close()
 
-	// 4. Verify that every single query succeeded
 	for i := range todos {
 		_, err := br.Exec()
 		if err != nil {
@@ -129,21 +87,21 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 	return nil
 }
 
-// FindByID retrieves a todo by its ID scoped to the given user
+// FindByID retrieves a todo by its ID scoped to the given user.
 func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID, userID uuid.UUID) (*domain.Todo, error) {
 	query := `
-		SELECT id, title, description, status, priority, due_date, created_at, updated_at, user_id
+		SELECT id, title, description, status, priority, due_date,
+		       created_at, updated_at, completed_at, user_id
 		FROM todo.todo
 		WHERE id = $1 AND user_id = $2
 	`
-
-	rows, err := r.pool.Query(ctx, query, id.String(), userID.String())
+	exec := ogluow.GetExecutor(ctx, r.pool)
+	rows, err := exec.Query(ctx, query, id.String(), userID)
 	if err != nil {
 		return nil, eris.Wrap(err, "querying todo")
 	}
-	defer rows.Close()
 
-	todo, err := pgx.CollectOneRow(rows, todoRowScanner)
+	snap, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[domain.TodoSnapshot])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrTodoNotFound
@@ -152,94 +110,87 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID,
 		return nil, eris.Wrap(err, "collecting todo")
 	}
 
-	return todo, nil
+	return domain.ReconstituteTodo(&snap), nil
 }
 
-// FindAll retrieves todos matching the given filters
+// FindAll retrieves todos matching the given filters.
+// Uses dynamic positional args for filters — pgx.NamedArgs is incompatible
+// with runtime-composed query strings.
 func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error) {
 	query := `
-		SELECT id, title, description, status, priority, due_date, created_at, updated_at, user_id
+		SELECT id, title, description, status, priority, due_date,
+		       created_at, updated_at, completed_at, user_id
 		FROM todo.todo
-		WHERE 1=1
+		WHERE TRUE
 	`
 	args := []any{}
 	argIndex := 1
 
-	// Apply user_id filter (must come first to keep $N numbering consistent)
 	if filters.UserID != nil {
 		query += fmt.Sprintf(" AND user_id = $%d", argIndex)
 		args = append(args, filters.UserID.String())
 		argIndex++
 	}
 
-	// Apply status filter
 	if filters.Status != nil {
 		query += fmt.Sprintf(" AND status = $%d", argIndex)
 		args = append(args, filters.Status.String())
 		argIndex++
 	}
 
-	// Apply priority filter
 	if filters.Priority != nil {
 		query += fmt.Sprintf(" AND priority = $%d", argIndex)
 		args = append(args, filters.Priority.String())
 		argIndex++
 	}
 
-	// Order by created_at descending (newest first)
 	query += " ORDER BY created_at DESC"
 
-	// Apply limit
 	if filters.Limit != nil {
 		query += fmt.Sprintf(" LIMIT $%d", argIndex)
 		args = append(args, *filters.Limit)
 		argIndex++
 	}
 
-	// Apply offset
 	if filters.Offset != nil {
 		query += fmt.Sprintf(" OFFSET $%d", argIndex)
 		args = append(args, *filters.Offset)
 	}
 
-	rows, err := r.pool.Query(ctx, query, args...)
+	exec := ogluow.GetExecutor(ctx, r.pool)
+	rows, err := exec.Query(ctx, query, args...)
 	if err != nil {
 		return nil, eris.Wrap(err, "querying todos")
 	}
-	defer rows.Close()
 
-	todos, err := pgx.CollectRows(rows, todoRowScanner)
+	snaps, err := pgx.CollectRows(rows, pgx.RowToStructByName[domain.TodoSnapshot])
 	if err != nil {
 		return nil, eris.Wrap(err, "collecting todos")
+	}
+
+	todos := make([]*domain.Todo, len(snaps))
+	for i := range snaps {
+		todos[i] = domain.ReconstituteTodo(&snaps[i])
 	}
 
 	return todos, nil
 }
 
-// Update updates an existing todo scoped to the given user
-func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error {
+// Update updates an existing todo scoped to the given user.
+func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
 	query := `
 		UPDATE todo.todo
-		SET title = $3, description = $4, status = $5, priority = $6, due_date = $7, updated_at = $8
-		WHERE id = $1 AND user_id = $2
+		SET title        = @title,
+		    description  = @description,
+		    status       = @status,
+		    priority     = @priority,
+		    due_date     = @due_date,
+		    updated_at   = @updated_at,
+		    completed_at = @completed_at
+		WHERE id = @id AND user_id = @user_id
 	`
-
-	var dueDate *time.Time
-	if todo.DueDate() != nil {
-		t := todo.DueDate().Time()
-		dueDate = &t
-	}
-
-	result, err := r.pool.Exec(ctx, query,
-		todo.ID().String(),
-		userID.String(),
-		todo.Title().String(),
-		todo.Description(),
-		todo.Status().String(),
-		todo.Priority().String(),
-		dueDate,
-		todo.UpdatedAt(),
-	)
+	exec := ogluow.GetExecutor(ctx, r.pool)
+	result, err := exec.Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
 	if err != nil {
 		return eris.Wrap(err, "updating todo")
 	}
@@ -251,9 +202,10 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo, 
 	return nil
 }
 
-// Delete removes a todo from the database scoped to the given user
+// Delete removes a todo from the database scoped to the given user.
 func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID, userID uuid.UUID) error {
-	result, err := r.pool.Exec(ctx,
+	exec := ogluow.GetExecutor(ctx, r.pool)
+	result, err := exec.Exec(ctx,
 		`DELETE FROM todo.todo WHERE id = $1 AND user_id = $2`,
 		id.String(), userID.String(),
 	)
@@ -276,74 +228,4 @@ func (r *PostgresTodoRepository) Health(ctx context.Context) (any, error) {
 	}
 
 	return count, nil
-}
-
-// todoRowScanner is a pgx.RowToFunc that scans a row and reconstitutes a domain Todo
-func todoRowScanner(row pgx.CollectableRow) (*domain.Todo, error) {
-	// Use pgx.RowToStructByName to automatically map columns to struct fields
-	dbRow, err := pgx.RowToStructByName[todoRow](row)
-	if err != nil {
-		return nil, eris.Wrap(err, "scanning row")
-	}
-
-	// Parse domain ID
-	todoID, err := domain.ParseTodoID(dbRow.ID)
-	if err != nil {
-		return nil, eris.Wrap(err, "invalid todo ID")
-	}
-
-	// Create value objects
-	taskTitle, err := domain.NewTaskTitle(dbRow.Title)
-	if err != nil {
-		return nil, eris.Wrap(err, "invalid title")
-	}
-
-	taskStatus, err := domain.ParseTaskStatus(dbRow.Status)
-	if err != nil {
-		return nil, eris.Wrap(err, "invalid status")
-	}
-
-	taskPriority, err := domain.ParsePriority(dbRow.Priority)
-	if err != nil {
-		return nil, eris.Wrap(err, "invalid priority")
-	}
-
-	var domainDueDate *domain.DueDate
-	if dbRow.DueDate != nil {
-		// For reconstitution, we don't validate that due date is in the future
-		// since it may have passed since creation
-		dd := domain.DueDate{}
-		// We need to use reflection or create a helper method
-		// For now, we'll just store the time directly if it's past
-		// TODO: In production, you might want to add a reconstitution method to DueDate
-		if dbRow.DueDate.After(time.Now()) {
-			dd, err = domain.NewDueDate(*dbRow.DueDate)
-			if err == nil {
-				domainDueDate = &dd
-			}
-		}
-		// If due date is in the past, we'll set it to nil for now
-		// A better approach would be to have a separate reconstitution method
-	}
-
-	userID, err := uuid.Parse(dbRow.UserID)
-	if err != nil {
-		return nil, eris.Wrap(err, "invalid user_id")
-	}
-
-	// Reconstitute the aggregate
-	todo := domain.ReconstituteTodo(
-		todoID,
-		taskTitle,
-		dbRow.Description,
-		taskStatus,
-		taskPriority,
-		domainDueDate,
-		dbRow.CreatedAt,
-		dbRow.UpdatedAt,
-		nil,    // completedAt - we don't track this in current schema
-		userID, // parsed from DB
-	)
-
-	return todo, nil
 }

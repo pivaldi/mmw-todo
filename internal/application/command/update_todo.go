@@ -39,30 +39,25 @@ func (c *UpdateTodoCommand) Execute(
 		return nil, eris.Wrap(err, "update todo")
 	}
 
-	// Parse and validate ID
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
 		return nil, eris.Wrap(err, "invalid todo ID")
 	}
 
-	// Retrieve existing todo
 	todo, err := c.repository.FindByID(ctx, todoID, userID)
 	if err != nil {
 		return nil, eris.Wrap(err, "finding todo")
 	}
 
-	// Update title if provided
 	err = todo.Update(req.Title, req.Description, req.Priority, req.DueDate, req.Status)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to update")
 	}
 
-	// Persist changes
-	if err := c.repository.Update(ctx, todo, userID); err != nil {
+	if err := c.repository.Update(ctx, todo); err != nil {
 		return nil, eris.Wrap(err, "updating todo")
 	}
 
-	// Dispatch domain events
 	if err := c.eventDispatcher.Dispatch(ctx, todo.Events()); err != nil {
 		return nil, eris.Wrap(err, "dispatching events")
 	}
@@ -70,6 +65,5 @@ func (c *UpdateTodoCommand) Execute(
 	// Clear events after dispatching
 	todo.ClearEvents()
 
-	// Map to response DTO
 	return dto.MapTodoToResponse(todo), nil
 }

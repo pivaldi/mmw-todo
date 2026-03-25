@@ -60,6 +60,8 @@ func (c *TodoStatusChangeCommand) Execute(ctx context.Context, id string) (*dto.
 }
 
 // executeStatusChange handles the common flow: retrieve todo -> execute action -> update -> dispatch events.
+//
+//nolint:revive // Because it's an helper
 func executeStatusChange(
 	ctx context.Context,
 	id string,
@@ -83,7 +85,7 @@ func executeStatusChange(
 		return nil, eris.Wrapf(err, "%s", actionName)
 	}
 
-	if err := repository.Update(ctx, todo, userID); err != nil {
+	if err := repository.Update(ctx, todo); err != nil {
 		return nil, eris.Wrap(err, "updating todo")
 	}
 

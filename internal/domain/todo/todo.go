@@ -48,30 +48,66 @@ func New(title TaskTitle, description string, priority Priority, dueDate *DueDat
 	return todo
 }
 
-// ReconstituteTodo reconstitutes a Todo from stored data (used by repository)
-func ReconstituteTodo(
-	id TodoID,
-	title TaskTitle,
-	description string,
-	status TaskStatus,
-	priority Priority,
-	dueDate *DueDate,
-	createdAt, updatedAt time.Time,
-	completedAt *time.Time,
-	userID uuid.UUID,
-) *Todo {
+// Snapshot returns the Memento for this Todo — a plain-data representation
+// of the aggregate's current state, suitable for persistence.
+// events is not included; it is runtime state only.
+func (t *Todo) Snapshot() TodoSnapshot {
+	snap := TodoSnapshot{
+		ID:          uuid.MustParse(string(t.id)), // TodoID is type string; MustParse is safe — ID is always valid UUID
+		Title:       t.title.String(),
+		Description: t.description,
+		Status:      t.status.String(),
+		Priority:    t.priority.String(),
+		CreatedAt:   t.createdAt,
+		UpdatedAt:   t.updatedAt,
+		CompletedAt: t.completedAt,
+		UserID:      t.userID,
+	}
+	if t.dueDate != nil {
+		d := t.dueDate.Time()
+		snap.DueDate = &d
+	}
+
+	return snap
+}
+
+// ReconstituteTodo reconstitutes a Todo from stored data (used by repository).
+// Panics if the snapshot contains values that violate basic type invariants —
+// this should never happen since the DB is the authoritative source of truth.
+func ReconstituteTodo(snap *TodoSnapshot) *Todo {
+	title, err := NewTaskTitle(snap.Title)
+	if err != nil {
+		panic(fmt.Sprintf("ReconstituteTodo: invalid title from DB: %v", err))
+	}
+
+	status, err := ParseTaskStatus(snap.Status)
+	if err != nil {
+		panic(fmt.Sprintf("ReconstituteTodo: invalid status from DB: %v", err))
+	}
+
+	priority, err := ParsePriority(snap.Priority)
+	if err != nil {
+		panic(fmt.Sprintf("ReconstituteTodo: invalid priority from DB: %v", err))
+	}
+
+	var dueDate *DueDate
+	if snap.DueDate != nil {
+		dd := DueDate{value: *snap.DueDate}
+		dueDate = &dd
+	}
+
 	return &Todo{
-		id:          id,
+		id:          TodoID(snap.ID.String()),
 		title:       title,
-		description: description,
+		description: snap.Description,
 		status:      status,
 		priority:    priority,
 		dueDate:     dueDate,
-		createdAt:   createdAt,
-		updatedAt:   updatedAt,
-		completedAt: completedAt,
+		createdAt:   snap.CreatedAt,
+		updatedAt:   snap.UpdatedAt,
+		completedAt: snap.CompletedAt,
 		events:      []DomainEvent{},
-		userID:      userID,
+		userID:      snap.UserID,
 	}
 }
 
@@ -159,7 +195,7 @@ func (t *Todo) Update(title, description *string, priority *Priority, dueDate *t
 
 	if dueDate != nil {
 		var ldueDate *DueDate
-		if *dueDate != (time.Time{}) {
+		if !dueDate.Equal(time.Time{}) {
 			dd, err := NewDueDate(*dueDate)
 			if err != nil {
 				return err

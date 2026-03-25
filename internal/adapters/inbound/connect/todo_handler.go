@@ -269,6 +269,8 @@ func mapPriorityToProto(priority domain.Priority) todov1.Priority {
 }
 
 // mapStatusFromProto converts a protobuf status enum to string
+//
+//nolint:revive // convert status not priority
 func mapStatusFromProto(status todov1.TaskStatus) domain.TaskStatus {
 	switch status {
 	case todov1.TaskStatus_TASK_STATUS_PENDING:
@@ -285,6 +287,8 @@ func mapStatusFromProto(status todov1.TaskStatus) domain.TaskStatus {
 }
 
 // mapPriorityFromProto converts a protobuf priority enum to domain enum
+//
+//nolint:revive // convert priority not status
 func mapPriorityFromProto(priority todov1.Priority) domain.Priority {
 	switch priority {
 	case todov1.Priority_PRIORITY_LOW:

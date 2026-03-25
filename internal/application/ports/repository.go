@@ -22,10 +22,13 @@ type TodoRepository interface {
 	FindAll(ctx context.Context, filters Filters) ([]*domain.Todo, error)
 
 	// Update updates an existing todo
-	Update(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error
+	Update(ctx context.Context, todo *domain.Todo) error
 
 	// Delete removes a todo
 	Delete(ctx context.Context, id domain.TodoID, userID uuid.UUID) error
+
+	// Health repo function
+	Health(ctx context.Context) (any, error)
 }
 
 // Filters represents query filters for finding todos
@@ -41,5 +44,6 @@ type Filters struct {
 
 // UnitOfWork defines the contract for atomic operations
 type UnitOfWork interface {
+	// WithTransaction excute the fn in a transaction context allowin atomic operation.
 	WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
 }

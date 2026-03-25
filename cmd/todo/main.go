@@ -49,7 +49,7 @@ func main() {
 	todoConf, err := config.Load(ctx, "")
 	if err != nil {
 		exitCode = 1
-		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
+		_, _ = fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
 
 		return
 	}
@@ -57,7 +57,7 @@ func main() {
 	logger, err = oglslog.New(oglslog.HandlerText, todoConf.LogLevel.SlogLevel())
 	if err != nil {
 		exitCode = 1
-		fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
+		_, _ = fmt.Fprint(os.Stdout, eris.ToString(err, true)+"\n")
 
 		return
 	}
@@ -118,8 +118,6 @@ func main() {
 	if err != nil {
 		logError("platform error", err)
 		exitCode = 1
-
-		return
 	}
 }
 

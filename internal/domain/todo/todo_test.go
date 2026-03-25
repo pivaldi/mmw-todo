@@ -550,54 +550,59 @@ func TestNewTodo_StoresUserID(t *testing.T) {
 
 func TestReconstituteTodo_StoresUserID(t *testing.T) {
 	userID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
-	id := NewTodoID()
-	title, _ := NewTaskTitle("Test")
-	todo := ReconstituteTodo(id, title, "", TaskStatusPending, PriorityMedium, nil, time.Now(), time.Now(), nil, userID)
+	snap := TodoSnapshot{
+		ID:       uuid.MustParse("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"),
+		Title:    "Test",
+		Status:   TaskStatusPending.String(),
+		Priority: PriorityMedium.String(),
+		UserID:   userID,
+	}
+	todo := ReconstituteTodo(&snap)
 	assert.Equal(t, userID, todo.UserID())
 }
 
 // TestReconstituteTodo tests reconstituting a todo from stored data
 func TestReconstituteTodo(t *testing.T) {
-	id, _ := ParseTodoID("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
-	title, _ := NewTaskTitle("Reconstituted Todo")
-	description := "From database"
-	status := TaskStatusInProgress
-	priority := PriorityHigh
+	id := uuid.MustParse("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11")
 	createdAt := time.Now().Add(-24 * time.Hour)
 	updatedAt := time.Now()
-
-	todo := ReconstituteTodo(
-		id,
-		title,
-		description,
-		status,
-		priority,
-		nil,
-		createdAt,
-		updatedAt,
-		nil,
-		uuid.Nil,
-	)
-
-	// Verify all fields
-	if todo.ID() != id {
-		t.Errorf("ID = %v, want %v", todo.ID(), id)
-	}
-	if todo.Title().String() != title.String() {
-		t.Errorf("Title = %v, want %v", todo.Title().String(), title.String())
-	}
-	if todo.Description() != description {
-		t.Errorf("Description = %v, want %v", todo.Description(), description)
-	}
-	if todo.Status() != status {
-		t.Errorf("Status = %v, want %v", todo.Status(), status)
-	}
-	if todo.Priority() != priority {
-		t.Errorf("Priority = %v, want %v", todo.Priority(), priority)
+	snap := TodoSnapshot{
+		ID:          id,
+		Title:       "Reconstituted Todo",
+		Description: "From database",
+		Status:      TaskStatusInProgress.String(),
+		Priority:    PriorityHigh.String(),
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
+		UserID:      uuid.Nil,
 	}
 
-	// Reconstituted todos should not have events
-	if len(todo.Events()) != 0 {
-		t.Errorf("Reconstituted todo should have 0 events, got %d", len(todo.Events()))
-	}
+	todo := ReconstituteTodo(&snap)
+
+	assert.Equal(t, TodoID(id.String()), todo.ID())
+	assert.Equal(t, "Reconstituted Todo", todo.Title().String())
+	assert.Equal(t, "From database", todo.Description())
+	assert.Equal(t, TaskStatusInProgress, todo.Status())
+	assert.Equal(t, PriorityHigh, todo.Priority())
+	assert.Empty(t, todo.Events(), "reconstituted todo must not emit events")
+}
+
+func TestTodo_Snapshot_roundtrip(t *testing.T) {
+	futureDate := time.Now().Add(48 * time.Hour)
+	dueDate, _ := NewDueDate(futureDate)
+	userID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	title, _ := NewTaskTitle("Round-trip test")
+	original := New(title, "desc", PriorityHigh, &dueDate, userID)
+
+	snap := original.Snapshot()
+	restored := ReconstituteTodo(&snap)
+
+	assert.Equal(t, original.ID(), restored.ID())
+	assert.Equal(t, original.Title().String(), restored.Title().String())
+	assert.Equal(t, original.Description(), restored.Description())
+	assert.Equal(t, original.Status(), restored.Status())
+	assert.Equal(t, original.Priority(), restored.Priority())
+	assert.Equal(t, original.UserID(), restored.UserID())
+	assert.NotNil(t, restored.DueDate())
+	assert.Empty(t, restored.Events())
 }
