@@ -69,15 +69,15 @@ func New(infra Infrastructure) (*module, error) {
 	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, nil, handler))
 
 	httpInfra := oglserver.HTTPServerInfra{
-		Config:      cfg.Server,
-		Handler:     mux,
-		Logger:      infra.Logger,
-		HealthFns:   oglserver.HealthFns{"database": todoService.Health},
-		LogPayloads: true,
+		Config:          cfg.Server,
+		Handler:         mux,
+		Logger:          infra.Logger,
+		HealthFns:       oglserver.HealthFns{"database": todoService.Health},
+		LogPayloads:     true,
+		WithDebugRoutes: cfg.Environment.IsDev(),
 	}
 
-	withDebug := cfg.Environment.IsDev()
-	httpServer := oglserver.NewHTTPServer2(withDebug, httpInfra)
+	httpServer := oglserver.NewHTTPServer(httpInfra)
 	// Initialize everything internal to Todo here!
 	return &module{
 		relay:  ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
