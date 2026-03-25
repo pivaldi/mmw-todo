@@ -11,7 +11,7 @@ import (
 
 	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
 	dto "github.com/pivaldi/mmw-todo/internal/application/dto"
-	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
 // MockTodoService is a mock implementation of application.TodoService

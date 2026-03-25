@@ -21,7 +21,7 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
-	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 )

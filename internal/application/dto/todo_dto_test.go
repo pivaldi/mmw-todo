@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
 // TestMapTodoToResponse tests mapping a domain Todo to TodoResponse DTO

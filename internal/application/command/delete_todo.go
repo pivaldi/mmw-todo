@@ -7,7 +7,7 @@ import (
 
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
-	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
 // DeleteTodoCommand handles deleting todos

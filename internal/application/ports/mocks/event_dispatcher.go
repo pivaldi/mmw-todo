@@ -7,7 +7,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 	mock "github.com/stretchr/testify/mock"
 )
 

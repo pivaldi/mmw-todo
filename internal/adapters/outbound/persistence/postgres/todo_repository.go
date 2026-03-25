@@ -13,7 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
-	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
 // PostgresTodoRepository implements the TodoRepository port using PostgreSQL

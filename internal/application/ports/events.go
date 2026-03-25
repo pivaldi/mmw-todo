@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
 // EventDispatcher defines the interface for publishing domain events

@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	domain "github.com/pivaldi/mmw-todo/internal/domain/todo"
+	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
 // TodoRepository defines the interface for todo persistence operations
