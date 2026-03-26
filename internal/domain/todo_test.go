@@ -14,7 +14,7 @@ func createValidTodo(t *testing.T) *Todo {
 	t.Helper()
 	title, _ := NewTaskTitle("Test Todo")
 
-	return New(title, "Test description", PriorityMedium, nil, uuid.Nil)
+	return NewTodo(title, "Test description", PriorityMedium, nil, uuid.Nil)
 }
 
 func createTodoWithStatus(t *testing.T, status TaskStatus) *Todo {
@@ -38,7 +38,7 @@ func TestNewTodo(t *testing.T) {
 	futureDate := time.Now().Add(24 * time.Hour)
 	dueDate, _ := NewDueDate(futureDate)
 
-	todo := New(title, description, priority, &dueDate, uuid.Nil)
+	todo := NewTodo(title, description, priority, &dueDate, uuid.Nil)
 
 	// Verify initial state
 	if todo.ID().IsEmpty() {
@@ -470,7 +470,7 @@ func TestTodo_IsDue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			title, _ := NewTaskTitle("Test")
-			todo := New(title, "", PriorityMedium, tt.dueDate, uuid.Nil)
+			todo := NewTodo(title, "", PriorityMedium, tt.dueDate, uuid.Nil)
 
 			if got := todo.IsDue(); got != tt.want {
 				t.Errorf("IsDue() = %v, want %v", got, tt.want)
@@ -516,7 +516,7 @@ func TestTodo_IsDueSoon(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			title, _ := NewTaskTitle("Test")
-			todo := New(title, "", PriorityMedium, tt.dueDate, uuid.Nil)
+			todo := NewTodo(title, "", PriorityMedium, tt.dueDate, uuid.Nil)
 
 			if got := todo.IsDueSoon(tt.within); got != tt.want {
 				t.Errorf("IsDueSoon() = %v, want %v", got, tt.want)
@@ -544,7 +544,7 @@ func TestTodo_ClearEvents(t *testing.T) {
 func TestNewTodo_StoresUserID(t *testing.T) {
 	userID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	title, _ := NewTaskTitle("Test")
-	todo := New(title, "", PriorityMedium, nil, userID)
+	todo := NewTodo(title, "", PriorityMedium, nil, userID)
 	assert.Equal(t, userID, todo.UserID())
 }
 
@@ -592,7 +592,7 @@ func TestTodo_Snapshot_roundtrip(t *testing.T) {
 	dueDate, _ := NewDueDate(futureDate)
 	userID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	title, _ := NewTaskTitle("Round-trip test")
-	original := New(title, "desc", PriorityHigh, &dueDate, userID)
+	original := NewTodo(title, "desc", PriorityHigh, &dueDate, userID)
 
 	snap := original.Snapshot()
 	restored := ReconstituteTodo(&snap)

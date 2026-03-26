@@ -24,8 +24,8 @@ type Todo struct {
 	userID      uuid.UUID
 }
 
-// New creates a new Todo aggregate with validation
-func New(title TaskTitle, description string, priority Priority, dueDate *DueDate, userID uuid.UUID) *Todo {
+// NewTodo creates a new Todo aggregate with validation
+func NewTodo(title TaskTitle, description string, priority Priority, dueDate *DueDate, userID uuid.UUID) *Todo {
 	id := NewTodoID()
 	now := time.Now()
 

@@ -16,12 +16,12 @@ import (
 	oglserver "github.com/ovya/ogl/platform/server"
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
 	"github.com/pivaldi/mmw-contracts/gen/go/todo/v1/todov1connect"
-	"github.com/pivaldi/mmw-todo/config"
 	connecthandler "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
 	"github.com/pivaldi/mmw-todo/internal/domain"
+	"github.com/pivaldi/mmw-todo/internal/infra/config"
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
 )
@@ -33,14 +33,14 @@ const (
 
 var NotifyEvents = domain.AllEvents
 
-type module struct {
+type Module struct {
 	relay  *ogloutbox.EventsRelay
 	server *oglserver.HTTPServer
 	logger *slog.Logger
 }
 
 // Ensure Module implements oglcore.Module
-var _ oglcore.Module = (*module)(nil)
+var _ oglcore.Module = (*Module)(nil)
 
 type Infrastructure struct {
 	DBPool   *pgxpool.Pool
@@ -49,7 +49,7 @@ type Infrastructure struct {
 	Logger   *slog.Logger
 }
 
-func New(infra Infrastructure) (*module, error) {
+func New(infra Infrastructure) (*Module, error) {
 	cfg, err := config.Load(context.Background(), "")
 	if err != nil {
 		return nil, eris.Wrap(err, "app failed to load config")
@@ -79,7 +79,7 @@ func New(infra Infrastructure) (*module, error) {
 
 	httpServer := oglserver.NewHTTPServer(httpInfra)
 	// Initialize everything internal to Todo here!
-	return &module{
+	return &Module{
 		relay:  ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
 		server: httpServer,
 		logger: infra.Logger,
@@ -92,13 +92,13 @@ func New(infra Infrastructure) (*module, error) {
 //	if err := m.internalCache.Flush(); err != nil {
 //	    return err
 //	}
-func (m *module) Close() error {
+func (m *Module) Close() error {
 	m.logger.Info("shutting down module internal resources")
 
 	return nil
 }
 
-func (m *module) Start(ctx context.Context) error {
+func (m *Module) Start(ctx context.Context) error {
 	m.logger.Info("starting the app")
 	g, gCtx := errgroup.WithContext(ctx)
 

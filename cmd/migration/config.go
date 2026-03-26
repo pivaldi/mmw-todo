@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/pivaldi/mmw-todo/config"
+	"github.com/pivaldi/mmw-todo/internal/infra/config"
 	"github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
 
 	// Needed to embed all the go migrations
