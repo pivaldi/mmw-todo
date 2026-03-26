@@ -205,7 +205,7 @@ goda graph \
  """
 
 # Dependency tasks
-[tasks."deps-tidy"]
+[tasks."deps:tidy"]
 description = "Tidy Go dependencies"
 run = "go mod tidy"
 
@@ -234,6 +234,11 @@ goda list "./..."
 [tasks."deps:verify"]
 description = "Verify Go dependencies"
 run = "go mod verify"
+
+
+[tasks."metrics:spm"]
+description = "Software Package Metrics tool for Go"
+run = "spm-go all && spm-go dependencies && echo 'See https://mariocarrion.com/2021/06/18/golang-software-architecture-instability-efferent-afferent.html'"
 
 # Database tasks
 [tasks."db:migrate:build"]
