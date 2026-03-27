@@ -22,7 +22,7 @@ type mockAuthService struct {
 	err    error
 }
 
-func (m *mockAuthService) GetUser(_ context.Context, _ string) (*defauth.UserDTO, error) {
+func (m *mockAuthService) GetUser(_ context.Context, _ string) (*defauth.User, error) {
 	return nil, nil
 }
 

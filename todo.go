@@ -20,7 +20,6 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
-	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/pivaldi/mmw-todo/internal/infra/config"
 	"github.com/rotisserie/eris"
 	"golang.org/x/sync/errgroup"
@@ -30,8 +29,6 @@ const (
 	relayTableName = "todo.event"
 	ModuleName     = "Auth"
 )
-
-var NotifyEvents = domain.AllEvents
 
 type Module struct {
 	relay  *ogloutbox.EventsRelay

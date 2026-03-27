@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,7 +69,7 @@ func TestNewTodo(t *testing.T) {
 	if len(events) != 1 {
 		t.Errorf("Expected 1 event, got %d", len(events))
 	}
-	if events[0].EventType() != "todo.created" {
+	if events[0].EventType() != tododef.TopicUserTaskCreated {
 		t.Errorf("Expected TodoCreated event, got %s", events[0].EventType())
 	}
 }
@@ -133,7 +134,7 @@ func TestTodo_Complete(t *testing.T) {
 					if len(events) == 0 {
 						t.Error("Expected todo.completed event")
 					}
-					if events[0].EventType() != "todo.completed" {
+					if events[0].EventType() != tododef.TopicUserTaskCompleted {
 						t.Errorf("Expected todo.completed event, got %s", events[0].EventType())
 					}
 				}
@@ -198,7 +199,7 @@ func TestTodo_Reopen(t *testing.T) {
 				if len(events) == 0 {
 					t.Error("Expected todo.reopened event")
 				}
-				if events[0].EventType() != "todo.reopened" {
+				if events[0].EventType() != tododef.TopicUserTaskReopened {
 					t.Errorf("Expected todo.reopened event, got %s", events[0].EventType())
 				}
 			}

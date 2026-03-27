@@ -73,7 +73,7 @@ run = "APP_ROOT_PATH={{config_root}} ./scripts/common/pre-commit.sh"
 alias = "pc"
 
 # Development tasks
-[tasks."buf-deps"]
+[tasks."buf:deps"]
 description = "Download buf dependencies"
 run = """
 cd {{vars.CONTRACTS_DIR}}
@@ -86,31 +86,41 @@ run = """
 #!/usr/bin/env bash
   set -euo pipefail
 
-  cd {{vars.CONTRACTS_DIR}}
-  buf generate --template buf.gen.todo.yaml
   cd {{config_root}} || exit 1
-  go generate ./...
+  source scripts/common/libs/st.bash
+
+  st.quiet
+
+  st.doing 'Generating Proto'
+  cd {{vars.CONTRACTS_DIR}}
+  st.do buf generate --template buf.gen.todo.yaml
+  st.done
+
+  st.doing 'Generating Go Code'
+  cd {{config_root}} || exit 1
+  st.do go generate ./...
+  st.done
  """
 
 [tasks."generate:mocks"]
 description = "Generate Go mocks for application ports"
 run = "mockery"
 
-[tasks."buf-lint"]
+[tasks."buf:lint"]
 description = "Lint protobuf files (Todo API only)"
 run = """
 cd {{vars.CONTRACTS_DIR}}
-buf lint proto/todo
+buf lint proto
 """
 
-[tasks."buf-format"]
+[tasks."buf:format"]
 description = "Format protobuf files (Todo API only)"
 run = """
 cd {{vars.CONTRACTS_DIR}}
 buf format -w proto/todo
 """
 
-[tasks."buf-breaking"]
+[tasks."buf:breaking"]
 description = "Check for breaking changes in protobuf (Todo API only)"
 run = """
 cd {{vars.CONTRACTS_DIR}}
@@ -125,7 +135,7 @@ run = """
 go build {{vars.COMPILE_OPTIONS}} -o {{vars.BUILD_DIR}}/{{vars.BINARY_NAME}} -v {{vars.BINARY_PATH}}
 """
 
-[tasks."build-linux"]
+[tasks."build:linux"]
 description = "Build for Linux"
 depends = ["generate"]
 run = """
@@ -133,7 +143,7 @@ mkdir -p {{vars.BUILD_DIR}}
 GOOS=linux GOARCH=amd64 go build {{vars.COMPILE_OPTIONS}} -o {{vars.BUILD_DIR}}/{{vars.BINARY_NAME}}-linux-amd64 -v {{vars.BINARY_PATH}}
 """
 
-[tasks."build-darwin"]
+[tasks."build:darwin"]
 description = "Build for macOS"
 depends = ["generate"]
 run = """
@@ -155,7 +165,7 @@ rm -rf gen/
 description = "Run unit tests"
 run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v ./... ./..."
 
-[tasks."test-coverage"]
+[tasks."test:coverage"]
 description = "Run tests with coverage report"
 run = """
 go test -v -race -coverprofile=coverage.out ./...
@@ -163,17 +173,17 @@ go tool cover -html=coverage.out -o coverage.html || exit 1
 echo "Coverage report generated: coverage.html"
 """
 
-[tasks."test-integration"]
+[tasks."test:integration"]
 description = "Run integration tests (requires Docker for testcontainers)"
 run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v -race -tags=integration ./internal/adapters/outbound/persistence/postgres/... ./test/integration/..."
 
-[tasks."test-api"]
+[tasks."test:api"]
 description = "Run API tests (requires running server)"
 run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v -tags=api ./test/api/..."
 
-[tasks."test-all"]
+[tasks."test:all"]
 description = "Run all tests"
-depends = ["test", "test-integration", "test-api"]
+depends = ["test", "test:integration", "test:api"]
 
 # Code quality tasks
 [tasks.fmt]
@@ -190,7 +200,7 @@ run = "go vet ./..."
 
 [tasks.check]
 description = "Run all checks (format, vet, lint)"
-depends = ["fmt", "vet", "lint", "buf-lint"]
+depends = ["fmt", "vet", "lint", "buf:lint"]
 
 [tasks."arch:check"]
 description = "Validate architecture boundaries for this module"

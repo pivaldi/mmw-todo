@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
+)
 
 // DomainEvent is the interface that all domain events must implement
 type DomainEvent interface {
@@ -10,22 +14,6 @@ type DomainEvent interface {
 	GetAggregateID() string
 	// GetOccurredAt returns when the event occurred
 	GetOccurredAt() time.Time
-}
-
-const (
-	EventCreated   = "todo.created"
-	EventUpdated   = "todo.updated"
-	EventReopened  = "todo.reopened"
-	EventDeleted   = "todo.deleted"
-	EventCompleted = "todo.completed"
-)
-
-var AllEvents = []string{
-	EventCreated,
-	EventUpdated,
-	EventReopened,
-	EventDeleted,
-	EventCompleted,
 }
 
 // BaseDomainEvent contains common fields for all domain events
@@ -55,7 +43,7 @@ type TodoCreated struct {
 
 // EventType returns the event type
 func (*TodoCreated) EventType() string {
-	return EventCreated
+	return tododef.TopicUserTaskCreated
 }
 
 // NewTodoCreatedEvent creates a new TodoCreated event
@@ -86,7 +74,7 @@ type TodoUpdated struct {
 
 // EventType returns the event type
 func (*TodoUpdated) EventType() string {
-	return EventUpdated
+	return tododef.TopicUserTaskUpdated
 }
 
 // NewTodoUpdatedEvent creates a new TodoUpdated event
@@ -108,7 +96,7 @@ type TodoCompleted struct {
 
 // EventType returns the event type
 func (*TodoCompleted) EventType() string {
-	return EventCompleted
+	return tododef.TopicUserTaskCompleted
 }
 
 // NewTodoCompletedEvent creates a new TodoCompleted event
@@ -130,7 +118,7 @@ type TodoReopened struct {
 
 // EventType returns the event type
 func (*TodoReopened) EventType() string {
-	return EventReopened
+	return tododef.TopicUserTaskReopened
 }
 
 // NewTodoReopenedEvent creates a new TodoReopened event
@@ -151,7 +139,7 @@ type TodoDeleted struct {
 
 // EventType returns the event type
 func (*TodoDeleted) EventType() string {
-	return EventDeleted
+	return tododef.TopicUserTaskDeleted
 }
 
 // NewTodoDeletedEvent creates a new TodoDeleted event
