@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	ogluow "github.com/ovya/ogl/pg/uow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -130,7 +131,7 @@ func createTestTodoWithDueDate() *domain.Todo {
 
 func TestPostgresTodRepository_Save_Success(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	todo := createTestTodo()
 	err := repo.Save(context.Background(), todo)
@@ -155,7 +156,7 @@ func TestPostgresTodRepository_Save_Success(t *testing.T) {
 
 func TestPostgresTodRepository_Save_WithDueDate_Success(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	todo := createTestTodoWithDueDate()
 	err := repo.Save(context.Background(), todo)
@@ -187,7 +188,7 @@ func TestPostgresTodRepository_Save_WithDueDate_Success(t *testing.T) {
 
 func TestPostgresTodRepository_FindByID_NotFound_ReturnsError(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	nonExistentID := domain.NewTodoID()
 	_, err := repo.FindByID(context.Background(), nonExistentID, testUserID)
@@ -203,7 +204,7 @@ func TestPostgresTodRepository_FindByID_NotFound_ReturnsError(t *testing.T) {
 
 func TestFindByID_WrongUser_ReturnsNotFound(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 	ctx := t.Context()
 
 	ownerID := uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
@@ -219,7 +220,7 @@ func TestFindByID_WrongUser_ReturnsNotFound(t *testing.T) {
 
 func TestFindAll_FiltersByUserID(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 	ctx := t.Context()
 
 	userA := uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
@@ -240,7 +241,7 @@ func TestFindAll_FiltersByUserID(t *testing.T) {
 
 func TestPostgresTodRepository_FindAll_NoFilters_ReturnsAll(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Create and save multiple todos
 	todo1 := createTestTodo()
@@ -270,7 +271,7 @@ func TestPostgresTodRepository_FindAll_NoFilters_ReturnsAll(t *testing.T) {
 
 func TestPostgresTodRepository_FindAll_WithStatusFilter_FiltersCorrectly(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Create todos with different statuses
 	todo1 := createTestTodo()
@@ -304,7 +305,7 @@ func TestPostgresTodRepository_FindAll_WithStatusFilter_FiltersCorrectly(t *test
 
 func TestPostgresTodRepository_FindAll_WithPriorityFilter_FiltersCorrectly(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Create todos with different priorities
 	title1, _ := domain.NewTaskTitle("Low Priority Todo")
@@ -340,7 +341,7 @@ func TestPostgresTodRepository_FindAll_WithPriorityFilter_FiltersCorrectly(t *te
 
 func TestPostgresTodRepository_FindAll_WithLimit_LimitsResults(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Create multiple todos
 	for i := 0; i < 5; i++ {
@@ -366,7 +367,7 @@ func TestPostgresTodRepository_FindAll_WithLimit_LimitsResults(t *testing.T) {
 
 func TestPostgresTodRepository_FindAll_WithOffset_OffsetsResults(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Create multiple todos
 	var createdIDs []domain.TodoID
@@ -396,7 +397,7 @@ func TestPostgresTodRepository_FindAll_WithOffset_OffsetsResults(t *testing.T) {
 
 func TestPostgresTodRepository_Update_ExistingTodo_Success(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Save initial todo
 	todo := createTestTodo()
@@ -408,7 +409,7 @@ func TestPostgresTodRepository_Update_ExistingTodo_Success(t *testing.T) {
 	newTitle, _ := domain.NewTaskTitle("Updated Title")
 	todo.UpdateTitle(newTitle)
 
-	err := repo.Update(context.Background(), todo, testUserID)
+	err := repo.Update(context.Background(), todo)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}
@@ -426,11 +427,11 @@ func TestPostgresTodRepository_Update_ExistingTodo_Success(t *testing.T) {
 
 func TestPostgresTodRepository_Update_NonExistentTodo_ReturnsError(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Try to update non-existent todo
 	todo := createTestTodo()
-	err := repo.Update(context.Background(), todo, testUserID)
+	err := repo.Update(context.Background(), todo)
 
 	if err == nil {
 		t.Error("Update() expected error for non-existent todo, got nil")
@@ -443,7 +444,7 @@ func TestPostgresTodRepository_Update_NonExistentTodo_ReturnsError(t *testing.T)
 
 func TestPostgresTodRepository_Update_CompleteTodo_Success(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Save initial todo
 	todo := createTestTodo()
@@ -454,7 +455,7 @@ func TestPostgresTodRepository_Update_CompleteTodo_Success(t *testing.T) {
 	// Complete the todo
 	todo.Complete()
 
-	err := repo.Update(context.Background(), todo, testUserID)
+	err := repo.Update(context.Background(), todo)
 	if err != nil {
 		t.Fatalf("Update() unexpected error: %v", err)
 	}
@@ -472,7 +473,7 @@ func TestPostgresTodRepository_Update_CompleteTodo_Success(t *testing.T) {
 
 func TestPostgresTodRepository_Delete_ExistingTodo_Success(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Save todo
 	todo := createTestTodo()
@@ -495,7 +496,7 @@ func TestPostgresTodRepository_Delete_ExistingTodo_Success(t *testing.T) {
 
 func TestPostgresTodRepository_Delete_NonExistentTodo_ReturnsError(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Try to delete non-existent todo
 	nonExistentID := domain.NewTodoID()
@@ -512,7 +513,7 @@ func TestPostgresTodRepository_Delete_NonExistentTodo_ReturnsError(t *testing.T)
 
 func TestPostgresTodRepository_Reconstitution_PreservesAllFields(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Create todo with all fields set
 	title, _ := domain.NewTaskTitle("Complete Todo")
@@ -552,7 +553,7 @@ func TestPostgresTodRepository_Reconstitution_PreservesAllFields(t *testing.T) {
 
 func TestPostgresTodRepository_ConcurrentSaves_Success(t *testing.T) {
 	pool := setupTestDB(t)
-	repo := NewPostgresTodoRepository(pool)
+	repo := NewPostgresTodoRepository(ogluow.New(pool))
 
 	// Create multiple todos concurrently
 	const numTodos = 10

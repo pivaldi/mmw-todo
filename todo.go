@@ -53,9 +53,10 @@ func New(infra Infrastructure) (*Module, error) {
 	}
 	mux := http.NewServeMux()
 
-	todoRepo := postgres.NewPostgresTodoRepository(infra.DBPool)
-	eventDispatcher := events.NewPostgresOutboxDispatcher(infra.DBPool)
-	todoService := application.NewTodoApplicationService(todoRepo, ogluow.New(infra.DBPool), eventDispatcher)
+	uow := ogluow.New(infra.DBPool)
+	todoRepo := postgres.NewPostgresTodoRepository(uow)
+	eventDispatcher := events.NewPostgresOutboxDispatcher(uow)
+	todoService := application.NewTodoApplicationService(todoRepo, uow, eventDispatcher)
 
 	path, handler := todov1connect.NewTodoServiceHandler(
 		connecthandler.NewTodoHandler(todoService),

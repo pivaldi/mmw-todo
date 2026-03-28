@@ -6,18 +6,17 @@ import (
 	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	oglpguow "github.com/ovya/ogl/pg/uow"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/rotisserie/eris"
 )
 
 type PostgresOutboxDispatcher struct {
-	pool *pgxpool.Pool
+	uow *oglpguow.UnitOfWork
 }
 
-func NewPostgresOutboxDispatcher(pool *pgxpool.Pool) *PostgresOutboxDispatcher {
-	return &PostgresOutboxDispatcher{pool: pool}
+func NewPostgresOutboxDispatcher(uow *oglpguow.UnitOfWork) *PostgresOutboxDispatcher {
+	return &PostgresOutboxDispatcher{uow: uow}
 }
 
 // Dispatch saves all events to the outbox table efficiently using a single batch
@@ -39,8 +38,7 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 		batch.Queue(query, event.EventType(), string(payload), event.GetOccurredAt())
 	}
 
-	// uses the transaction from the Oglpguow context!
-	exec := oglpguow.GetExecutor(ctx, d.pool)
+	exec := d.uow.Executor(ctx)
 
 	br := exec.SendBatch(ctx, batch)
 	defer br.Close()

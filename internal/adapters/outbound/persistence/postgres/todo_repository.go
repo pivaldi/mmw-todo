@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	ogldb "github.com/ovya/ogl/db"
 	ogluow "github.com/ovya/ogl/pg/uow"
 	"github.com/rotisserie/eris"
@@ -18,12 +17,12 @@ import (
 
 // PostgresTodoRepository implements the TodoRepository port using PostgreSQL
 type PostgresTodoRepository struct {
-	pool *pgxpool.Pool
+	uow *ogluow.UnitOfWork
 }
 
 // NewPostgresTodoRepository creates a new PostgreSQL repository
-func NewPostgresTodoRepository(pool *pgxpool.Pool) *PostgresTodoRepository {
-	return &PostgresTodoRepository{pool: pool}
+func NewPostgresTodoRepository(uow *ogluow.UnitOfWork) *PostgresTodoRepository {
+	return &PostgresTodoRepository{uow: uow}
 }
 
 // Save persists a new todo to the database.
@@ -34,8 +33,7 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 		VALUES (@id, @title, @description, @status, @priority, @due_date,
 		        @created_at, @updated_at, @completed_at, @user_id)
 	`
-	exec := ogluow.GetExecutor(ctx, r.pool)
-	_, err := exec.Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
+	_, err := r.uow.Executor(ctx).Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
 	if err != nil {
 		return eris.Wrap(err, "saving todo")
 	}
@@ -73,8 +71,7 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 		)
 	}
 
-	exec := ogluow.GetExecutor(ctx, r.pool)
-	br := exec.SendBatch(ctx, batch)
+	br := r.uow.Executor(ctx).SendBatch(ctx, batch)
 	defer br.Close()
 
 	for i := range todos {
@@ -95,8 +92,7 @@ func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID,
 		FROM todo.todo
 		WHERE id = $1 AND user_id = $2
 	`
-	exec := ogluow.GetExecutor(ctx, r.pool)
-	rows, err := exec.Query(ctx, query, id.String(), userID)
+	rows, err := r.uow.Executor(ctx).Query(ctx, query, id.String(), userID)
 	if err != nil {
 		return nil, eris.Wrap(err, "querying todo")
 	}
@@ -157,8 +153,7 @@ func (r *PostgresTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 		args = append(args, *filters.Offset)
 	}
 
-	exec := ogluow.GetExecutor(ctx, r.pool)
-	rows, err := exec.Query(ctx, query, args...)
+	rows, err := r.uow.Executor(ctx).Query(ctx, query, args...)
 	if err != nil {
 		return nil, eris.Wrap(err, "querying todos")
 	}
@@ -189,8 +184,7 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) 
 		    completed_at = @completed_at
 		WHERE id = @id AND user_id = @user_id
 	`
-	exec := ogluow.GetExecutor(ctx, r.pool)
-	result, err := exec.Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
+	result, err := r.uow.Executor(ctx).Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
 	if err != nil {
 		return eris.Wrap(err, "updating todo")
 	}
@@ -204,8 +198,7 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) 
 
 // Delete removes a todo from the database scoped to the given user.
 func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID, userID uuid.UUID) error {
-	exec := ogluow.GetExecutor(ctx, r.pool)
-	result, err := exec.Exec(ctx,
+	result, err := r.uow.Executor(ctx).Exec(ctx,
 		`DELETE FROM todo.todo WHERE id = $1 AND user_id = $2`,
 		id.String(), userID.String(),
 	)
@@ -221,7 +214,7 @@ func (r *PostgresTodoRepository) Delete(ctx context.Context, id domain.TodoID, u
 }
 
 func (r *PostgresTodoRepository) Health(ctx context.Context) (any, error) {
-	row := r.pool.QueryRow(ctx, "SELECT count(*) FROM todo.todo")
+	row := r.uow.Executor(ctx).QueryRow(ctx, "SELECT count(*) FROM todo.todo")
 	var count int
 	if err := row.Scan(&count); err != nil {
 		return 0, eris.Wrap(err, "scan row")
