@@ -249,6 +249,55 @@ Adapters → Application → Domain
 
 The domain layer has **zero dependencies** on infrastructure.
 
+### Error Handling
+
+Errors flow through three layers, each with a single responsibility.
+
+```
+domain sentinels → DomainErrorFor (application) → connectErrorFrom (adapter)
+```
+
+**Layer 1 — Domain sentinels** (`internal/domain/errors.go`)
+
+Plain `errors.New` values. No dependency on ogl or contracts. The domain never knows about wire protocols.
+
+```go
+var ErrInvalidTitle  = errors.New("invalid title")
+var ErrTodoNotFound  = errors.New("todo not found")
+```
+
+**Layer 2 — `DomainErrorFor`** (`internal/application/errors.go`)
+
+Called by the service before returning. Translates each sentinel into a `*platform.DomainError` carrying the proto enum code from `contracts/definitions/todo`. Non-domain errors (infra, unexpected) pass through unchanged.
+
+```go
+case errors.Is(err, domain.ErrInvalidTitle):
+    return &platform.DomainError{
+        Code:    platform.ErrorCode(deftodo.ErrorCodeInvalidTitle),
+        Message: err.Error(),
+    }
+```
+
+**Layer 3 — `connectErrorFrom`** (`internal/adapters/inbound/connect/errors.go`)
+
+Type-asserts on `*platform.DomainError`. Looks up the Connect status code in `domainConnectCodeMap` and attaches a `commonv1.DomainError` proto detail so TypeScript clients can call `err.findDetails(DomainError)` to get `{ code, message }`. Unknown errors become `CodeInternal`.
+
+#### Why `ValidationError`/`BusinessRuleError` were removed
+
+Earlier iterations used struct error types (`ValidationError`, `BusinessRuleError`) to categorise errors at the domain level. This was removed because:
+
+- The category (validation vs. business rule) is already implicit in the Connect status code (`InvalidArgument` vs. `FailedPrecondition`), which is set by `connectErrorFrom`.
+- The TypeScript client needs numeric codes, not Go struct types.
+- Struct errors required type switches in two places; sentinels with `errors.Is` require only one.
+
+#### Adding a new error code
+
+1. **Proto enum** — add the value to `TodoErrorCode` in `contracts/proto/todo/v1/todo.proto` and run `buf generate`.
+2. **Definitions** — add the constant alias in `contracts/definitions/todo/errors.go`.
+3. **Domain** — add the sentinel var in `internal/domain/errors.go`.
+4. **`DomainErrorFor`** — add a `case errors.Is(err, domain.ErrXxx)` branch in `internal/application/errors.go`.
+5. **`connectErrorFrom` map** — add the `platform.ErrorCode(deftodo.ErrorCodeXxx): connect.CodeYyy` entry in `internal/adapters/inbound/connect/errors.go`.
+
 ## API Usage
 
 ### Using Connect Protocol (HTTP)

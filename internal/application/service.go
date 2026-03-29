@@ -7,7 +7,6 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
 	"github.com/pivaldi/mmw-todo/internal/application/query"
-	"github.com/rotisserie/eris"
 )
 
 // TodoService defines the application service interface
@@ -69,7 +68,7 @@ func (s *TodoApplicationService) CreateTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.createTodoCmd.Execute(ctx, req)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to create todo")
+		return nil, DomainErrorFor(err)
 	}
 
 	return result, nil
@@ -82,7 +81,7 @@ func (s *TodoApplicationService) GetTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.getTodoQuery.Execute(ctx, id)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to get todo")
+		return nil, DomainErrorFor(err)
 	}
 
 	return result, nil
@@ -96,7 +95,7 @@ func (s *TodoApplicationService) UpdateTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.updateTodoCmd.Execute(ctx, id, req)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to update todo")
+		return nil, DomainErrorFor(err)
 	}
 
 	return result, nil
@@ -109,7 +108,7 @@ func (s *TodoApplicationService) CompleteTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.completeTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to complete todo")
+		return nil, DomainErrorFor(err)
 	}
 
 	return result, nil
@@ -122,7 +121,7 @@ func (s *TodoApplicationService) ReopenTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.reopenTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to reopen todo")
+		return nil, DomainErrorFor(err)
 	}
 
 	return result, nil
@@ -135,7 +134,7 @@ func (s *TodoApplicationService) DeleteTodo(
 ) error {
 	err := s.deleteTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return eris.Wrap(err, "failed to delete todo")
+		return DomainErrorFor(err)
 	}
 
 	return nil
@@ -148,7 +147,7 @@ func (s *TodoApplicationService) ListTodos(
 ) (*dto.ListTodosResponse, error) {
 	result, err := s.listTodosQuery.Execute(ctx, filters)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to list todos")
+		return nil, DomainErrorFor(err)
 	}
 
 	return result, nil
@@ -158,7 +157,7 @@ func (s *TodoApplicationService) ListTodos(
 func (s *TodoApplicationService) Health(ctx context.Context) (any, error) {
 	count, err := s.repository.Health(ctx)
 	if err != nil {
-		return 0, eris.Wrap(err, "database health error")
+		return 0, DomainErrorFor(err)
 	}
 
 	return count, nil

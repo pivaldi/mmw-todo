@@ -9,6 +9,8 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/ovya/ogl/platform"
+	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
 	dto "github.com/pivaldi/mmw-todo/internal/application/dto"
 	"github.com/pivaldi/mmw-todo/internal/domain"
@@ -208,8 +210,11 @@ func TestTodoHandler_GetTodo_Success(t *testing.T) {
 
 func TestTodoHandler_GetTodo_NotFound_ReturnsNotFoundError(t *testing.T) {
 	mockService := &MockTodoService{
-		GetTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
-			return nil, domain.ErrTodoNotFound
+		GetTodoFunc: func(_ context.Context, _ string) (*dto.TodoResponse, error) {
+			return nil, &platform.DomainError{
+				Code:    platform.ErrorCode(deftodo.ErrorCodeNotFound),
+				Message: "todo not found",
+			}
 		},
 	}
 
@@ -219,7 +224,7 @@ func TestTodoHandler_GetTodo_NotFound_ReturnsNotFoundError(t *testing.T) {
 		Id: "nonexistent",
 	})
 
-	_, err := handler.GetTodo(context.Background(), req)
+	_, err := handler.GetTodo(t.Context(), req)
 
 	if err == nil {
 		t.Fatal("GetTodo() expected error, got nil")
@@ -227,11 +232,11 @@ func TestTodoHandler_GetTodo_NotFound_ReturnsNotFoundError(t *testing.T) {
 
 	var connectErr *connect.Error
 	if !errors.As(err, &connectErr) {
-		t.Fatalf("Expected connect.Error, got %T", err)
+		t.Fatalf("Expected *connect.Error, got %T", err)
 	}
 
 	if connectErr.Code() != connect.CodeNotFound {
-		t.Errorf("Error code = %v, want %v", connectErr.Code(), connect.CodeNotFound)
+		t.Errorf("Code() = %v, want %v", connectErr.Code(), connect.CodeNotFound)
 	}
 }
 
@@ -417,12 +422,12 @@ func TestTodoHandler_ListTodos_Success(t *testing.T) {
 	}
 }
 
-func TestTodoHandler_ValidationError_ReturnsInvalidArgument(t *testing.T) {
+func TestTodoHandler_DomainError_InvalidTitle_ReturnsInvalidArgument(t *testing.T) {
 	mockService := &MockTodoService{
-		CreateTodoFunc: func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
-			return nil, &domain.ValidationError{
-				Field:   "title",
-				Message: "title is required",
+		CreateTodoFunc: func(_ context.Context, _ *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
+			return nil, &platform.DomainError{
+				Code:    platform.ErrorCode(deftodo.ErrorCodeInvalidTitle),
+				Message: "title must be between 1 and 200 characters",
 			}
 		},
 	}
@@ -434,7 +439,7 @@ func TestTodoHandler_ValidationError_ReturnsInvalidArgument(t *testing.T) {
 		Priority: todov1.Priority_PRIORITY_MEDIUM,
 	})
 
-	_, err := handler.CreateTodo(context.Background(), req)
+	_, err := handler.CreateTodo(t.Context(), req)
 
 	if err == nil {
 		t.Fatal("CreateTodo() expected error, got nil")
@@ -442,19 +447,19 @@ func TestTodoHandler_ValidationError_ReturnsInvalidArgument(t *testing.T) {
 
 	var connectErr *connect.Error
 	if !errors.As(err, &connectErr) {
-		t.Fatalf("Expected connect.Error, got %T", err)
+		t.Fatalf("Expected *connect.Error, got %T", err)
 	}
 
 	if connectErr.Code() != connect.CodeInvalidArgument {
-		t.Errorf("Error code = %v, want %v", connectErr.Code(), connect.CodeInvalidArgument)
+		t.Errorf("Code() = %v, want %v", connectErr.Code(), connect.CodeInvalidArgument)
 	}
 }
 
-func TestTodoHandler_BusinessRuleError_ReturnsFailedPrecondition(t *testing.T) {
+func TestTodoHandler_DomainError_CannotCompleteCancelled_ReturnsFailedPrecondition(t *testing.T) {
 	mockService := &MockTodoService{
-		CompleteTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
-			return nil, &domain.BusinessRuleError{
-				Rule:    "complete_cancelled",
+		CompleteTodoFunc: func(_ context.Context, _ string) (*dto.TodoResponse, error) {
+			return nil, &platform.DomainError{
+				Code:    platform.ErrorCode(deftodo.ErrorCodeCannotCompleteCancelled),
 				Message: "cannot complete a cancelled task",
 			}
 		},
@@ -466,7 +471,7 @@ func TestTodoHandler_BusinessRuleError_ReturnsFailedPrecondition(t *testing.T) {
 		Id: "123",
 	})
 
-	_, err := handler.CompleteTodo(context.Background(), req)
+	_, err := handler.CompleteTodo(t.Context(), req)
 
 	if err == nil {
 		t.Fatal("CompleteTodo() expected error, got nil")
@@ -474,10 +479,10 @@ func TestTodoHandler_BusinessRuleError_ReturnsFailedPrecondition(t *testing.T) {
 
 	var connectErr *connect.Error
 	if !errors.As(err, &connectErr) {
-		t.Fatalf("Expected connect.Error, got %T", err)
+		t.Fatalf("Expected *connect.Error, got %T", err)
 	}
 
 	if connectErr.Code() != connect.CodeFailedPrecondition {
-		t.Errorf("Error code = %v, want %v", connectErr.Code(), connect.CodeFailedPrecondition)
+		t.Errorf("Code() = %v, want %v", connectErr.Code(), connect.CodeFailedPrecondition)
 	}
 }

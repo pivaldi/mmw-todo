@@ -270,10 +270,7 @@ func (t *Todo) UpdateDueDate(newDueDate *DueDate) error {
 // UpdateStatus updates the status with transition validation
 func (t *Todo) UpdateStatus(newStatus TaskStatus) error {
 	if !t.status.CanTransitionTo(newStatus) {
-		return NewBusinessRuleError(
-			"status_transition",
-			"cannot transition from "+t.status.String()+" to "+newStatus.String(),
-		)
+		return ErrInvalidStatusTransition
 	}
 
 	t.status = newStatus

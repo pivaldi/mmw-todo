@@ -2,7 +2,6 @@ package connect
 
 import (
 	"context"
-	"errors"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -47,7 +46,7 @@ func (h *TodoHandler) CreateTodo(
 	// Call application service
 	todo, err := h.service.CreateTodo(ctx, &appReq)
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, connectErrorFrom(err)
 	}
 
 	// Convert response to protobuf
@@ -65,7 +64,7 @@ func (h *TodoHandler) GetTodo(
 ) (*connect.Response[todov1.GetTodoResponse], error) {
 	todo, err := h.service.GetTodo(ctx, req.Msg.GetId())
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, connectErrorFrom(err)
 	}
 
 	response := &todov1.GetTodoResponse{
@@ -84,11 +83,11 @@ func (h *TodoHandler) UpdateTodo(
 	appReq := dto.UpdateTodoRequest{}
 
 	if req.Msg.Title != nil {
-		appReq.Title = req.Msg.Title
+		appReq.Title = new(req.Msg.GetTitle())
 	}
 
 	if req.Msg.Description != nil {
-		appReq.Description = req.Msg.Description
+		appReq.Description = new(req.Msg.GetDescription())
 	}
 
 	if req.Msg.Priority != nil {
@@ -109,7 +108,7 @@ func (h *TodoHandler) UpdateTodo(
 	// Call application service
 	todo, err := h.service.UpdateTodo(ctx, req.Msg.GetId(), &appReq)
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, connectErrorFrom(err)
 	}
 
 	response := &todov1.UpdateTodoResponse{
@@ -126,7 +125,7 @@ func (h *TodoHandler) CompleteTodo(
 ) (*connect.Response[todov1.CompleteTodoResponse], error) {
 	todo, err := h.service.CompleteTodo(ctx, req.Msg.GetId())
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, connectErrorFrom(err)
 	}
 
 	response := &todov1.CompleteTodoResponse{
@@ -143,7 +142,7 @@ func (h *TodoHandler) ReopenTodo(
 ) (*connect.Response[todov1.ReopenTodoResponse], error) {
 	todo, err := h.service.ReopenTodo(ctx, req.Msg.GetId())
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, connectErrorFrom(err)
 	}
 
 	response := &todov1.ReopenTodoResponse{
@@ -160,7 +159,7 @@ func (h *TodoHandler) DeleteTodo(
 ) (*connect.Response[todov1.DeleteTodoResponse], error) {
 	err := h.service.DeleteTodo(ctx, req.Msg.GetId())
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, connectErrorFrom(err)
 	}
 
 	response := &todov1.DeleteTodoResponse{}
@@ -200,7 +199,7 @@ func (h *TodoHandler) ListTodos(
 	// Call application service
 	result, err := h.service.ListTodos(ctx, &filters)
 	if err != nil {
-		return nil, mapDomainError(err)
+		return nil, connectErrorFrom(err)
 	}
 
 	// Convert todos to protobuf
@@ -269,12 +268,8 @@ func mapPriorityToProto(priority domain.Priority) todov1.Priority {
 }
 
 // mapStatusFromProto converts a protobuf status enum to string
-//
-//nolint:revive // convert status not priority
 func mapStatusFromProto(status todov1.TaskStatus) domain.TaskStatus {
 	switch status {
-	case todov1.TaskStatus_TASK_STATUS_PENDING:
-		return domain.TaskStatusPending
 	case todov1.TaskStatus_TASK_STATUS_IN_PROGRESS:
 		return domain.TaskStatusInProgress
 	case todov1.TaskStatus_TASK_STATUS_COMPLETED:
@@ -287,14 +282,10 @@ func mapStatusFromProto(status todov1.TaskStatus) domain.TaskStatus {
 }
 
 // mapPriorityFromProto converts a protobuf priority enum to domain enum
-//
-//nolint:revive // convert priority not status
 func mapPriorityFromProto(priority todov1.Priority) domain.Priority {
 	switch priority {
 	case todov1.Priority_PRIORITY_LOW:
 		return domain.PriorityLow
-	case todov1.Priority_PRIORITY_MEDIUM:
-		return domain.PriorityMedium
 	case todov1.Priority_PRIORITY_HIGH:
 		return domain.PriorityHigh
 	case todov1.Priority_PRIORITY_URGENT:
@@ -302,31 +293,4 @@ func mapPriorityFromProto(priority todov1.Priority) domain.Priority {
 	default:
 		return domain.PriorityMedium
 	}
-}
-
-// mapDomainError converts domain errors to Connect errors with appropriate codes
-func mapDomainError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	// Check for domain-specific errors
-	if errors.Is(err, domain.ErrTodoNotFound) {
-		return connect.NewError(connect.CodeNotFound, err)
-	}
-
-	// Check for validation errors
-	var validationErr *domain.ValidationError
-	if errors.As(err, &validationErr) {
-		return connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	// Check for business rule errors
-	var businessErr *domain.BusinessRuleError
-	if errors.As(err, &businessErr) {
-		return connect.NewError(connect.CodeFailedPrecondition, err)
-	}
-
-	// Default to internal error
-	return connect.NewError(connect.CodeInternal, err)
 }

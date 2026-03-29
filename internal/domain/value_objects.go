@@ -53,15 +53,14 @@ type TaskTitle struct {
 
 // NewTaskTitle creates a new TaskTitle with validation
 func NewTaskTitle(title string) (TaskTitle, error) {
-	// Trim whitespace
 	trimmed := strings.TrimSpace(title)
 
-	// Validate length
 	if trimmed == "" {
-		return TaskTitle{}, NewValidationError("title", "cannot be empty")
+		return TaskTitle{}, ErrInvalidTitle
 	}
+
 	if len(trimmed) > maxTitleLength {
-		return TaskTitle{}, NewValidationError("title", "cannot exceed 200 characters")
+		return TaskTitle{}, ErrInvalidTitle
 	}
 
 	return TaskTitle{value: trimmed}, nil
