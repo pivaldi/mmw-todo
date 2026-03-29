@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { ConnectError, Code } from '@connectrpc/connect';
+import { ConnectError } from '@connectrpc/connect';
+import { AuthErrorCode } from '@contracts/auth/v1/auth_pb';
+import { DomainErrorSchema } from '@contracts/common/v1/errors_pb';
 import { AuthService } from '../auth.service';
 
 @Component({
@@ -19,10 +21,27 @@ export class RegisterComponent {
     this.auth.register(this.login, this.password).subscribe({
       next: () => this.router.navigate(['/login']),
       error: (err: unknown) => {
-        this.errorMessage = err instanceof ConnectError && err.code === Code.AlreadyExists
-          ? 'This login is already taken'
-          : 'Registration failed. Please try again.';
+        this.errorMessage = this.getRegisterError(err);
       }
     });
+  }
+
+  private getRegisterError(err: unknown): string {
+    if (!(err instanceof ConnectError)) {
+      return 'An unexpected error occurred. Please try again.';
+    }
+
+    const detail = err.findDetails(DomainErrorSchema)[0];
+
+    switch (detail?.code) {
+      case AuthErrorCode.INVALID_LOGIN:
+        return 'Login must not be empty.';
+      case AuthErrorCode.INVALID_PASSWORD:
+        return 'Password must not be empty.';
+      case AuthErrorCode.USER_ALREADY_EXISTS:
+        return 'This login is already taken.';
+      default:
+        return 'Registration failed. Please try again.';
+    }
   }
 }
