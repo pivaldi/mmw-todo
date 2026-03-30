@@ -67,7 +67,7 @@ description = "Install/Update needed tools"
 run = "UPDATE=true scripts/common/install-tools-ss.sh"
 
 [tasks.pre-commit]
-depends = ["arch:check"]
+depends = ["arch:check", "buf:lint"]
 description = "Pre-commit checks (can be run manually or as git hook)"
 run = "APP_ROOT_PATH={{config_root}} ./scripts/common/pre-commit.sh"
 alias = "pc"
@@ -81,7 +81,30 @@ buf mod update
 """
 
 [tasks.generate]
+depends = ["buf:generate"]
 description = "Generate code from protobuf definitions and Go enums"
+run = """
+#!/usr/bin/env bash
+  set -euo pipefail
+
+  cd {{config_root}} || exit 1
+  source scripts/common/libs/st.bash
+
+  st.quiet
+
+  st.doing 'Generating Go Code'
+  cd {{config_root}} || exit 1
+  st.do go generate ./...
+  st.done
+ """
+
+
+[tasks."generate:mocks"]
+description = "Generate Go mocks for application ports"
+run = "mockery"
+
+[tasks."buf:generate"]
+description = "Generate the protocol buffer code"
 run = """
 #!/usr/bin/env bash
   set -euo pipefail
@@ -95,22 +118,22 @@ run = """
   cd {{vars.CONTRACTS_DIR}}
   st.do buf generate --template buf.gen.todo.yaml
   st.done
-
-  st.doing 'Generating Go Code'
-  cd {{config_root}} || exit 1
-  st.do go generate ./...
-  st.done
- """
-
-[tasks."generate:mocks"]
-description = "Generate Go mocks for application ports"
-run = "mockery"
+"""
 
 [tasks."buf:lint"]
 description = "Lint protobuf files (Todo API only)"
 run = """
-cd {{vars.CONTRACTS_DIR}}
-buf lint proto
+#!/usr/bin/env bash
+  set -euo pipefail
+
+  cd {{config_root}} || exit 1
+  source scripts/common/libs/st.bash
+
+  st.quiet
+
+  cd {{vars.CONTRACTS_DIR}}
+  st.doing "Linting proto file"
+  st.do buf lint proto
 """
 
 [tasks."buf:format"]
