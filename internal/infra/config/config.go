@@ -6,8 +6,8 @@ import (
 	"embed"
 	"io/fs"
 
-	pfconfig "github.com/piprim/mmw/platform/config"
-	pfslog "github.com/piprim/mmw/platform/slog"
+	pfconfig "github.com/piprim/mmw/pkg/platform/config"
+	pfslog "github.com/piprim/mmw/pkg/platform/slog"
 	"github.com/rotisserie/eris"
 )
 

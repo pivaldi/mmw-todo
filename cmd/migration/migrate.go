@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"os"
 
-	pfdbcli "github.com/piprim/mmw/platform/db/cli"
-	pfslog "github.com/piprim/mmw/platform/slog"
+	pfdbcli "github.com/piprim/mmw/pkg/platform/db/cli"
+	pfslog "github.com/piprim/mmw/pkg/platform/slog"
 
 	"github.com/rotisserie/eris"
 )

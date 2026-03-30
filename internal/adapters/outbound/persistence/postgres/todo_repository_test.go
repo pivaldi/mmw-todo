@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	ogluow "github.com/piprim/mmw/platform/pg/uow"
+	ogluow "github.com/piprim/mmw/pkg/platform/pg/uow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 
-	pfevents "github.com/piprim/mmw/platform/events"
+	pfevents "github.com/piprim/mmw/pkg/platform/events"
 	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/encoding/protojson"

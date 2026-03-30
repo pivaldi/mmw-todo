@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
-	pfuow "github.com/piprim/mmw/platform/pg/uow"
+	pfuow "github.com/piprim/mmw/pkg/platform/pg/uow"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/rotisserie/eris"
 )

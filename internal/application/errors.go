@@ -4,7 +4,7 @@ package application
 import (
 	"errors"
 
-	"github.com/piprim/mmw/platform"
+	"github.com/piprim/mmw/pkg/platform"
 	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )

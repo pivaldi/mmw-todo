@@ -48,6 +48,8 @@ run = """
   st.h1 'Fix GOPRIVATE for this project'
   st.doing go env -w "GOPRIVATE=github.com/pivaldi/mmw-*"
   st.done
+  st.doing go env -w "GOPRIVATE=github.com/piprim/mmw"
+  st.done
 
   st.h1 'Update Repo Deps'
   st.doing "Go Mod Tidy"

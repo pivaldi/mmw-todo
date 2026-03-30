@@ -8,8 +8,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	oglconfig "github.com/piprim/mmw/platform/config"
-	oglslog "github.com/piprim/mmw/platform/slog"
+	oglconfig "github.com/piprim/mmw/pkg/platform/config"
+	oglslog "github.com/piprim/mmw/pkg/platform/slog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

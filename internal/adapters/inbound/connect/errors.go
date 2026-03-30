@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"connectrpc.com/connect"
-	"github.com/piprim/mmw/platform"
+	"github.com/piprim/mmw/pkg/platform"
 	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	commonv1 "github.com/pivaldi/mmw-contracts/gen/go/common/v1"
 )
