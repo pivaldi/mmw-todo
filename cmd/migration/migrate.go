@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"os"
 
-	dbpgcli "github.com/ovya/ogl/db/cli"
-	oglslog "github.com/ovya/ogl/slog"
+	pfdbcli "github.com/piprim/mmw/platform/db/cli"
+	pfslog "github.com/piprim/mmw/platform/slog"
 
 	"github.com/rotisserie/eris"
 )
@@ -19,7 +19,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := dbpgcli.Migrate(conf.Database.URL(), "todo", migrationsFS); err != nil {
+	if err := pfdbcli.Migrate(conf.Database.URL(), "todo", migrationsFS); err != nil {
 		logError("command failed", err)
 		os.Exit(1)
 	}
@@ -28,7 +28,7 @@ func main() {
 }
 
 func logError(msg string, err error) {
-	logger := slog.New(oglslog.StderrTxtHandler(slog.LevelDebug, nil))
+	logger := slog.New(pfslog.StderrTxtHandler(slog.LevelDebug, nil))
 	logger.Error(msg)
 	// Print the formatted stack trace directly to stderr
 	_, _ = fmt.Fprintf(os.Stderr, "%s\n", eris.ToString(err, true))

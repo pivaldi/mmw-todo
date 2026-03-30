@@ -8,12 +8,12 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
-	ogloutbox "github.com/ovya/ogl/db/outbox"
-	ogluow "github.com/ovya/ogl/pg/uow"
-	oglconnect "github.com/ovya/ogl/platform/connect"
-	oglcore "github.com/ovya/ogl/platform/core"
-	oglevents "github.com/ovya/ogl/platform/events"
-	oglserver "github.com/ovya/ogl/platform/server"
+	pfoutbox "github.com/piprim/mmw/platform/db/outbox"
+	pfuow "github.com/piprim/mmw/platform/pg/uow"
+	pfconnect "github.com/piprim/mmw/platform/connect"
+	pfcore "github.com/piprim/mmw/platform/core"
+	pfevents "github.com/piprim/mmw/platform/events"
+	pfserver "github.com/piprim/mmw/platform/server"
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
 	"github.com/pivaldi/mmw-contracts/gen/go/todo/v1/todov1connect"
 	connecthandler "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
@@ -31,17 +31,17 @@ const (
 )
 
 type Module struct {
-	relay  *ogloutbox.EventsRelay
-	server *oglserver.HTTPServer
+	relay  *pfoutbox.EventsRelay
+	server *pfserver.HTTPServer
 	logger *slog.Logger
 }
 
-// Ensure Module implements oglcore.Module
-var _ oglcore.Module = (*Module)(nil)
+// Ensure Module implements pfcore.Module
+var _ pfcore.Module = (*Module)(nil)
 
 type Infrastructure struct {
 	DBPool   *pgxpool.Pool
-	EventBus oglevents.SystemEventBus
+	EventBus pfevents.SystemEventBus
 	AuthSvc  defauth.AuthService
 	Logger   *slog.Logger
 }
@@ -53,32 +53,32 @@ func New(infra Infrastructure) (*Module, error) {
 	}
 	mux := http.NewServeMux()
 
-	uow := ogluow.New(infra.DBPool)
+	uow := pfuow.New(infra.DBPool)
 	todoRepo := postgres.NewPostgresTodoRepository(uow)
 	eventDispatcher := events.NewPostgresOutboxDispatcher(uow)
 	todoService := application.NewTodoApplicationService(todoRepo, uow, eventDispatcher)
 
 	path, handler := todov1connect.NewTodoServiceHandler(
 		connecthandler.NewTodoHandler(todoService),
-		connect.WithInterceptors(oglconnect.NewErrorLoggingInterceptor(infra.Logger)),
+		connect.WithInterceptors(pfconnect.NewErrorLoggingInterceptor(infra.Logger)),
 	)
 
 	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
 	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, nil, handler))
 
-	httpInfra := oglserver.HTTPServerInfra{
+	httpInfra := pfserver.HTTPServerInfra{
 		Config:          cfg.Server,
 		Handler:         mux,
 		Logger:          infra.Logger,
-		HealthFns:       oglserver.HealthFns{"database": todoService.Health},
+		HealthFns:       pfserver.HealthFns{"database": todoService.Health},
 		LogPayloads:     true,
 		WithDebugRoutes: cfg.Environment.IsDev(),
 	}
 
-	httpServer := oglserver.NewHTTPServer(httpInfra)
+	httpServer := pfserver.NewHTTPServer(httpInfra)
 	// Initialize everything internal to Todo here!
 	return &Module{
-		relay:  ogloutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
+		relay:  pfoutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
 		server: httpServer,
 		logger: infra.Logger,
 	}, nil

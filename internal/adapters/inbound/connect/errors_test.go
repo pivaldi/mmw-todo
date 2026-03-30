@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	"github.com/ovya/ogl/platform"
+	"github.com/piprim/mmw/platform"
 	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 )
 

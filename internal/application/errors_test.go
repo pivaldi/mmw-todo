@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ovya/ogl/platform"
+	"github.com/piprim/mmw/platform"
 	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-todo/internal/application"
 	"github.com/pivaldi/mmw-todo/internal/domain"

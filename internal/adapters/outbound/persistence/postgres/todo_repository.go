@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	ogldb "github.com/ovya/ogl/db"
-	ogluow "github.com/ovya/ogl/pg/uow"
+	pfdb "github.com/piprim/mmw/platform/db"
+	pfuow "github.com/piprim/mmw/platform/pg/uow"
 	"github.com/rotisserie/eris"
 
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
@@ -17,11 +17,11 @@ import (
 
 // PostgresTodoRepository implements the TodoRepository port using PostgreSQL
 type PostgresTodoRepository struct {
-	uow *ogluow.UnitOfWork
+	uow *pfuow.UnitOfWork
 }
 
 // NewPostgresTodoRepository creates a new PostgreSQL repository
-func NewPostgresTodoRepository(uow *ogluow.UnitOfWork) *PostgresTodoRepository {
+func NewPostgresTodoRepository(uow *pfuow.UnitOfWork) *PostgresTodoRepository {
 	return &PostgresTodoRepository{uow: uow}
 }
 
@@ -33,7 +33,7 @@ func (r *PostgresTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 		VALUES (@id, @title, @description, @status, @priority, @due_date,
 		        @created_at, @updated_at, @completed_at, @user_id)
 	`
-	_, err := r.uow.Executor(ctx).Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
+	_, err := r.uow.Executor(ctx).Exec(ctx, query, pgx.NamedArgs(pfdb.StructArgs(todo.Snapshot())))
 	if err != nil {
 		return eris.Wrap(err, "saving todo")
 	}
@@ -184,7 +184,7 @@ func (r *PostgresTodoRepository) Update(ctx context.Context, todo *domain.Todo) 
 		    completed_at = @completed_at
 		WHERE id = @id AND user_id = @user_id
 	`
-	result, err := r.uow.Executor(ctx).Exec(ctx, query, pgx.NamedArgs(ogldb.StructArgs(todo.Snapshot())))
+	result, err := r.uow.Executor(ctx).Exec(ctx, query, pgx.NamedArgs(pfdb.StructArgs(todo.Snapshot())))
 	if err != nil {
 		return eris.Wrap(err, "updating todo")
 	}

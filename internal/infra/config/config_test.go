@@ -8,15 +8,14 @@ import (
 	"testing"
 	"testing/fstest"
 
-	oglconfig "github.com/ovya/ogl/config"
-	oglpfconfig "github.com/ovya/ogl/platform/config"
-	oglslog "github.com/ovya/ogl/slog"
+	oglconfig "github.com/piprim/mmw/platform/config"
+	oglslog "github.com/piprim/mmw/platform/slog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // testDefaultTOML is a minimal default config used across Load tests.
-// Database port is an integer to match oglpfconfig.Database.Port (Port int16).
+// Database port is an integer to match oglconfig.Database.Port (Port int16).
 const testDefaultTOML = `
 [database]
 user = "rcv"
@@ -102,7 +101,7 @@ func TestLoad_WithDefaultConfigOnly(t *testing.T) {
 
 func TestConfig_GetAppEnv(t *testing.T) {
 	config := &Config{
-		Base: oglpfconfig.Base{Environment: oglconfig.EnvironmentStaging},
+		Base: oglconfig.Base{Environment: oglconfig.EnvironmentStaging},
 	}
 
 	env := config.GetAppEnv()

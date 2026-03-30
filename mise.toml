@@ -121,7 +121,7 @@ run = """
 """
 
 [tasks."buf:lint"]
-description = "Lint protobuf files (Todo API only)"
+description = "Lint protobuf files"
 run = """
 #!/usr/bin/env bash
   set -euo pipefail

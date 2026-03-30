@@ -6,16 +6,16 @@ import (
 	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
-	oglpguow "github.com/ovya/ogl/pg/uow"
+	pfuow "github.com/piprim/mmw/platform/pg/uow"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/rotisserie/eris"
 )
 
 type PostgresOutboxDispatcher struct {
-	uow *oglpguow.UnitOfWork
+	uow *pfuow.UnitOfWork
 }
 
-func NewPostgresOutboxDispatcher(uow *oglpguow.UnitOfWork) *PostgresOutboxDispatcher {
+func NewPostgresOutboxDispatcher(uow *pfuow.UnitOfWork) *PostgresOutboxDispatcher {
 	return &PostgresOutboxDispatcher{uow: uow}
 }
 

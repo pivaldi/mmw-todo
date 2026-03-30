@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 
-	oglevnets "github.com/ovya/ogl/platform/events"
+	pfevents "github.com/piprim/mmw/platform/events"
 	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -11,11 +11,11 @@ import (
 )
 
 type DeleteUserTasksCommand struct {
-	bus oglevnets.SystemEventBus
+	bus pfevents.SystemEventBus
 	// ... repo, etc.
 }
 
-func NewDeleteUserTasksCommand(bus oglevnets.SystemEventBus) *DeleteUserTasksCommand {
+func NewDeleteUserTasksCommand(bus pfevents.SystemEventBus) *DeleteUserTasksCommand {
 	return &DeleteUserTasksCommand{bus: bus}
 }
 

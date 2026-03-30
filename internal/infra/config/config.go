@@ -6,9 +6,8 @@ import (
 	"embed"
 	"io/fs"
 
-	oglconfig "github.com/ovya/ogl/config"
-	oglpfconfig "github.com/ovya/ogl/platform/config"
-	oglslog "github.com/ovya/ogl/slog"
+	pfconfig "github.com/piprim/mmw/platform/config"
+	pfslog "github.com/piprim/mmw/platform/slog"
 	"github.com/rotisserie/eris"
 )
 
@@ -22,12 +21,12 @@ var getConfigFS = func() fs.FS {
 }
 
 type Config struct {
-	oglpfconfig.Base
-	Database *oglpfconfig.Database `mapstructure:"database"`
-	// Environment oglconfig.Environment `env:"APP_ENV, required" mapstructure:"environment"`
-	Server     *oglpfconfig.Server `mapstructure:"server"`
-	LogLevel   oglslog.LogLevel    `mapstructure:"log-level"`
-	AuthServer *oglpfconfig.Server `mapstructure:"auth-server"`
+	pfconfig.Base
+	Database *pfconfig.Database `mapstructure:"database"`
+	// Environment pfconfig.Environment `env:"APP_ENV, required" mapstructure:"environment"`
+	Server     *pfconfig.Server `mapstructure:"server"`
+	LogLevel   pfslog.LogLevel  `mapstructure:"log-level"`
+	AuthServer *pfconfig.Server `mapstructure:"auth-server"`
 }
 
 var conf *Config
@@ -45,7 +44,7 @@ func Load(ctx context.Context, envPrefix string) (*Config, error) {
 	conf := new(Config)
 	configFS := getConfigFS()
 
-	err := oglconfig.NewContext(ctx, configFS, envPrefix).Fill(conf)
+	err := pfconfig.NewContext(ctx, configFS, envPrefix).Fill(conf)
 	if err != nil {
 		return nil, eris.Wrap(err, "error filling config")
 	}
