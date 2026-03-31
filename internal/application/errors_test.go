@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/piprim/mmw/pkg/platform"
-	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-todo/internal/application"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )
@@ -18,38 +18,14 @@ func TestDomainErrorFor_KnownSentinels(t *testing.T) {
 		input    error
 		wantCode platform.ErrorCode
 	}{
-		{
-			"ErrInvalidTitle", domain.ErrInvalidTitle,
-			platform.ErrorCode(deftodo.ErrorCodeInvalidTitle),
-		},
-		{
-			"ErrInvalidDueDate", domain.ErrInvalidDueDate,
-			platform.ErrorCode(deftodo.ErrorCodeInvalidDueDate),
-		},
-		{
-			"ErrInvalidID", domain.ErrInvalidID,
-			platform.ErrorCode(deftodo.ErrorCodeInvalidID),
-		},
-		{
-			"ErrTodoNotFound", domain.ErrTodoNotFound,
-			platform.ErrorCode(deftodo.ErrorCodeNotFound),
-		},
-		{
-			"ErrTodoAlreadyExists", domain.ErrTodoAlreadyExists,
-			platform.ErrorCode(deftodo.ErrorCodeAlreadyExists),
-		},
-		{
-			"ErrCannotCompleteCancelled", domain.ErrCannotCompleteCancelled,
-			platform.ErrorCode(deftodo.ErrorCodeCannotCompleteCancelled),
-		},
-		{
-			"ErrCannotModifyCompleted", domain.ErrCannotModifyCompleted,
-			platform.ErrorCode(deftodo.ErrorCodeCannotModifyCompleted),
-		},
-		{
-			"ErrInvalidStatusTransition", domain.ErrInvalidStatusTransition,
-			platform.ErrorCode(deftodo.ErrorCodeInvalidStatusTransition),
-		},
+		{"ErrInvalidTitle", domain.ErrInvalidTitle, platform.ErrorCode(tododef.ErrorCodeInvalidTitle)},
+		{"ErrInvalidDueDate", domain.ErrInvalidDueDate, platform.ErrorCode(tododef.ErrorCodeInvalidDueDate)},
+		{"ErrInvalidID", domain.ErrInvalidID, platform.ErrorCode(tododef.ErrorCodeInvalidID)},
+		{"ErrTodoNotFound", domain.ErrTodoNotFound, platform.ErrorCode(tododef.ErrorCodeNotFound)},
+		{"ErrTodoAlreadyExists", domain.ErrTodoAlreadyExists, platform.ErrorCode(tododef.ErrorCodeAlreadyExists)},
+		{"ErrCannotCompleteCancelled", domain.ErrCannotCompleteCancelled, platform.ErrorCode(tododef.ErrorCodeCannotCompleteCancelled)},
+		{"ErrCannotModifyCompleted", domain.ErrCannotModifyCompleted, platform.ErrorCode(tododef.ErrorCodeCannotModifyCompleted)},
+		{"ErrInvalidStatusTransition", domain.ErrInvalidStatusTransition, platform.ErrorCode(tododef.ErrorCodeInvalidStatusTransition)},
 	}
 
 	for _, tc := range cases {

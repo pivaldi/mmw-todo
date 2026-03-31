@@ -9,11 +9,11 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/piprim/mmw/pkg/platform"
-	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
 	dto "github.com/pivaldi/mmw-todo/internal/application/dto"
 	"github.com/pivaldi/mmw-todo/internal/domain"
+	"github.com/piprim/mmw/pkg/platform"
 )
 
 // MockTodoService is a mock implementation of application.TodoService
@@ -212,7 +212,7 @@ func TestTodoHandler_GetTodo_NotFound_ReturnsNotFoundError(t *testing.T) {
 	mockService := &MockTodoService{
 		GetTodoFunc: func(_ context.Context, _ string) (*dto.TodoResponse, error) {
 			return nil, &platform.DomainError{
-				Code:    platform.ErrorCode(deftodo.ErrorCodeNotFound),
+				Code:    platform.ErrorCode(tododef.ErrorCodeNotFound),
 				Message: "todo not found",
 			}
 		},
@@ -426,7 +426,7 @@ func TestTodoHandler_DomainError_InvalidTitle_ReturnsInvalidArgument(t *testing.
 	mockService := &MockTodoService{
 		CreateTodoFunc: func(_ context.Context, _ *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
 			return nil, &platform.DomainError{
-				Code:    platform.ErrorCode(deftodo.ErrorCodeInvalidTitle),
+				Code:    platform.ErrorCode(tododef.ErrorCodeInvalidTitle),
 				Message: "title must be between 1 and 200 characters",
 			}
 		},
@@ -459,7 +459,7 @@ func TestTodoHandler_DomainError_CannotCompleteCancelled_ReturnsFailedPreconditi
 	mockService := &MockTodoService{
 		CompleteTodoFunc: func(_ context.Context, _ string) (*dto.TodoResponse, error) {
 			return nil, &platform.DomainError{
-				Code:    platform.ErrorCode(deftodo.ErrorCodeCannotCompleteCancelled),
+				Code:    platform.ErrorCode(tododef.ErrorCodeCannotCompleteCancelled),
 				Message: "cannot complete a cancelled task",
 			}
 		},

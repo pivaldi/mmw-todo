@@ -2,8 +2,16 @@ package domain
 
 import (
 	"time"
+)
 
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
+// Event type constants — semantic identifiers owned by the domain.
+// Adapters are responsible for mapping these to transport-layer routing keys.
+const (
+	EventTypeCreated   = "todo.created"
+	EventTypeUpdated   = "todo.updated"
+	EventTypeCompleted = "todo.completed"
+	EventTypeReopened  = "todo.reopened"
+	EventTypeDeleted   = "todo.deleted"
 )
 
 // DomainEvent is the interface that all domain events must implement
@@ -43,7 +51,7 @@ type TodoCreated struct {
 
 // EventType returns the event type
 func (*TodoCreated) EventType() string {
-	return tododef.TopicUserTaskCreated
+	return EventTypeCreated
 }
 
 // NewTodoCreatedEvent creates a new TodoCreated event
@@ -74,7 +82,7 @@ type TodoUpdated struct {
 
 // EventType returns the event type
 func (*TodoUpdated) EventType() string {
-	return tododef.TopicUserTaskUpdated
+	return EventTypeUpdated
 }
 
 // NewTodoUpdatedEvent creates a new TodoUpdated event
@@ -96,7 +104,7 @@ type TodoCompleted struct {
 
 // EventType returns the event type
 func (*TodoCompleted) EventType() string {
-	return tododef.TopicUserTaskCompleted
+	return EventTypeCompleted
 }
 
 // NewTodoCompletedEvent creates a new TodoCompleted event
@@ -118,7 +126,7 @@ type TodoReopened struct {
 
 // EventType returns the event type
 func (*TodoReopened) EventType() string {
-	return tododef.TopicUserTaskReopened
+	return EventTypeReopened
 }
 
 // NewTodoReopenedEvent creates a new TodoReopened event
@@ -139,7 +147,7 @@ type TodoDeleted struct {
 
 // EventType returns the event type
 func (*TodoDeleted) EventType() string {
-	return tododef.TopicUserTaskDeleted
+	return EventTypeDeleted
 }
 
 // NewTodoDeletedEvent creates a new TodoDeleted event

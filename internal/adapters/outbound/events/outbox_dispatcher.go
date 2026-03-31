@@ -1,4 +1,3 @@
-// services/todo/internal/adapters/events/outbox_dispatcher.go
 package events
 
 import (
@@ -19,7 +18,8 @@ func NewPostgresOutboxDispatcher(uow *pfuow.UnitOfWork) *PostgresOutboxDispatche
 	return &PostgresOutboxDispatcher{uow: uow}
 }
 
-// Dispatch saves all events to the outbox table efficiently using a single batch
+// Dispatch saves all events to the outbox table efficiently using a single batch.
+// The stored event_type is the Watermill routing key, resolved via domainTopics.
 func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain.DomainEvent) error {
 	if len(events) == 0 {
 		return nil
@@ -30,12 +30,17 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 
 	// Queue all events into the batch
 	for _, event := range events {
+		topic, ok := domainTopics[event.EventType()]
+		if !ok {
+			return eris.Errorf("no routing key for domain event type %q", event.EventType())
+		}
+
 		payload, err := json.Marshal(event)
 		if err != nil {
 			return eris.Wrapf(err, "failed to marshal event %s", event.EventType())
 		}
 
-		batch.Queue(query, event.EventType(), string(payload), event.GetOccurredAt())
+		batch.Queue(query, topic, string(payload), event.GetOccurredAt())
 	}
 
 	exec := d.uow.Executor(ctx)

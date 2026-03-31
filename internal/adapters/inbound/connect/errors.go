@@ -6,22 +6,22 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/piprim/mmw/pkg/platform"
-	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	commonv1 "github.com/pivaldi/mmw-contracts/gen/go/common/v1"
 )
 
-// domainConnectCodeMap maps todo domain error codes to Connect status codes.
+// domainConnectCodeMap maps proto error codes (from contracts) to Connect status codes.
 //
 //nolint:gochecknoglobals // package-level lookup table, not mutable state
 var domainConnectCodeMap = map[platform.ErrorCode]connect.Code{
-	platform.ErrorCode(deftodo.ErrorCodeInvalidTitle):            connect.CodeInvalidArgument,
-	platform.ErrorCode(deftodo.ErrorCodeInvalidDueDate):          connect.CodeInvalidArgument,
-	platform.ErrorCode(deftodo.ErrorCodeInvalidID):               connect.CodeInvalidArgument,
-	platform.ErrorCode(deftodo.ErrorCodeNotFound):                connect.CodeNotFound,
-	platform.ErrorCode(deftodo.ErrorCodeAlreadyExists):           connect.CodeAlreadyExists,
-	platform.ErrorCode(deftodo.ErrorCodeCannotCompleteCancelled): connect.CodeFailedPrecondition,
-	platform.ErrorCode(deftodo.ErrorCodeCannotModifyCompleted):   connect.CodeFailedPrecondition,
-	platform.ErrorCode(deftodo.ErrorCodeInvalidStatusTransition): connect.CodeFailedPrecondition,
+	platform.ErrorCode(tododef.ErrorCodeInvalidTitle):            connect.CodeInvalidArgument,
+	platform.ErrorCode(tododef.ErrorCodeInvalidDueDate):          connect.CodeInvalidArgument,
+	platform.ErrorCode(tododef.ErrorCodeInvalidID):               connect.CodeInvalidArgument,
+	platform.ErrorCode(tododef.ErrorCodeNotFound):                connect.CodeNotFound,
+	platform.ErrorCode(tododef.ErrorCodeAlreadyExists):           connect.CodeAlreadyExists,
+	platform.ErrorCode(tododef.ErrorCodeCannotCompleteCancelled): connect.CodeFailedPrecondition,
+	platform.ErrorCode(tododef.ErrorCodeCannotModifyCompleted):   connect.CodeFailedPrecondition,
+	platform.ErrorCode(tododef.ErrorCodeInvalidStatusTransition): connect.CodeFailedPrecondition,
 }
 
 // connectErrorFrom converts any error from the application layer into a *connect.Error.

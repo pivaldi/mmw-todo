@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/piprim/mmw/pkg/platform"
-	deftodo "github.com/pivaldi/mmw-contracts/definitions/todo"
 )
 
 func TestConnectErrorFrom_DomainError_MapsToCorrectCode(t *testing.T) {
@@ -16,23 +16,14 @@ func TestConnectErrorFrom_DomainError_MapsToCorrectCode(t *testing.T) {
 		code     platform.ErrorCode
 		wantCode connect.Code
 	}{
-		{"InvalidTitle", platform.ErrorCode(deftodo.ErrorCodeInvalidTitle), connect.CodeInvalidArgument},
-		{"InvalidDueDate", platform.ErrorCode(deftodo.ErrorCodeInvalidDueDate), connect.CodeInvalidArgument},
-		{"InvalidID", platform.ErrorCode(deftodo.ErrorCodeInvalidID), connect.CodeInvalidArgument},
-		{"NotFound", platform.ErrorCode(deftodo.ErrorCodeNotFound), connect.CodeNotFound},
-		{"AlreadyExists", platform.ErrorCode(deftodo.ErrorCodeAlreadyExists), connect.CodeAlreadyExists},
-		{
-			"CannotCompleteCancelled",
-			platform.ErrorCode(deftodo.ErrorCodeCannotCompleteCancelled), connect.CodeFailedPrecondition,
-		},
-		{
-			"CannotModifyCompleted",
-			platform.ErrorCode(deftodo.ErrorCodeCannotModifyCompleted), connect.CodeFailedPrecondition,
-		},
-		{
-			"InvalidStatusTransition",
-			platform.ErrorCode(deftodo.ErrorCodeInvalidStatusTransition), connect.CodeFailedPrecondition,
-		},
+		{"InvalidTitle", platform.ErrorCode(tododef.ErrorCodeInvalidTitle), connect.CodeInvalidArgument},
+		{"InvalidDueDate", platform.ErrorCode(tododef.ErrorCodeInvalidDueDate), connect.CodeInvalidArgument},
+		{"InvalidID", platform.ErrorCode(tododef.ErrorCodeInvalidID), connect.CodeInvalidArgument},
+		{"NotFound", platform.ErrorCode(tododef.ErrorCodeNotFound), connect.CodeNotFound},
+		{"AlreadyExists", platform.ErrorCode(tododef.ErrorCodeAlreadyExists), connect.CodeAlreadyExists},
+		{"CannotCompleteCancelled", platform.ErrorCode(tododef.ErrorCodeCannotCompleteCancelled), connect.CodeFailedPrecondition},
+		{"CannotModifyCompleted", platform.ErrorCode(tododef.ErrorCodeCannotModifyCompleted), connect.CodeFailedPrecondition},
+		{"InvalidStatusTransition", platform.ErrorCode(tododef.ErrorCodeInvalidStatusTransition), connect.CodeFailedPrecondition},
 	}
 
 	for _, tc := range cases {
@@ -55,7 +46,7 @@ func TestConnectErrorFrom_DomainError_MapsToCorrectCode(t *testing.T) {
 
 func TestConnectErrorFrom_DomainError_HasDetail(t *testing.T) {
 	domainErr := &platform.DomainError{
-		Code:    platform.ErrorCode(deftodo.ErrorCodeNotFound),
+		Code:    platform.ErrorCode(tododef.ErrorCodeNotFound),
 		Message: "todo not found",
 	}
 
