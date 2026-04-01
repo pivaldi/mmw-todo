@@ -9,11 +9,11 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/piprim/mmw/pkg/platform"
 	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
 	dto "github.com/pivaldi/mmw-todo/internal/application/dto"
 	"github.com/pivaldi/mmw-todo/internal/domain"
-	"github.com/piprim/mmw/pkg/platform"
 )
 
 // MockTodoService is a mock implementation of application.TodoService

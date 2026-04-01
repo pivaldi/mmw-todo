@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/piprim/mmw/pkg/platform"
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 )
 
 func TestConnectErrorFrom_DomainError_MapsToCorrectCode(t *testing.T) {
