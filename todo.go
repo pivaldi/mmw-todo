@@ -31,9 +31,15 @@ const (
 )
 
 type Module struct {
-	relay  *pfoutbox.EventsRelay
-	server *pfserver.HTTPServer
-	logger *slog.Logger
+	relay   *pfoutbox.EventsRelay
+	server  *pfserver.HTTPServer
+	logger  *slog.Logger
+	service application.TodoService
+}
+
+// Service return the todo application service
+func (m *Module) Service() application.TodoService {
+	return m.service
 }
 
 // Ensure Module implements pfcore.Module
@@ -78,9 +84,10 @@ func New(infra Infrastructure) (*Module, error) {
 	httpServer := pfserver.NewHTTPServer(httpInfra)
 	// Initialize everything internal to Todo here!
 	return &Module{
-		relay:  pfoutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
-		server: httpServer,
-		logger: infra.Logger,
+		relay:   pfoutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
+		server:  httpServer,
+		logger:  infra.Logger,
+		service: todoService,
 	}, nil
 }
 

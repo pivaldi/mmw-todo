@@ -4,8 +4,8 @@ package application
 import (
 	"errors"
 
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/piprim/mmw/pkg/platform"
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
