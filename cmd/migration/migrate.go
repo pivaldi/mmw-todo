@@ -6,8 +6,9 @@ import (
 	"log/slog"
 	"os"
 
-	pfdbcli "github.com/piprim/mmw/pkg/platform/db/cli"
+	dbpgcli "github.com/piprim/mmw/pkg/platform/db/cli"
 	pfslog "github.com/piprim/mmw/pkg/platform/slog"
+	todo "github.com/pivaldi/mmw-todo"
 
 	"github.com/rotisserie/eris"
 )
@@ -19,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := pfdbcli.Migrate(conf.Database.URL(), "todo", migrationsFS); err != nil {
+	if err := dbpgcli.Migrate(conf.Database.URL(), todo.PGSchema, migrationsFS); err != nil {
 		logError("command failed", err)
 		os.Exit(1)
 	}

@@ -3,7 +3,6 @@ package todo
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -24,7 +23,7 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
 	"github.com/pivaldi/mmw-todo/internal/infra/config"
-	migrations "github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
+	"github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
 	"github.com/rotisserie/eris"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -34,6 +33,7 @@ import (
 const (
 	relayTableName = "todo.event"
 	ModuleName     = "Todo"
+	PGSchema       = "todo"
 )
 
 type Module struct {
@@ -54,17 +54,20 @@ func (m *Module) Handler() http.Handler {
 	return m.server.Handler()
 }
 
-// Migrate runs all pending database migrations for the todo module.
+// Migrate runs all pending database migrations for the auth module.
 // Intended for use in tests and migration tooling.
 func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	db := stdlib.OpenDBFromPool(pool)
 	defer db.Close()
-	if _, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS todo"); err != nil {
-		return fmt.Errorf("create todo schema: %w", err)
+
+	m, err := pfdbmigrator.New(db, migrations.FS, "scripts", PGSchema)
+	if err != nil {
+		return eris.Wrap(err, "failed to create migrator")
 	}
-	m := pfdbmigrator.New(db, migrations.FS, "scripts", "todo.goose_db_version")
-	_, err := m.Up(ctx)
-	return err
+
+	_, err = m.Up(ctx)
+
+	return eris.Wrap(err, "failed to migrate up")
 }
 
 // Ensure Module implements pfcore.Module
