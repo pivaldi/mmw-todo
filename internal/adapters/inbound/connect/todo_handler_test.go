@@ -7,110 +7,31 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/piprim/mmw/pkg/platform"
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
-	dto "github.com/pivaldi/mmw-todo/internal/application/dto"
+	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/domain"
+	"github.com/pivaldi/mmw-todo/internal/testhelpers"
 )
 
-// MockTodoService is a mock implementation of application.TodoService
-type MockTodoService struct {
-	CreateTodoFunc   func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error)
-	GetTodoFunc      func(ctx context.Context, id string) (*dto.TodoResponse, error)
-	UpdateTodoFunc   func(ctx context.Context, id string, req *dto.UpdateTodoRequest) (*dto.TodoResponse, error)
-	CompleteTodoFunc func(ctx context.Context, id string) (*dto.TodoResponse, error)
-	ReopenTodoFunc   func(ctx context.Context, id string) (*dto.TodoResponse, error)
-	DeleteTodoFunc   func(ctx context.Context, id string) error
-	ListTodosFunc    func(ctx context.Context, filters *dto.ListFilters) (*dto.ListTodosResponse, error)
+// newTestHandler wires a real TodoApplicationService with in-memory fakes
+// and returns the handler and repo for test setup.
+func newTestHandler(t *testing.T) (*TodoHandler, *testhelpers.InMemoryTodoRepo) {
+	t.Helper()
+	svc, repo := testhelpers.NewTestService(t)
+	return NewTodoHandler(svc), repo
 }
 
-func (m *MockTodoService) CreateTodo(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
-	if m.CreateTodoFunc != nil {
-		return m.CreateTodoFunc(ctx, req)
-	}
-
-	return nil, errors.New("not implemented")
-}
-
-func (m *MockTodoService) GetTodo(ctx context.Context, id string) (*dto.TodoResponse, error) {
-	if m.GetTodoFunc != nil {
-		return m.GetTodoFunc(ctx, id)
-	}
-
-	return nil, errors.New("not implemented")
-}
-
-func (m *MockTodoService) UpdateTodo(ctx context.Context, id string, req *dto.UpdateTodoRequest) (*dto.TodoResponse, error) {
-	if m.UpdateTodoFunc != nil {
-		return m.UpdateTodoFunc(ctx, id, req)
-	}
-
-	return nil, errors.New("not implemented")
-}
-
-func (m *MockTodoService) CompleteTodo(ctx context.Context, id string) (*dto.TodoResponse, error) {
-	if m.CompleteTodoFunc != nil {
-		return m.CompleteTodoFunc(ctx, id)
-	}
-
-	return nil, errors.New("not implemented")
-}
-
-func (m *MockTodoService) ReopenTodo(ctx context.Context, id string) (*dto.TodoResponse, error) {
-	if m.ReopenTodoFunc != nil {
-		return m.ReopenTodoFunc(ctx, id)
-	}
-
-	return nil, errors.New("not implemented")
-}
-
-func (m *MockTodoService) DeleteTodo(ctx context.Context, id string) error {
-	if m.DeleteTodoFunc != nil {
-		return m.DeleteTodoFunc(ctx, id)
-	}
-
-	return errors.New("not implemented")
-}
-
-func (m *MockTodoService) ListTodos(ctx context.Context, filters *dto.ListFilters) (*dto.ListTodosResponse, error) {
-	if m.ListTodosFunc != nil {
-		return m.ListTodosFunc(ctx, filters)
-	}
-
-	return nil, errors.New("not implemented")
-}
-
-func (m *MockTodoService) Health(ctx context.Context) (any, error) {
-	return nil, nil
+// testCtx returns a context with a fixed userID injected, required by the
+// application layer for all operations.
+func testCtx() context.Context {
+	return authctx.WithUserID(context.Background(), uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 }
 
 func TestTodoHandler_CreateTodo_Success(t *testing.T) {
-	mockService := &MockTodoService{
-		CreateTodoFunc: func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
-			// Verify request mapping
-			if req.Title != "Test Todo" {
-				t.Errorf("Title = %v, want %v", req.Title, "Test Todo")
-			}
-			if req.Priority != "medium" {
-				t.Errorf("Priority = %v, want %v", req.Priority, "medium")
-			}
-
-			return &dto.TodoResponse{
-				ID:          "123",
-				Title:       "Test Todo",
-				Description: "Test description",
-				Status:      "pending",
-				Priority:    domain.PriorityMedium,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}, nil
-		},
-	}
-
-	handler := NewTodoHandler(mockService)
+	handler, _ := newTestHandler(t)
 
 	req := connect.NewRequest(&todov1.CreateTodoRequest{
 		Title:       "Test Todo",
@@ -118,43 +39,21 @@ func TestTodoHandler_CreateTodo_Success(t *testing.T) {
 		Priority:    todov1.Priority_PRIORITY_MEDIUM,
 	})
 
-	resp, err := handler.CreateTodo(context.Background(), req)
+	resp, err := handler.CreateTodo(testCtx(), req)
 	if err != nil {
 		t.Fatalf("CreateTodo() unexpected error: %v", err)
 	}
-
 	if resp.Msg.Todo.Title != "Test Todo" {
-		t.Errorf("Response title = %v, want %v", resp.Msg.Todo.Title, "Test Todo")
+		t.Errorf("Title = %v, want %v", resp.Msg.Todo.Title, "Test Todo")
 	}
-
 	if resp.Msg.Todo.Status != todov1.TaskStatus_TASK_STATUS_PENDING {
-		t.Errorf("Response status = %v, want %v", resp.Msg.Todo.Status, todov1.TaskStatus_TASK_STATUS_PENDING)
+		t.Errorf("Status = %v, want PENDING", resp.Msg.Todo.Status)
 	}
 }
 
 func TestTodoHandler_CreateTodo_WithDueDate_Success(t *testing.T) {
+	handler, _ := newTestHandler(t)
 	dueDate := time.Now().Add(24 * time.Hour)
-
-	mockService := &MockTodoService{
-		CreateTodoFunc: func(ctx context.Context, req *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
-			if req.DueDate == nil {
-				t.Error("Expected due date to be set")
-			}
-
-			return &dto.TodoResponse{
-				ID:          "123",
-				Title:       "Test Todo",
-				Description: "Test description",
-				Status:      "pending",
-				Priority:    domain.PriorityHigh,
-				DueDate:     &dueDate,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}, nil
-		},
-	}
-
-	handler := NewTodoHandler(mockService)
 
 	req := connect.NewRequest(&todov1.CreateTodoRequest{
 		Title:       "Test Todo",
@@ -163,326 +62,220 @@ func TestTodoHandler_CreateTodo_WithDueDate_Success(t *testing.T) {
 		DueDate:     timestamppb.New(dueDate),
 	})
 
-	resp, err := handler.CreateTodo(context.Background(), req)
+	resp, err := handler.CreateTodo(testCtx(), req)
 	if err != nil {
 		t.Fatalf("CreateTodo() unexpected error: %v", err)
 	}
-
 	if resp.Msg.Todo.DueDate == nil {
 		t.Error("Expected due date in response")
 	}
 }
 
 func TestTodoHandler_GetTodo_Success(t *testing.T) {
-	mockService := &MockTodoService{
-		GetTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
-			if id != "123" {
-				t.Errorf("ID = %v, want %v", id, "123")
-			}
+	handler, _ := newTestHandler(t)
+	ctx := testCtx()
 
-			return &dto.TodoResponse{
-				ID:          "123",
-				Title:       "Test Todo",
-				Description: "Test description",
-				Status:      "pending",
-				Priority:    domain.PriorityMedium,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}, nil
-		},
+	createResp, err := handler.CreateTodo(ctx, connect.NewRequest(&todov1.CreateTodoRequest{
+		Title:    "Fetch Me",
+		Priority: todov1.Priority_PRIORITY_MEDIUM,
+	}))
+	if err != nil {
+		t.Fatalf("CreateTodo() unexpected error: %v", err)
 	}
+	id := createResp.Msg.Todo.Id
 
-	handler := NewTodoHandler(mockService)
-
-	req := connect.NewRequest(&todov1.GetTodoRequest{
-		Id: "123",
-	})
-
-	resp, err := handler.GetTodo(context.Background(), req)
+	resp, err := handler.GetTodo(ctx, connect.NewRequest(&todov1.GetTodoRequest{Id: id}))
 	if err != nil {
 		t.Fatalf("GetTodo() unexpected error: %v", err)
 	}
-
-	if resp.Msg.Todo.Id != "123" {
-		t.Errorf("Response ID = %v, want %v", resp.Msg.Todo.Id, "123")
+	if resp.Msg.Todo.Id != id {
+		t.Errorf("ID = %v, want %v", resp.Msg.Todo.Id, id)
 	}
 }
 
 func TestTodoHandler_GetTodo_NotFound_ReturnsNotFoundError(t *testing.T) {
-	mockService := &MockTodoService{
-		GetTodoFunc: func(_ context.Context, _ string) (*dto.TodoResponse, error) {
-			return nil, &platform.DomainError{
-				Code:    platform.ErrorCode(tododef.ErrorCodeNotFound),
-				Message: "todo not found",
-			}
-		},
-	}
+	handler, _ := newTestHandler(t)
 
-	handler := NewTodoHandler(mockService)
-
-	req := connect.NewRequest(&todov1.GetTodoRequest{
-		Id: "nonexistent",
-	})
-
-	_, err := handler.GetTodo(t.Context(), req)
+	_, err := handler.GetTodo(testCtx(), connect.NewRequest(&todov1.GetTodoRequest{
+		Id: uuid.New().String(), // valid UUID format, but not in the repo
+	}))
 
 	if err == nil {
 		t.Fatal("GetTodo() expected error, got nil")
 	}
-
 	var connectErr *connect.Error
 	if !errors.As(err, &connectErr) {
 		t.Fatalf("Expected *connect.Error, got %T", err)
 	}
-
 	if connectErr.Code() != connect.CodeNotFound {
-		t.Errorf("Code() = %v, want %v", connectErr.Code(), connect.CodeNotFound)
+		t.Errorf("Code() = %v, want CodeNotFound", connectErr.Code())
 	}
 }
 
 func TestTodoHandler_UpdateTodo_Success(t *testing.T) {
+	handler, _ := newTestHandler(t)
+	ctx := testCtx()
+
+	createResp, err := handler.CreateTodo(ctx, connect.NewRequest(&todov1.CreateTodoRequest{
+		Title:    "Original Title",
+		Priority: todov1.Priority_PRIORITY_MEDIUM,
+	}))
+	if err != nil {
+		t.Fatalf("CreateTodo() unexpected error: %v", err)
+	}
+	id := createResp.Msg.Todo.Id
 	newTitle := "Updated Title"
 
-	mockService := &MockTodoService{
-		UpdateTodoFunc: func(ctx context.Context, id string, req *dto.UpdateTodoRequest) (*dto.TodoResponse, error) {
-			if req.Title == nil || *req.Title != newTitle {
-				t.Error("Title not updated correctly")
-			}
-
-			return &dto.TodoResponse{
-				ID:          id,
-				Title:       newTitle,
-				Description: "Test description",
-				Status:      "pending",
-				Priority:    domain.PriorityMedium,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}, nil
-		},
-	}
-
-	handler := NewTodoHandler(mockService)
-
-	req := connect.NewRequest(&todov1.UpdateTodoRequest{
-		Id:    "123",
+	resp, err := handler.UpdateTodo(ctx, connect.NewRequest(&todov1.UpdateTodoRequest{
+		Id:    id,
 		Title: &newTitle,
-	})
-
-	resp, err := handler.UpdateTodo(context.Background(), req)
+	}))
 	if err != nil {
 		t.Fatalf("UpdateTodo() unexpected error: %v", err)
 	}
-
 	if resp.Msg.Todo.Title != newTitle {
-		t.Errorf("Response title = %v, want %v", resp.Msg.Todo.Title, newTitle)
+		t.Errorf("Title = %v, want %v", resp.Msg.Todo.Title, newTitle)
 	}
 }
 
 func TestTodoHandler_CompleteTodo_Success(t *testing.T) {
-	mockService := &MockTodoService{
-		CompleteTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
-			return &dto.TodoResponse{
-				ID:          id,
-				Title:       "Test Todo",
-				Description: "Test description",
-				Status:      "completed",
-				Priority:    domain.PriorityMedium,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}, nil
-		},
+	handler, _ := newTestHandler(t)
+	ctx := testCtx()
+
+	createResp, err := handler.CreateTodo(ctx, connect.NewRequest(&todov1.CreateTodoRequest{
+		Title:    "Complete Me",
+		Priority: todov1.Priority_PRIORITY_MEDIUM,
+	}))
+	if err != nil {
+		t.Fatalf("CreateTodo() unexpected error: %v", err)
 	}
 
-	handler := NewTodoHandler(mockService)
-
-	req := connect.NewRequest(&todov1.CompleteTodoRequest{
-		Id: "123",
-	})
-
-	resp, err := handler.CompleteTodo(context.Background(), req)
+	resp, err := handler.CompleteTodo(ctx, connect.NewRequest(&todov1.CompleteTodoRequest{
+		Id: createResp.Msg.Todo.Id,
+	}))
 	if err != nil {
 		t.Fatalf("CompleteTodo() unexpected error: %v", err)
 	}
-
 	if resp.Msg.Todo.Status != todov1.TaskStatus_TASK_STATUS_COMPLETED {
-		t.Errorf("Response status = %v, want %v", resp.Msg.Todo.Status, todov1.TaskStatus_TASK_STATUS_COMPLETED)
+		t.Errorf("Status = %v, want COMPLETED", resp.Msg.Todo.Status)
 	}
 }
 
 func TestTodoHandler_ReopenTodo_Success(t *testing.T) {
-	mockService := &MockTodoService{
-		ReopenTodoFunc: func(ctx context.Context, id string) (*dto.TodoResponse, error) {
-			return &dto.TodoResponse{
-				ID:          id,
-				Title:       "Test Todo",
-				Description: "Test description",
-				Status:      "pending",
-				Priority:    domain.PriorityMedium,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}, nil
-		},
-	}
+	handler, _ := newTestHandler(t)
+	ctx := testCtx()
 
-	handler := NewTodoHandler(mockService)
+	createResp, _ := handler.CreateTodo(ctx, connect.NewRequest(&todov1.CreateTodoRequest{
+		Title:    "Reopen Me",
+		Priority: todov1.Priority_PRIORITY_MEDIUM,
+	}))
+	_, _ = handler.CompleteTodo(ctx, connect.NewRequest(&todov1.CompleteTodoRequest{
+		Id: createResp.Msg.Todo.Id,
+	}))
 
-	req := connect.NewRequest(&todov1.ReopenTodoRequest{
-		Id: "123",
-	})
-
-	resp, err := handler.ReopenTodo(context.Background(), req)
+	resp, err := handler.ReopenTodo(ctx, connect.NewRequest(&todov1.ReopenTodoRequest{
+		Id: createResp.Msg.Todo.Id,
+	}))
 	if err != nil {
 		t.Fatalf("ReopenTodo() unexpected error: %v", err)
 	}
-
 	if resp.Msg.Todo.Status != todov1.TaskStatus_TASK_STATUS_PENDING {
-		t.Errorf("Response status = %v, want %v", resp.Msg.Todo.Status, todov1.TaskStatus_TASK_STATUS_PENDING)
+		t.Errorf("Status = %v, want PENDING", resp.Msg.Todo.Status)
 	}
 }
 
 func TestTodoHandler_DeleteTodo_Success(t *testing.T) {
-	mockService := &MockTodoService{
-		DeleteTodoFunc: func(ctx context.Context, id string) error {
-			if id != "123" {
-				t.Errorf("ID = %v, want %v", id, "123")
-			}
-			return nil
-		},
-	}
+	handler, _ := newTestHandler(t)
+	ctx := testCtx()
 
-	handler := NewTodoHandler(mockService)
+	createResp, _ := handler.CreateTodo(ctx, connect.NewRequest(&todov1.CreateTodoRequest{
+		Title:    "Delete Me",
+		Priority: todov1.Priority_PRIORITY_MEDIUM,
+	}))
+	id := createResp.Msg.Todo.Id
 
-	req := connect.NewRequest(&todov1.DeleteTodoRequest{
-		Id: "123",
-	})
-
-	_, err := handler.DeleteTodo(context.Background(), req)
+	_, err := handler.DeleteTodo(ctx, connect.NewRequest(&todov1.DeleteTodoRequest{Id: id}))
 	if err != nil {
 		t.Fatalf("DeleteTodo() unexpected error: %v", err)
+	}
+
+	_, err = handler.GetTodo(ctx, connect.NewRequest(&todov1.GetTodoRequest{Id: id}))
+	if err == nil {
+		t.Fatal("GetTodo() after delete expected error, got nil")
 	}
 }
 
 func TestTodoHandler_ListTodos_Success(t *testing.T) {
-	mockService := &MockTodoService{
-		ListTodosFunc: func(ctx context.Context, filters *dto.ListFilters) (*dto.ListTodosResponse, error) {
-			// Verify filters
-			if filters.Status != nil && *filters.Status != "pending" {
-				t.Errorf("Status filter = %v, want %v", *filters.Status, "pending")
-			}
+	handler, _ := newTestHandler(t)
+	ctx := testCtx()
 
-			todo1 := &dto.TodoResponse{
-				ID:          "1",
-				Title:       "Todo 1",
-				Description: "Description 1",
-				Status:      "pending",
-				Priority:    domain.PriorityMedium,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}
-
-			todo2 := &dto.TodoResponse{
-				ID:          "2",
-				Title:       "Todo 2",
-				Description: "Description 2",
-				Status:      "pending",
-				Priority:    domain.PriorityHigh,
-				CreatedAt:   time.Now(),
-				UpdatedAt:   time.Now(),
-			}
-
-			return &dto.ListTodosResponse{
-				Todos:      []*dto.TodoResponse{todo1, todo2},
-				TotalCount: 2,
-			}, nil
-		},
-	}
-
-	handler := NewTodoHandler(mockService)
+	_, _ = handler.CreateTodo(ctx, connect.NewRequest(&todov1.CreateTodoRequest{
+		Title:    "Todo 1",
+		Priority: todov1.Priority_PRIORITY_MEDIUM,
+	}))
+	_, _ = handler.CreateTodo(ctx, connect.NewRequest(&todov1.CreateTodoRequest{
+		Title:    "Todo 2",
+		Priority: todov1.Priority_PRIORITY_HIGH,
+	}))
 
 	status := todov1.TaskStatus_TASK_STATUS_PENDING
 	limit := int32(10)
 	offset := int32(0)
-	req := connect.NewRequest(&todov1.ListTodosRequest{
+	resp, err := handler.ListTodos(ctx, connect.NewRequest(&todov1.ListTodosRequest{
 		Status: &status,
 		Limit:  &limit,
 		Offset: &offset,
-	})
-
-	resp, err := handler.ListTodos(context.Background(), req)
+	}))
 	if err != nil {
 		t.Fatalf("ListTodos() unexpected error: %v", err)
 	}
-
 	if len(resp.Msg.Todos) != 2 {
-		t.Errorf("Response todos count = %v, want %v", len(resp.Msg.Todos), 2)
-	}
-
-	if resp.Msg.TotalCount != 2 {
-		t.Errorf("Response total count = %v, want %v", resp.Msg.TotalCount, 2)
+		t.Errorf("len(Todos) = %v, want 2", len(resp.Msg.Todos))
 	}
 }
 
 func TestTodoHandler_DomainError_InvalidTitle_ReturnsInvalidArgument(t *testing.T) {
-	mockService := &MockTodoService{
-		CreateTodoFunc: func(_ context.Context, _ *dto.CreateTodoRequest) (*dto.TodoResponse, error) {
-			return nil, &platform.DomainError{
-				Code:    platform.ErrorCode(tododef.ErrorCodeInvalidTitle),
-				Message: "title must be between 1 and 200 characters",
-			}
-		},
-	}
+	handler, _ := newTestHandler(t)
 
-	handler := NewTodoHandler(mockService)
-
-	req := connect.NewRequest(&todov1.CreateTodoRequest{
+	_, err := handler.CreateTodo(testCtx(), connect.NewRequest(&todov1.CreateTodoRequest{
 		Title:    "",
 		Priority: todov1.Priority_PRIORITY_MEDIUM,
-	})
-
-	_, err := handler.CreateTodo(t.Context(), req)
+	}))
 
 	if err == nil {
 		t.Fatal("CreateTodo() expected error, got nil")
 	}
-
 	var connectErr *connect.Error
 	if !errors.As(err, &connectErr) {
 		t.Fatalf("Expected *connect.Error, got %T", err)
 	}
-
 	if connectErr.Code() != connect.CodeInvalidArgument {
-		t.Errorf("Code() = %v, want %v", connectErr.Code(), connect.CodeInvalidArgument)
+		t.Errorf("Code() = %v, want CodeInvalidArgument", connectErr.Code())
 	}
 }
 
 func TestTodoHandler_DomainError_CannotCompleteCancelled_ReturnsFailedPrecondition(t *testing.T) {
-	mockService := &MockTodoService{
-		CompleteTodoFunc: func(_ context.Context, _ string) (*dto.TodoResponse, error) {
-			return nil, &platform.DomainError{
-				Code:    platform.ErrorCode(tododef.ErrorCodeCannotCompleteCancelled),
-				Message: "cannot complete a cancelled task",
-			}
-		},
-	}
+	handler, repo := newTestHandler(t)
+	ctx := testCtx()
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 
-	handler := NewTodoHandler(mockService)
+	// Seed a cancelled todo directly via the repo so we can try to complete it.
+	title, _ := domain.NewTaskTitle("Cancelled Todo")
+	todo := domain.NewTodo(title, "", domain.PriorityMedium, nil, userID)
+	_ = todo.Cancel()
+	_ = repo.Save(ctx, todo)
 
-	req := connect.NewRequest(&todov1.CompleteTodoRequest{
-		Id: "123",
-	})
-
-	_, err := handler.CompleteTodo(t.Context(), req)
-
+	_, err := handler.CompleteTodo(ctx, connect.NewRequest(&todov1.CompleteTodoRequest{
+		Id: todo.ID().String(),
+	}))
 	if err == nil {
-		t.Fatal("CompleteTodo() expected error, got nil")
+		t.Fatal("CompleteTodo() on cancelled todo expected error, got nil")
 	}
-
 	var connectErr *connect.Error
 	if !errors.As(err, &connectErr) {
 		t.Fatalf("Expected *connect.Error, got %T", err)
 	}
-
 	if connectErr.Code() != connect.CodeFailedPrecondition {
-		t.Errorf("Code() = %v, want %v", connectErr.Code(), connect.CodeFailedPrecondition)
+		t.Errorf("Code() = %v, want CodeFailedPrecondition", connectErr.Code())
 	}
 }

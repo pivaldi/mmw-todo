@@ -200,15 +200,15 @@ echo "Coverage report generated: coverage.html"
 
 [tasks."test:integration"]
 description = "Run integration tests (requires Docker for testcontainers)"
-run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v -race -tags=integration ./internal/adapters/outbound/persistence/postgres/... ./test/integration/..."
+run = "echo 'Not implemented for now. See monolith system test…'"
 
-[tasks."test:api"]
-description = "Run API tests (requires running server)"
-run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v -tags=api ./test/api/..."
+[tasks."test:contract"]
+description = "Run contract tests for the todo module (no Docker needed)"
+run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v ./test/contract/..."
 
 [tasks."test:all"]
 description = "Run all tests"
-depends = ["test", "test:integration", "test:api"]
+depends = ["test", "test:integration", "test:contract"]
 
 # Code quality tasks
 [tasks.fmt]

@@ -3,13 +3,16 @@ package todo
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	pfconnect "github.com/piprim/mmw/pkg/platform/connect"
 	pfcore "github.com/piprim/mmw/pkg/platform/core"
+	pfdbmigrator "github.com/piprim/mmw/pkg/platform/db/migrator"
 	pfoutbox "github.com/piprim/mmw/pkg/platform/db/outbox"
 	pfevents "github.com/piprim/mmw/pkg/platform/events"
 	pfuow "github.com/piprim/mmw/pkg/platform/pg/uow"
@@ -21,13 +24,16 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
 	"github.com/pivaldi/mmw-todo/internal/infra/config"
+	migrations "github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
 	"github.com/rotisserie/eris"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
 )
 
 const (
 	relayTableName = "todo.event"
-	ModuleName     = "Auth"
+	ModuleName     = "Todo"
 )
 
 type Module struct {
@@ -40,6 +46,25 @@ type Module struct {
 // Service return the todo application service
 func (m *Module) Service() application.TodoService {
 	return m.service
+}
+
+// Handler returns the module's HTTP handler so tests can wrap it in
+// httptest.NewServer without starting a real server on a port.
+func (m *Module) Handler() http.Handler {
+	return m.server.Handler()
+}
+
+// Migrate runs all pending database migrations for the todo module.
+// Intended for use in tests and migration tooling.
+func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
+	db := stdlib.OpenDBFromPool(pool)
+	defer db.Close()
+	if _, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS todo"); err != nil {
+		return fmt.Errorf("create todo schema: %w", err)
+	}
+	m := pfdbmigrator.New(db, migrations.FS, "scripts", "todo.goose_db_version")
+	_, err := m.Up(ctx)
+	return err
 }
 
 // Ensure Module implements pfcore.Module
@@ -72,9 +97,10 @@ func New(infra Infrastructure) (*Module, error) {
 	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
 	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, nil, handler))
 
+	h2cHandler := h2c.NewHandler(mux, &http2.Server{})
 	httpInfra := pfserver.HTTPServerInfra{
 		Config:          cfg.Server,
-		Handler:         mux,
+		Handler:         h2cHandler,
 		Logger:          infra.Logger,
 		HealthFns:       pfserver.HealthFns{"database": todoService.Health},
 		LogPayloads:     true,

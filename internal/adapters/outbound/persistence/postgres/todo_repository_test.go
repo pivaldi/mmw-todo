@@ -6,13 +6,13 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	pfdbmigrator "github.com/piprim/mmw/pkg/platform/db/migrator"
 	ogluow "github.com/piprim/mmw/pkg/platform/pg/uow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
 	"github.com/pivaldi/mmw-todo/internal/domain"
+	migrations "github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
 )
 
 var testDB *pgxpool.Pool
@@ -79,36 +80,16 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-// runMigrations executes migration files
+// runMigrations runs all pending migrations using the embedded FS.
 func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
-	// Get migrations directory
-	migrationsDir := filepath.Join("..", "..", "..", "..", "scripts", "migrations")
-
-	// Read up migration files
-	entries, err := os.ReadDir(migrationsDir)
-	if err != nil {
-		return fmt.Errorf("reading migrations directory: %w", err)
+	db := stdlib.OpenDBFromPool(pool)
+	defer db.Close()
+	if _, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS todo"); err != nil {
+		return fmt.Errorf("create todo schema: %w", err)
 	}
-
-	// Execute .up.sql files in order
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if filepath.Ext(entry.Name()) == ".sql" && filepath.Ext(entry.Name()[:len(entry.Name())-4]) == ".up" {
-			migrationPath := filepath.Join(migrationsDir, entry.Name())
-			content, err := os.ReadFile(migrationPath)
-			if err != nil {
-				return fmt.Errorf("reading migration %s: %w", entry.Name(), err)
-			}
-
-			if _, err := pool.Exec(ctx, string(content)); err != nil {
-				return fmt.Errorf("executing migration %s: %w", entry.Name(), err)
-			}
-		}
-	}
-
-	return nil
+	m := pfdbmigrator.New(db, migrations.FS, "scripts", "todo.goose_db_version")
+	_, err := m.Up(ctx)
+	return err
 }
 
 var testUserID = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
