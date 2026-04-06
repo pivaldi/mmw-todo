@@ -17,6 +17,7 @@ import (
 	pfuow "github.com/piprim/mmw/pkg/platform/pg/uow"
 	pfserver "github.com/piprim/mmw/pkg/platform/server"
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-contracts/gen/go/todo/v1/todov1connect"
 	connecthandler "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
@@ -43,9 +44,10 @@ type Module struct {
 	service application.TodoService
 }
 
-// Service return the todo application service
-func (m *Module) Service() application.TodoService {
-	return m.service
+// Service returns the todo service as a tododef.TodoService, wrapped in a
+// ContractAdapter so callers receive the proto-typed contract interface.
+func (m *Module) Service() tododef.TodoService {
+	return application.NewContractAdapter(m.service)
 }
 
 // Handler returns the module's HTTP handler so tests can wrap it in

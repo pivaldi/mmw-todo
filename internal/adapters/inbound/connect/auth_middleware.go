@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/rotisserie/eris"
 
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	authv1 "github.com/pivaldi/mmw-contracts/gen/go/auth/v1"
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 )
 
@@ -36,9 +38,17 @@ func NewAuthMiddleware(
 			return
 		}
 
-		userID, err := authSvc.ValidateToken(r.Context(), token)
+		resp, err := authSvc.ValidateToken(r.Context(), &authv1.ValidateTokenRequest{Token: token})
 		if err != nil {
 			logger.Error("token validation failed", "err", eris.ToString(err, true), "path", r.URL.Path)
+			writeUnauthorized(w)
+
+			return
+		}
+
+		userID, err := uuid.Parse(resp.GetUserId())
+		if err != nil {
+			logger.Error("invalid user_id in token response", "err", err, "path", r.URL.Path)
 			writeUnauthorized(w)
 
 			return

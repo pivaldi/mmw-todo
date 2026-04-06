@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	authv1 "github.com/pivaldi/mmw-contracts/gen/go/auth/v1"
 	. "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 )
@@ -22,12 +22,27 @@ type mockAuthService struct {
 	err    error
 }
 
-func (m *mockAuthService) GetUser(_ context.Context, _ string) (*defauth.User, error) {
+func (m *mockAuthService) Register(_ context.Context, _ *authv1.RegisterRequest) (*authv1.RegisterResponse, error) {
 	return nil, nil
 }
 
-func (m *mockAuthService) ValidateToken(_ context.Context, _ string) (uuid.UUID, error) {
-	return m.userID, m.err
+func (m *mockAuthService) Login(_ context.Context, _ *authv1.LoginRequest) (*authv1.LoginResponse, error) {
+	return nil, nil
+}
+
+func (m *mockAuthService) ValidateToken(_ context.Context, _ *authv1.ValidateTokenRequest) (*authv1.ValidateTokenResponse, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &authv1.ValidateTokenResponse{IsValid: true, UserId: m.userID.String()}, nil
+}
+
+func (m *mockAuthService) ChangePassword(_ context.Context, _ *authv1.ChangePasswordRequest) (*authv1.ChangePasswordResponse, error) {
+	return nil, nil
+}
+
+func (m *mockAuthService) DeleteUser(_ context.Context, _ *authv1.DeleteUserRequest) (*authv1.DeleteUserResponse, error) {
+	return nil, nil
 }
 
 func TestAuthMiddleware_ValidToken_CallsNext(t *testing.T) {

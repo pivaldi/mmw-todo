@@ -75,13 +75,6 @@ run = "APP_ROOT_PATH={{config_root}} ./scripts/common/pre-commit.sh"
 alias = "pc"
 
 # Development tasks
-[tasks."buf:deps"]
-description = "Download buf dependencies"
-run = """
-cd {{vars.CONTRACTS_DIR}}
-buf mod update
-"""
-
 [tasks.generate]
 depends = ["buf:generate"]
 description = "Generate code from protobuf definitions and Go enums"
@@ -99,7 +92,6 @@ run = """
   st.do go generate ./...
   st.done
  """
-
 
 [tasks."generate:mocks"]
 description = "Generate Go mocks for application ports"
@@ -120,6 +112,13 @@ run = """
   cd {{vars.CONTRACTS_DIR}}
   st.do buf generate --template buf.gen.todo.yaml
   st.done
+"""
+
+[tasks."buf:deps"]
+description = "Download buf dependencies"
+run = """
+cd {{vars.CONTRACTS_DIR}}
+buf mod update
 """
 
 [tasks."buf:lint"]
@@ -210,10 +209,12 @@ run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v ./test/contract/..."
 description = "Run all tests"
 depends = ["test", "test:integration", "test:contract"]
 
-# Code quality tasks
 [tasks.fmt]
-description = "Format Go code"
-run = "go fmt ./..."
+description = "Format all Go code"
+run = """
+  echo "Formatting all Go code in workspace..."
+  gofumpt -l -w .
+  """
 
 [tasks.lint]
 description = "Run linter"
