@@ -49,7 +49,8 @@ func (c *DeleteTodoCommand) Execute(
 	}
 
 	// Create and dispatch deleted event
-	deletedEvent := domain.NewTodoDeletedEvent(todoID)
+	deletedEvent := domain.NewTodoDeletedEvent(todoID, userID)
+
 	if err := c.eventDispatcher.Dispatch(ctx, []domain.DomainEvent{deletedEvent}); err != nil {
 		return eris.Wrap(err, "dispatching events")
 	}

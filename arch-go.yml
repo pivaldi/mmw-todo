@@ -57,7 +57,8 @@ dependenciesRules:
         - '**.application.**'
         - '**.domain.**'
         - '**.ports'
-    description: 'Inbound adapters depend on application, domain, and ports only'
+        - '**.adapters.inbound.mapper'
+    description: 'Inbound adapters depend on application, domain, ports and mapper only'
 
   # Outbound Adapters (Secondary) - Repositories, event publishers, external clients
   - package: '**.adapters.outbound.**'

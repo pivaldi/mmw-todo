@@ -6,8 +6,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	pfuow "github.com/piprim/mmw/pkg/platform/pg/uow"
+	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/rotisserie/eris"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type PostgresOutboxDispatcher struct {
@@ -35,7 +39,16 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 			return eris.Errorf("no routing key for domain event type %q", event.EventType())
 		}
 
-		payload, err := json.Marshal(event)
+		var payload []byte
+		var err error
+
+		// Map domain events to proto messages where possible
+		if protoMsg := domainToProto(event); protoMsg != nil {
+			payload, err = protojson.Marshal(protoMsg)
+		} else {
+			payload, err = json.Marshal(event)
+		}
+
 		if err != nil {
 			return eris.Wrapf(err, "failed to marshal event %s", event.EventType())
 		}
@@ -52,6 +65,48 @@ func (d *PostgresOutboxDispatcher) Dispatch(ctx context.Context, events []domain
 	for i := range events {
 		if _, err := br.Exec(); err != nil {
 			return eris.Wrapf(err, "failed to insert outbox event at index %d", i)
+		}
+	}
+
+	return nil
+}
+
+func domainToProto(event domain.DomainEvent) protoreflect.ProtoMessage {
+	switch e := event.(type) {
+	case *domain.UserTasksDeleted:
+		return &todov1.UserTasksDeletedEvent{
+			UserId:    e.GetAggregateID(),
+			DeletedAt: timestamppb.New(e.GetOccurredAt()),
+		}
+	case *domain.TodoCreated:
+		return &todov1.UserTaskCreatedEvent{
+			UserId:    e.GetUserID().String(),
+			TaskId:    e.GetAggregateID(),
+			CreatedAt: timestamppb.New(e.GetOccurredAt()),
+		}
+	case *domain.TodoUpdated:
+		return &todov1.UserTaskUpdatedEvent{
+			UserId:    e.GetUserID().String(),
+			TaskId:    e.GetAggregateID(),
+			UpdatedAt: timestamppb.New(e.GetOccurredAt()),
+		}
+	case *domain.TodoCompleted:
+		return &todov1.UserTaskCompletedEvent{
+			UserId:      e.GetUserID().String(),
+			TaskId:      e.GetAggregateID(),
+			CompletedAt: timestamppb.New(e.CompletedAt),
+		}
+	case *domain.TodoReopened:
+		return &todov1.UserTaskReopenedEvent{
+			UserId:     e.GetUserID().String(),
+			TaskId:     e.GetAggregateID(),
+			ReopenedAt: timestamppb.New(e.GetOccurredAt()),
+		}
+	case *domain.TodoDeleted:
+		return &todov1.UserTaskDeletedEvent{
+			UserId:    e.GetUserID().String(),
+			TaskId:    e.GetAggregateID(),
+			DeletedAt: timestamppb.New(e.GetOccurredAt()),
 		}
 	}
 

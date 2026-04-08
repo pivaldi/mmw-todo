@@ -1,4 +1,4 @@
-package application
+package inproc
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 
 	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
+	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
+	"github.com/pivaldi/mmw-todo/internal/application"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )
@@ -15,13 +17,13 @@ import (
 // ContractAdapter wraps TodoService and implements tododef.TodoService,
 // translating between proto-typed requests/responses and domain-idiomatic signatures.
 type ContractAdapter struct {
-	svc TodoService
+	svc application.TodoService
 }
 
 var _ tododef.TodoService = (*ContractAdapter)(nil)
 
 // NewContractAdapter creates a ContractAdapter around svc.
-func NewContractAdapter(svc TodoService) *ContractAdapter {
+func NewContractAdapter(svc application.TodoService) *ContractAdapter {
 	return &ContractAdapter{svc: svc}
 }
 
@@ -33,7 +35,7 @@ func (a *ContractAdapter) CreateTodo(ctx context.Context, req *todov1.CreateTodo
 		DueDate:     protoToTime(req.GetDueDate()),
 	})
 	if err != nil {
-		return nil, err
+		return nil, mapper.DomainErrorFor(err)
 	}
 	return &todov1.CreateTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
@@ -41,7 +43,7 @@ func (a *ContractAdapter) CreateTodo(ctx context.Context, req *todov1.CreateTodo
 func (a *ContractAdapter) GetTodo(ctx context.Context, req *todov1.GetTodoRequest) (*todov1.GetTodoResponse, error) {
 	r, err := a.svc.GetTodo(ctx, req.GetId())
 	if err != nil {
-		return nil, err
+		return nil, mapper.DomainErrorFor(err)
 	}
 	return &todov1.GetTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
@@ -67,7 +69,7 @@ func (a *ContractAdapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodo
 	}
 	r, err := a.svc.UpdateTodo(ctx, req.GetId(), update)
 	if err != nil {
-		return nil, err
+		return nil, mapper.DomainErrorFor(err)
 	}
 	return &todov1.UpdateTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
@@ -75,7 +77,7 @@ func (a *ContractAdapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodo
 func (a *ContractAdapter) CompleteTodo(ctx context.Context, req *todov1.CompleteTodoRequest) (*todov1.CompleteTodoResponse, error) {
 	r, err := a.svc.CompleteTodo(ctx, req.GetId())
 	if err != nil {
-		return nil, err
+		return nil, mapper.DomainErrorFor(err)
 	}
 	return &todov1.CompleteTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
@@ -83,14 +85,14 @@ func (a *ContractAdapter) CompleteTodo(ctx context.Context, req *todov1.Complete
 func (a *ContractAdapter) ReopenTodo(ctx context.Context, req *todov1.ReopenTodoRequest) (*todov1.ReopenTodoResponse, error) {
 	r, err := a.svc.ReopenTodo(ctx, req.GetId())
 	if err != nil {
-		return nil, err
+		return nil, mapper.DomainErrorFor(err)
 	}
 	return &todov1.ReopenTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
 
 func (a *ContractAdapter) DeleteTodo(ctx context.Context, req *todov1.DeleteTodoRequest) (*todov1.DeleteTodoResponse, error) {
 	if err := a.svc.DeleteTodo(ctx, req.GetId()); err != nil {
-		return nil, err
+		return nil, mapper.DomainErrorFor(err)
 	}
 	return &todov1.DeleteTodoResponse{}, nil
 }
@@ -115,7 +117,7 @@ func (a *ContractAdapter) ListTodos(ctx context.Context, req *todov1.ListTodosRe
 	}
 	result, err := a.svc.ListTodos(ctx, filters)
 	if err != nil {
-		return nil, err
+		return nil, mapper.DomainErrorFor(err)
 	}
 	todos := make([]*todov1.Todo, len(result.Todos))
 	for i, t := range result.Todos {
@@ -136,24 +138,35 @@ func todoResponseToProto(r *dto.TodoResponse) *todov1.Todo {
 		Description: r.Description,
 		Status:      domainStatusToProto(r.Status),
 		Priority:    domainPriorityToProto(r.Priority),
-		DueDate:     timeToProto(r.DueDate),
 		CreatedAt:   timestamppb.New(r.CreatedAt),
 		UpdatedAt:   timestamppb.New(r.UpdatedAt),
+		DueDate:     timeToProto(r.DueDate),
 	}
 }
 
-func protoPriorityToDomain(p todov1.Priority) domain.Priority {
-	switch p {
-	case todov1.Priority_PRIORITY_LOW:
-		return domain.PriorityLow
-	case todov1.Priority_PRIORITY_MEDIUM:
-		return domain.PriorityMedium
-	case todov1.Priority_PRIORITY_HIGH:
-		return domain.PriorityHigh
-	case todov1.Priority_PRIORITY_URGENT:
-		return domain.PriorityUrgent
+func domainStatusToProto(s domain.TaskStatus) todov1.TaskStatus {
+	switch s {
+	case domain.TaskStatusPending:
+		return todov1.TaskStatus_TASK_STATUS_PENDING
+	case domain.TaskStatusCompleted:
+		return todov1.TaskStatus_TASK_STATUS_COMPLETED
+	case domain.TaskStatusCancelled:
+		return todov1.TaskStatus_TASK_STATUS_CANCELLED
 	default:
-		return domain.PriorityLow
+		return todov1.TaskStatus_TASK_STATUS_UNSPECIFIED
+	}
+}
+
+func protoStatusToDomain(s todov1.TaskStatus) domain.TaskStatus {
+	switch s {
+	case todov1.TaskStatus_TASK_STATUS_PENDING:
+		return domain.TaskStatusPending
+	case todov1.TaskStatus_TASK_STATUS_COMPLETED:
+		return domain.TaskStatusCompleted
+	case todov1.TaskStatus_TASK_STATUS_CANCELLED:
+		return domain.TaskStatusCancelled
+	default:
+		return domain.TaskStatusPending
 	}
 }
 
@@ -165,40 +178,21 @@ func domainPriorityToProto(p domain.Priority) todov1.Priority {
 		return todov1.Priority_PRIORITY_MEDIUM
 	case domain.PriorityHigh:
 		return todov1.Priority_PRIORITY_HIGH
-	case domain.PriorityUrgent:
-		return todov1.Priority_PRIORITY_URGENT
 	default:
 		return todov1.Priority_PRIORITY_UNSPECIFIED
 	}
 }
 
-func protoStatusToDomain(s todov1.TaskStatus) domain.TaskStatus {
-	switch s {
-	case todov1.TaskStatus_TASK_STATUS_PENDING:
-		return domain.TaskStatusPending
-	case todov1.TaskStatus_TASK_STATUS_IN_PROGRESS:
-		return domain.TaskStatusInProgress
-	case todov1.TaskStatus_TASK_STATUS_COMPLETED:
-		return domain.TaskStatusCompleted
-	case todov1.TaskStatus_TASK_STATUS_CANCELLED:
-		return domain.TaskStatusCancelled
+func protoPriorityToDomain(p todov1.Priority) domain.Priority {
+	switch p {
+	case todov1.Priority_PRIORITY_LOW:
+		return domain.PriorityLow
+	case todov1.Priority_PRIORITY_MEDIUM:
+		return domain.PriorityMedium
+	case todov1.Priority_PRIORITY_HIGH:
+		return domain.PriorityHigh
 	default:
-		return domain.TaskStatusPending
-	}
-}
-
-func domainStatusToProto(s domain.TaskStatus) todov1.TaskStatus {
-	switch s {
-	case domain.TaskStatusPending:
-		return todov1.TaskStatus_TASK_STATUS_PENDING
-	case domain.TaskStatusInProgress:
-		return todov1.TaskStatus_TASK_STATUS_IN_PROGRESS
-	case domain.TaskStatusCompleted:
-		return todov1.TaskStatus_TASK_STATUS_COMPLETED
-	case domain.TaskStatusCancelled:
-		return todov1.TaskStatus_TASK_STATUS_CANCELLED
-	default:
-		return todov1.TaskStatus_TASK_STATUS_UNSPECIFIED
+		return domain.PriorityMedium
 	}
 }
 

@@ -2,16 +2,19 @@ package domain
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Event type constants — semantic identifiers owned by the domain.
 // Adapters are responsible for mapping these to transport-layer routing keys.
 const (
-	EventTypeCreated   = "todo.created"
-	EventTypeUpdated   = "todo.updated"
-	EventTypeCompleted = "todo.completed"
-	EventTypeReopened  = "todo.reopened"
-	EventTypeDeleted   = "todo.deleted"
+	EventTypeCreated          = "todo.created"
+	EventTypeUpdated          = "todo.updated"
+	EventTypeCompleted        = "todo.completed"
+	EventTypeReopened         = "todo.reopened"
+	EventTypeDeleted          = "todo.deleted"
+	EventTypeUserTasksDeleted = "todo.user_tasks_deleted"
 )
 
 // DomainEvent is the interface that all domain events must implement
@@ -20,6 +23,8 @@ type DomainEvent interface {
 	EventType() string
 	// GetAggregateID returns the ID of the aggregate that emitted the event
 	GetAggregateID() string
+	// GetUserID returns the ID of the user associated with this event
+	GetUserID() uuid.UUID
 	// GetOccurredAt returns when the event occurred
 	GetOccurredAt() time.Time
 }
@@ -27,12 +32,18 @@ type DomainEvent interface {
 // BaseDomainEvent contains common fields for all domain events
 type BaseDomainEvent struct {
 	AggregateID string
+	UserID      uuid.UUID
 	OccurredAt  time.Time
 }
 
 // GetAggregateID returns the ID of the aggregate
 func (e BaseDomainEvent) GetAggregateID() string {
 	return e.AggregateID
+}
+
+// GetUserID returns the ID of the user
+func (e BaseDomainEvent) GetUserID() uuid.UUID {
+	return e.UserID
 }
 
 // GetOccurredAt returns when the event occurred
@@ -55,7 +66,7 @@ func (*TodoCreated) EventType() string {
 }
 
 // NewTodoCreatedEvent creates a new TodoCreated event
-func NewTodoCreatedEvent(id TodoID, title TaskTitle, description string, priority Priority, dueDate *DueDate) *TodoCreated {
+func NewTodoCreatedEvent(id TodoID, userID uuid.UUID, title TaskTitle, description string, priority Priority, dueDate *DueDate) *TodoCreated {
 	var dueDatePtr *time.Time
 	if dueDate != nil {
 		t := dueDate.Time()
@@ -65,6 +76,7 @@ func NewTodoCreatedEvent(id TodoID, title TaskTitle, description string, priorit
 	return &TodoCreated{
 		BaseDomainEvent: BaseDomainEvent{
 			AggregateID: id.String(),
+			UserID:      userID,
 			OccurredAt:  time.Now(),
 		},
 		Title:       title.String(),
@@ -90,6 +102,7 @@ func NewTodoUpdatedEvent(todo *Todo) *TodoUpdated {
 	return &TodoUpdated{
 		BaseDomainEvent: BaseDomainEvent{
 			AggregateID: todo.id.String(),
+			UserID:      todo.userID,
 			OccurredAt:  time.Now(),
 		},
 		Todo: todo,
@@ -108,10 +121,11 @@ func (*TodoCompleted) EventType() string {
 }
 
 // NewTodoCompletedEvent creates a new TodoCompleted event
-func NewTodoCompletedEvent(id TodoID, completedAt time.Time) *TodoCompleted {
+func NewTodoCompletedEvent(id TodoID, userID uuid.UUID, completedAt time.Time) *TodoCompleted {
 	return &TodoCompleted{
 		BaseDomainEvent: BaseDomainEvent{
 			AggregateID: id.String(),
+			UserID:      userID,
 			OccurredAt:  time.Now(),
 		},
 		CompletedAt: completedAt,
@@ -130,10 +144,11 @@ func (*TodoReopened) EventType() string {
 }
 
 // NewTodoReopenedEvent creates a new TodoReopened event
-func NewTodoReopenedEvent(id TodoID, previousStatus TaskStatus) *TodoReopened {
+func NewTodoReopenedEvent(id TodoID, userID uuid.UUID, previousStatus TaskStatus) *TodoReopened {
 	return &TodoReopened{
 		BaseDomainEvent: BaseDomainEvent{
 			AggregateID: id.String(),
+			UserID:      userID,
 			OccurredAt:  time.Now(),
 		},
 		PreviousStatus: previousStatus.String(),
@@ -151,10 +166,33 @@ func (*TodoDeleted) EventType() string {
 }
 
 // NewTodoDeletedEvent creates a new TodoDeleted event
-func NewTodoDeletedEvent(id TodoID) *TodoDeleted {
+func NewTodoDeletedEvent(id TodoID, userID uuid.UUID) *TodoDeleted {
 	return &TodoDeleted{
 		BaseDomainEvent: BaseDomainEvent{
 			AggregateID: id.String(),
+			UserID:      userID,
+			OccurredAt:  time.Now(),
+		},
+	}
+}
+
+// UserTasksDeleted event is emitted when all tasks of a user are deleted
+type UserTasksDeleted struct {
+	BaseDomainEvent
+}
+
+// EventType returns the event type
+func (*UserTasksDeleted) EventType() string {
+	return EventTypeUserTasksDeleted
+}
+
+// NewUserTasksDeletedEvent creates a new UserTasksDeleted event
+func NewUserTasksDeletedEvent(userID string) *UserTasksDeleted {
+	uID, _ := uuid.Parse(userID)
+	return &UserTasksDeleted{
+		BaseDomainEvent: BaseDomainEvent{
+			AggregateID: userID,
+			UserID:      uID,
 			OccurredAt:  time.Now(),
 		},
 	}

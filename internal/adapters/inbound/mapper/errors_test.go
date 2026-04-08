@@ -1,5 +1,5 @@
-// modules/todo/internal/application/errors_test.go
-package application_test
+// modules/todo/internal/adapters/inbound/mapper/errors_test.go
+package mapper_test
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/piprim/mmw/pkg/platform"
 	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
-	"github.com/pivaldi/mmw-todo/internal/application"
+	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
@@ -30,7 +30,7 @@ func TestDomainErrorFor_KnownSentinels(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := application.DomainErrorFor(tc.input)
+			result := mapper.DomainErrorFor(tc.input)
 
 			domErr, ok := errors.AsType[*platform.DomainError](result)
 			if !ok {
@@ -51,7 +51,7 @@ func TestDomainErrorFor_KnownSentinels(t *testing.T) {
 func TestDomainErrorFor_WrappedSentinel_IsUnwrapped(t *testing.T) {
 	wrapped := fmt.Errorf("context: %w", domain.ErrInvalidTitle)
 
-	result := application.DomainErrorFor(wrapped)
+	result := mapper.DomainErrorFor(wrapped)
 
 	_, ok := errors.AsType[*platform.DomainError](result)
 	if !ok {
@@ -62,7 +62,7 @@ func TestDomainErrorFor_WrappedSentinel_IsUnwrapped(t *testing.T) {
 func TestDomainErrorFor_NonDomainError_PassesThrough(t *testing.T) {
 	infra := errors.New("db connection refused")
 
-	result := application.DomainErrorFor(infra)
+	result := mapper.DomainErrorFor(infra)
 
 	if result != infra {
 		t.Errorf("expected original error to pass through, got %v", result)

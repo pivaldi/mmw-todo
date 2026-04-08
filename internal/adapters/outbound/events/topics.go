@@ -10,9 +10,10 @@ import (
 //
 //nolint:gochecknoglobals // package-level lookup table, not mutable state
 var domainTopics = map[string]string{
-	domain.EventTypeCreated:   tododef.TopicUserTaskCreated,
-	domain.EventTypeUpdated:   tododef.TopicUserTaskUpdated,
-	domain.EventTypeCompleted: tododef.TopicUserTaskCompleted,
-	domain.EventTypeReopened:  tododef.TopicUserTaskReopened,
-	domain.EventTypeDeleted:   tododef.TopicUserTaskDeleted,
+	domain.EventTypeCreated:          tododef.TopicUserTaskCreated,
+	domain.EventTypeUpdated:          tododef.TopicUserTaskUpdated,
+	domain.EventTypeCompleted:        tododef.TopicUserTaskCompleted,
+	domain.EventTypeReopened:         tododef.TopicUserTaskReopened,
+	domain.EventTypeDeleted:          tododef.TopicUserTaskDeleted,
+	domain.EventTypeUserTasksDeleted: tododef.TopicUserTasksDeleted,
 }

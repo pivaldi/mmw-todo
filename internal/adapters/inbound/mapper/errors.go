@@ -1,5 +1,5 @@
-// modules/todo/internal/application/errors.go
-package application
+// modules/todo/internal/adapters/inbound/mapper/errors.go
+package mapper
 
 import (
 	"errors"

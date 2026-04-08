@@ -68,7 +68,7 @@ func (s *TodoApplicationService) CreateTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.createTodoCmd.Execute(ctx, req)
 	if err != nil {
-		return nil, DomainErrorFor(err)
+		return nil, err
 	}
 
 	return result, nil
@@ -81,7 +81,7 @@ func (s *TodoApplicationService) GetTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.getTodoQuery.Execute(ctx, id)
 	if err != nil {
-		return nil, DomainErrorFor(err)
+		return nil, err
 	}
 
 	return result, nil
@@ -95,7 +95,7 @@ func (s *TodoApplicationService) UpdateTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.updateTodoCmd.Execute(ctx, id, req)
 	if err != nil {
-		return nil, DomainErrorFor(err)
+		return nil, err
 	}
 
 	return result, nil
@@ -108,7 +108,7 @@ func (s *TodoApplicationService) CompleteTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.completeTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return nil, DomainErrorFor(err)
+		return nil, err
 	}
 
 	return result, nil
@@ -121,7 +121,7 @@ func (s *TodoApplicationService) ReopenTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.reopenTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return nil, DomainErrorFor(err)
+		return nil, err
 	}
 
 	return result, nil
@@ -134,7 +134,7 @@ func (s *TodoApplicationService) DeleteTodo(
 ) error {
 	err := s.deleteTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return DomainErrorFor(err)
+		return err
 	}
 
 	return nil
@@ -147,7 +147,7 @@ func (s *TodoApplicationService) ListTodos(
 ) (*dto.ListTodosResponse, error) {
 	result, err := s.listTodosQuery.Execute(ctx, filters)
 	if err != nil {
-		return nil, DomainErrorFor(err)
+		return nil, err
 	}
 
 	return result, nil
@@ -157,7 +157,7 @@ func (s *TodoApplicationService) ListTodos(
 func (s *TodoApplicationService) Health(ctx context.Context) (any, error) {
 	count, err := s.repository.Health(ctx)
 	if err != nil {
-		return 0, DomainErrorFor(err)
+		return nil, err
 	}
 
 	return count, nil

@@ -20,12 +20,17 @@ import (
 	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-contracts/gen/go/todo/v1/todov1connect"
 	connecthandler "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
+	inevents "github.com/pivaldi/mmw-todo/internal/adapters/inbound/events"
+	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/inproc"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
+	"github.com/pivaldi/mmw-todo/internal/application/command"
 	"github.com/pivaldi/mmw-todo/internal/infra/config"
 	"github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
 	"github.com/rotisserie/eris"
+	"github.com/ThreeDotsLabs/watermill"
+	"github.com/ThreeDotsLabs/watermill/message"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
@@ -40,6 +45,7 @@ const (
 type Module struct {
 	relay   *pfoutbox.EventsRelay
 	server  *pfserver.HTTPServer
+	router  *message.Router
 	logger  *slog.Logger
 	service application.TodoService
 }
@@ -47,7 +53,7 @@ type Module struct {
 // Service returns the todo service as a tododef.TodoService, wrapped in a
 // ContractAdapter so callers receive the proto-typed contract interface.
 func (m *Module) Service() tododef.TodoService {
-	return application.NewContractAdapter(m.service)
+	return inproc.NewContractAdapter(m.service)
 }
 
 // Handler returns the module's HTTP handler so tests can wrap it in
@@ -76,10 +82,11 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 var _ pfcore.Module = (*Module)(nil)
 
 type Infrastructure struct {
-	DBPool   *pgxpool.Pool
-	EventBus pfevents.SystemEventBus
-	AuthSvc  defauth.AuthPrivateService
-	Logger   *slog.Logger
+	DBPool     *pgxpool.Pool
+	EventBus   pfevents.SystemEventBus
+	Subscriber message.Subscriber
+	AuthSvc    defauth.AuthPrivateService
+	Logger     *slog.Logger
 }
 
 func New(infra Infrastructure) (*Module, error) {
@@ -93,6 +100,20 @@ func New(infra Infrastructure) (*Module, error) {
 	todoRepo := postgres.NewPostgresTodoRepository(uow)
 	eventDispatcher := events.NewPostgresOutboxDispatcher(uow)
 	todoService := application.NewTodoApplicationService(todoRepo, uow, eventDispatcher)
+
+	watermillLogger := watermill.NewSlogLogger(infra.Logger)
+	router, err := message.NewRouter(message.RouterConfig{}, watermillLogger)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to create event router")
+	}
+
+	deleteUserTasksCmd := command.NewDeleteUserTasksCommand(eventDispatcher)
+	router.AddNoPublisherHandler(
+		"todo.on_auth_user_deleted",
+		defauth.TopicUserDeleted,
+		infra.Subscriber,
+		inevents.HandleUserDeleted(deleteUserTasksCmd),
+	)
 
 	path, handler := todov1connect.NewTodoServiceHandler(
 		connecthandler.NewTodoHandler(todoService),
@@ -117,6 +138,7 @@ func New(infra Infrastructure) (*Module, error) {
 	return &Module{
 		relay:   pfoutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
 		server:  httpServer,
+		router:  router,
 		logger:  infra.Logger,
 		service: todoService,
 	}, nil
@@ -149,6 +171,10 @@ func (m *Module) Start(ctx context.Context) error {
 			return nil
 		})
 	}
+
+	g.Go(func() error {
+		return m.router.Run(gCtx)
+	})
 
 	err := g.Wait()
 

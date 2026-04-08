@@ -12,6 +12,7 @@ import (
 	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
 	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/inproc"
+	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/pivaldi/mmw-todo/internal/testhelpers"
@@ -33,8 +34,9 @@ func authedCtx() context.Context {
 // so tests must match by code rather than by sentinel identity.
 // want must be a value castable to platform.ErrorCode (e.g. tododef.ErrorCodeNotFound).
 func isDomainErrorCode(err error, want platform.ErrorCode) bool {
-	var de *platform.DomainError
-	if !errors.As(err, &de) {
+	mapped := mapper.DomainErrorFor(err)
+	de, ok := errors.AsType[*platform.DomainError](mapped)
+	if !ok {
 		return false
 	}
 	return de.Code == want

@@ -6,22 +6,23 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/piprim/mmw/pkg/platform"
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
-	commonv1 "github.com/pivaldi/mmw-contracts/gen/go/common/v1"
+	"github.com/pivaldi/mmw-contracts/definitions/todo"
+	"github.com/pivaldi/mmw-contracts/gen/go/common/v1"
+	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 )
 
 // domainConnectCodeMap maps proto error codes (from contracts) to Connect status codes.
 //
 //nolint:gochecknoglobals // package-level lookup table, not mutable state
 var domainConnectCodeMap = map[platform.ErrorCode]connect.Code{
-	platform.ErrorCode(tododef.ErrorCodeInvalidTitle):            connect.CodeInvalidArgument,
-	platform.ErrorCode(tododef.ErrorCodeInvalidDueDate):          connect.CodeInvalidArgument,
-	platform.ErrorCode(tododef.ErrorCodeInvalidID):               connect.CodeInvalidArgument,
-	platform.ErrorCode(tododef.ErrorCodeNotFound):                connect.CodeNotFound,
-	platform.ErrorCode(tododef.ErrorCodeAlreadyExists):           connect.CodeAlreadyExists,
-	platform.ErrorCode(tododef.ErrorCodeCannotCompleteCancelled): connect.CodeFailedPrecondition,
-	platform.ErrorCode(tododef.ErrorCodeCannotModifyCompleted):   connect.CodeFailedPrecondition,
-	platform.ErrorCode(tododef.ErrorCodeInvalidStatusTransition): connect.CodeFailedPrecondition,
+	platform.ErrorCode(todo.ErrorCodeInvalidTitle):            connect.CodeInvalidArgument,
+	platform.ErrorCode(todo.ErrorCodeInvalidDueDate):          connect.CodeInvalidArgument,
+	platform.ErrorCode(todo.ErrorCodeInvalidID):               connect.CodeInvalidArgument,
+	platform.ErrorCode(todo.ErrorCodeNotFound):                connect.CodeNotFound,
+	platform.ErrorCode(todo.ErrorCodeAlreadyExists):           connect.CodeAlreadyExists,
+	platform.ErrorCode(todo.ErrorCodeCannotCompleteCancelled): connect.CodeFailedPrecondition,
+	platform.ErrorCode(todo.ErrorCodeCannotModifyCompleted):   connect.CodeFailedPrecondition,
+	platform.ErrorCode(todo.ErrorCodeInvalidStatusTransition): connect.CodeFailedPrecondition,
 }
 
 // connectErrorFrom converts any error from the application layer into a *connect.Error.
@@ -33,7 +34,8 @@ var domainConnectCodeMap = map[platform.ErrorCode]connect.Code{
 // rather than sharing it via a helper in ogl, since ogl must not depend on
 // project-specific contracts (commonv1).
 func connectErrorFrom(err error) *connect.Error {
-	domainErr, ok := errors.AsType[*platform.DomainError](err)
+	mappedErr := mapper.DomainErrorFor(err)
+	domainErr, ok := errors.AsType[*platform.DomainError](mappedErr)
 	if !ok {
 		return connect.NewError(connect.CodeInternal, err)
 	}

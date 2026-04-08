@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
@@ -15,8 +16,9 @@ func TestInMemoryEventDispatcher_Dispatch_Success(t *testing.T) {
 
 	// Create test events
 	todoID := domain.NewTodoID()
+	userID := uuid.New()
 	title, _ := domain.NewTaskTitle("Test Todo")
-	event := domain.NewTodoCreatedEvent(todoID, title, "Description", domain.PriorityMedium, nil)
+	event := domain.NewTodoCreatedEvent(todoID, userID, title, "Description", domain.PriorityMedium, nil)
 
 	events := []domain.DomainEvent{event}
 

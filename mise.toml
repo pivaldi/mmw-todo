@@ -187,7 +187,7 @@ rm -rf gen/
 # Testing tasks
 [tasks.test]
 description = "Run unit tests"
-run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v ./... ./..."
+run = "go tool gotestsum {{vars.GOTESTSUM_OPTIONS}} -- -v ./..."
 
 [tasks."test:coverage"]
 description = "Run tests with coverage report"
