@@ -4,14 +4,14 @@ import { Observable, from } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { createClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { AuthService as AuthServiceDef } from '@contracts/auth/v1/auth_pb';
+import { AuthPublicService } from '@contracts/auth/v1/auth_pb';
 import type { LoginResponse, RegisterResponse } from '@contracts/auth/v1/auth_pb';
 import { environment } from '../../environments/environment';
 
 const TOKEN_KEY = 'auth_token';
 
 const transport = createConnectTransport({ baseUrl: environment.apiUrl });
-const client = createClient(AuthServiceDef, transport);
+const client = createClient(AuthPublicService, transport);
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -22,9 +22,7 @@ export class AuthService {
   }
 
   login(login: string, password: string): Observable<LoginResponse> {
-    return from(client.login({ login, password })).pipe(
-      tap(res => localStorage.setItem(TOKEN_KEY, res.token))
-    );
+    return from(client.login({ login, password })).pipe(tap((res) => localStorage.setItem(TOKEN_KEY, res.token)));
   }
 
   logout(): void {

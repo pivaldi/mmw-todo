@@ -78,7 +78,7 @@ var _ pfcore.Module = (*Module)(nil)
 type Infrastructure struct {
 	DBPool   *pgxpool.Pool
 	EventBus pfevents.SystemEventBus
-	AuthSvc  defauth.AuthService
+	AuthSvc  defauth.AuthPrivateService
 	Logger   *slog.Logger
 }
 

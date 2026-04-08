@@ -18,7 +18,7 @@ import (
 // the request context before delegating to next.
 // Routes starting with any of the excludedPaths will bypass authentication.
 func NewAuthMiddleware(
-	authSvc defauth.AuthService,
+	authSvc defauth.AuthPrivateService,
 	logger *slog.Logger,
 	excludedPaths []string,
 	next http.Handler,
