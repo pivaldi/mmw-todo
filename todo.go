@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	"github.com/ThreeDotsLabs/watermill"
+	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	pfconnect "github.com/piprim/mmw/pkg/platform/connect"
@@ -17,11 +19,9 @@ import (
 	pfuow "github.com/piprim/mmw/pkg/platform/pg/uow"
 	pfserver "github.com/piprim/mmw/pkg/platform/server"
 	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
 	"github.com/pivaldi/mmw-contracts/gen/go/todo/v1/todov1connect"
 	connecthandler "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
 	inevents "github.com/pivaldi/mmw-todo/internal/adapters/inbound/events"
-	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/inproc"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/events"
 	"github.com/pivaldi/mmw-todo/internal/adapters/outbound/persistence/postgres"
 	"github.com/pivaldi/mmw-todo/internal/application"
@@ -29,8 +29,6 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/infra/config"
 	"github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
 	"github.com/rotisserie/eris"
-	"github.com/ThreeDotsLabs/watermill"
-	"github.com/ThreeDotsLabs/watermill/message"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
@@ -43,17 +41,11 @@ const (
 )
 
 type Module struct {
-	relay   *pfoutbox.EventsRelay
-	server  *pfserver.HTTPServer
-	router  *message.Router
+	relay   *pfoutbox.EventsRelay // m.relay.Start(gCtx)  ← outbox relay (DB → bus)
+	server  *pfserver.HTTPServer  // m.server.Start(gCtx) ← HTTP server
+	router  *message.Router       // m.router.Run(gCtx)   ← Watermill router (bus → handlers)
 	logger  *slog.Logger
 	service application.TodoService
-}
-
-// Service returns the todo service as a tododef.TodoService, wrapped in a
-// ContractAdapter so callers receive the proto-typed contract interface.
-func (m *Module) Service() tododef.TodoService {
-	return inproc.NewContractAdapter(m.service)
 }
 
 // Handler returns the module's HTTP handler so tests can wrap it in
@@ -108,7 +100,7 @@ func New(infra Infrastructure) (*Module, error) {
 	}
 
 	deleteUserTasksCmd := command.NewDeleteUserTasksCommand(eventDispatcher)
-	router.AddNoPublisherHandler(
+	router.AddConsumerHandler(
 		"todo.on_auth_user_deleted",
 		defauth.TopicUserDeleted,
 		infra.Subscriber,

@@ -80,8 +80,6 @@ func main() {
 
 	// When extracted, you might swap Watermill's GoChannel for RabbitMQ here!
 	// systemBus := setupRabbitMQ()
-	// Wrap the raw infrastructure in the Adapter.
-	// systemBus := oglevents.NewWatermillBus(rawBus)
 
 	dbPool, err = getDatabasePoolConnexion(ctx, todoLogger, todoConf.Database.URL())
 	if err != nil {
