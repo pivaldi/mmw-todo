@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/piprim/mmw/pkg/platform"
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
+	tododef "github.com/pivaldi/mmw-contracts/go/application/todo"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )

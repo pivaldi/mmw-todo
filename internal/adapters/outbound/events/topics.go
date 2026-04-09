@@ -1,7 +1,7 @@
 package events
 
 import (
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
+	tododef "github.com/pivaldi/mmw-contracts/go/application/todo"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 

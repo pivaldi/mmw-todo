@@ -6,8 +6,8 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/piprim/mmw/pkg/platform"
-	"github.com/pivaldi/mmw-contracts/definitions/todo"
-	"github.com/pivaldi/mmw-contracts/gen/go/common/v1"
+	"github.com/pivaldi/mmw-contracts/go/application/todo"
+	"github.com/pivaldi/mmw-contracts/go/network/common/v1"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 )
 

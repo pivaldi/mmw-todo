@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	pfuow "github.com/piprim/mmw/pkg/platform/pg/uow"
-	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
+	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/encoding/protojson"

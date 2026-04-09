@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/rotisserie/eris"
 
-	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
-	authv1 "github.com/pivaldi/mmw-contracts/gen/go/auth/v1"
+	defauth "github.com/pivaldi/mmw-contracts/go/application/auth"
+	authv1 "github.com/pivaldi/mmw-contracts/go/network/auth/v1"
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 )
 

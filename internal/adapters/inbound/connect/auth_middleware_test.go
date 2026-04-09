@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	authv1 "github.com/pivaldi/mmw-contracts/gen/go/auth/v1"
+	authv1 "github.com/pivaldi/mmw-contracts/go/network/auth/v1"
 	. "github.com/pivaldi/mmw-todo/internal/adapters/inbound/connect"
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"
 )

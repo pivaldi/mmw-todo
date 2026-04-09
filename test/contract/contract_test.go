@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	todov1 "github.com/pivaldi/mmw-contracts/gen/go/todo/v1"
-	tododef "github.com/pivaldi/mmw-contracts/definitions/todo"
+	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
+	tododef "github.com/pivaldi/mmw-contracts/go/application/todo"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/inproc"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 	"github.com/pivaldi/mmw-todo/internal/application/authctx"

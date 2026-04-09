@@ -5,7 +5,7 @@ import (
 
 	"github.com/ThreeDotsLabs/watermill/message"
 	pfevents "github.com/piprim/mmw/pkg/platform/events"
-	defauth "github.com/pivaldi/mmw-contracts/definitions/auth"
+	defauth "github.com/pivaldi/mmw-contracts/go/application/auth"
 	"github.com/pivaldi/mmw-todo/internal/application/command"
 	"github.com/rotisserie/eris"
 )
