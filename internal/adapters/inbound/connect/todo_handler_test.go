@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
-	"github.com/pivaldi/mmw-todo/internal/application/authctx"
+	pfauthctx "github.com/piprim/mmw/pkg/platform/authctx"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/pivaldi/mmw-todo/internal/testhelpers"
 )
@@ -27,7 +27,7 @@ func newTestHandler(t *testing.T) (*TodoHandler, *testhelpers.InMemoryTodoRepo) 
 // testCtx returns a context with a fixed userID injected, required by the
 // application layer for all operations.
 func testCtx() context.Context {
-	return authctx.WithUserID(context.Background(), uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+	return pfauthctx.WithUserID(context.Background(), uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 }
 
 func TestTodoHandler_CreateTodo_Success(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rotisserie/eris"
 
-	"github.com/pivaldi/mmw-todo/internal/application/authctx"
+	"github.com/piprim/mmw/pkg/platform/authctx"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
 	"github.com/pivaldi/mmw-todo/internal/domain"

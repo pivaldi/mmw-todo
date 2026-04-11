@@ -16,6 +16,7 @@ import (
 	pfdbmigrator "github.com/piprim/mmw/pkg/platform/db/migrator"
 	pfoutbox "github.com/piprim/mmw/pkg/platform/db/outbox"
 	pfevents "github.com/piprim/mmw/pkg/platform/events"
+	pfmiddleware "github.com/piprim/mmw/pkg/platform/middleware"
 	pfuow "github.com/piprim/mmw/pkg/platform/pg/uow"
 	pfserver "github.com/piprim/mmw/pkg/platform/server"
 	defauth "github.com/pivaldi/mmw-contracts/go/application/auth"
@@ -29,8 +30,6 @@ import (
 	"github.com/pivaldi/mmw-todo/internal/infra/config"
 	"github.com/pivaldi/mmw-todo/internal/infra/persistence/migrations"
 	"github.com/rotisserie/eris"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -41,11 +40,11 @@ const (
 )
 
 type Module struct {
-	relay   *pfoutbox.EventsRelay // m.relay.Start(gCtx)  ← outbox relay (DB → bus)
-	server  *pfserver.HTTPServer  // m.server.Start(gCtx) ← HTTP server
-	router  *message.Router       // m.router.Run(gCtx)   ← Watermill router (bus → handlers)
-	logger  *slog.Logger
-	service application.TodoService
+	relay   *pfoutbox.EventsRelay   // m.relay.Start(gCtx)  ← outbox relay (DB → bus)
+	server  *pfserver.HTTPServer    // m.server.Start(gCtx) ← HTTP server
+	router  *message.Router         // m.router.Run(gCtx)   ← Watermill router (bus → handlers)
+	logger  *slog.Logger            // The native Go logger is enough
+	service application.TodoService // This is an interface ! Can be replaced by any implementation.
 }
 
 // Handler returns the module's HTTP handler so tests can wrap it in
@@ -113,16 +112,18 @@ func New(infra Infrastructure) (*Module, error) {
 	)
 
 	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
-	mux.Handle(path, connecthandler.NewAuthMiddleware(infra.AuthSvc, infra.Logger, nil, handler))
+	authMiddleware := pfmiddleware.BearerAuthMiddleware(connecthandler.NewTokenValidator(infra.AuthSvc), infra.Logger, nil)
+	mux.Handle(path, authMiddleware(handler))
 
-	h2cHandler := h2c.NewHandler(mux, &http2.Server{})
 	httpInfra := pfserver.HTTPServerInfra{
-		Config:          cfg.Server,
-		Handler:         h2cHandler,
-		Logger:          infra.Logger,
-		HealthFns:       pfserver.HealthFns{"database": todoService.Health},
-		LogPayloads:     true,
-		WithDebugRoutes: cfg.Environment.IsDev(),
+		Config:      cfg.Server,
+		Handler:     mux,
+		Logger:      infra.Logger,
+		HealthFns:   pfserver.HealthFns{"database": todoService.Health},
+		LogPayloads: true,
+		ServiceNames: []string{
+			todov1connect.TodoServiceName,
+		},
 	}
 
 	httpServer := pfserver.NewHTTPServer(httpInfra)

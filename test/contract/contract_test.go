@@ -13,7 +13,7 @@ import (
 	tododef "github.com/pivaldi/mmw-contracts/go/application/todo"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/inproc"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
-	"github.com/pivaldi/mmw-todo/internal/application/authctx"
+	pfauthctx "github.com/piprim/mmw/pkg/platform/authctx"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/pivaldi/mmw-todo/internal/testhelpers"
 	"github.com/piprim/mmw/pkg/platform"
@@ -26,7 +26,7 @@ func newAdapter(t *testing.T) (*inproc.Adapter, *testhelpers.InMemoryTodoRepo) {
 }
 
 func authedCtx() context.Context {
-	return authctx.WithUserID(context.Background(), uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+	return pfauthctx.WithUserID(context.Background(), uuid.MustParse("00000000-0000-0000-0000-000000000001"))
 }
 
 // isDomainErrorCode checks whether err carries the given domain error code.
