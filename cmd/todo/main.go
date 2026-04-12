@@ -95,10 +95,11 @@ func main() {
 	)
 
 	todoModule, err := todo.New(todo.Infrastructure{
-		DBPool:   dbPool,
-		EventBus: systemBus,
-		Logger:   todoLogger,
-		AuthSvc:  defauth.NewPrivateHTTPClient(authHttpClient),
+		DBPool:     dbPool,
+		EventBus:   systemBus,
+		Subscriber: rawBus,
+		Logger:     todoLogger,
+		AuthSvc:    defauth.NewPrivateHTTPClient(authHttpClient),
 	})
 	if err != nil {
 		logError("creating module failed", err)
