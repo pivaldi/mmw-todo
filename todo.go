@@ -80,61 +80,110 @@ type Infrastructure struct {
 	Logger     *slog.Logger
 }
 
+// New wires all the dependencies of the Todo module and returns a ready-to-start Module.
 func New(infra Infrastructure) (*Module, error) {
 	cfg, err := config.Load(context.Background(), "")
 	if err != nil {
 		return nil, eris.Wrap(err, "app failed to load config")
 	}
-	mux := http.NewServeMux()
 
-	uow := pfuow.New(infra.DBPool)
-	todoRepo := postgres.NewPostgresTodoRepository(uow)
-	eventDispatcher := events.NewPostgresOutboxDispatcher(uow)
-	todoService := application.NewTodoApplicationService(todoRepo, uow, eventDispatcher)
-
-	watermillLogger := watermill.NewSlogLogger(infra.Logger)
-	router, err := message.NewRouter(message.RouterConfig{}, watermillLogger)
+	todoService := newApplicationService(infra)
+	router, err := newEventRouter(infra)
 	if err != nil {
-		return nil, eris.Wrap(err, "failed to create event router")
+		return nil, err
 	}
 
-	deleteUserTasksCmd := command.NewDeleteUserTasksCommand(eventDispatcher)
-	router.AddConsumerHandler(
-		"todo.on_auth_user_deleted",
-		defauth.TopicUserDeleted,
-		infra.Subscriber,
-		inevents.HandleUserDeleted(deleteUserTasksCmd),
-	)
+	httpServer := newHTTPServer(cfg, infra, todoService)
 
-	path, handler := todov1connect.NewTodoServiceHandler(
-		connecthandler.NewTodoHandler(todoService),
-		connect.WithInterceptors(pfconnect.NewErrorLoggingInterceptor(infra.Logger)),
-	)
-
-	// Wrap Connect handler with auth middleware — every todo RPC requires a valid JWT
-	authMiddleware := pfmiddleware.BearerAuthMiddleware(connecthandler.NewTokenValidator(infra.AuthSvc), infra.Logger, nil)
-	mux.Handle(path, authMiddleware(handler))
-
-	httpInfra := pfserver.HTTPServerInfra{
-		Config:      cfg.Server,
-		Handler:     mux,
-		Logger:      infra.Logger,
-		HealthFns:   pfserver.HealthFns{"database": todoService.Health},
-		LogPayloads: true,
-		ServiceNames: []string{
-			todov1connect.TodoServiceName,
-		},
-	}
-
-	httpServer := pfserver.NewHTTPServer(httpInfra)
-	// Initialize everything internal to Todo here!
 	return &Module{
+		// Outbox relay: polls todo.event every 2 s and forwards rows to the SystemEventBus.
 		relay:   pfoutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
 		server:  httpServer,
 		router:  router,
 		logger:  infra.Logger,
 		service: todoService,
 	}, nil
+}
+
+// newApplicationService builds the infrastructure adapters (repository, outbox dispatcher,
+// unit of work) and wires them into the TodoApplicationService.
+//
+// The UnitOfWork is the single source of truth for database access: both the repository
+// and the event dispatcher receive the same UoW so that writes to todo rows and writes
+// to the outbox table share the same transaction.
+func newApplicationService(infra Infrastructure) application.TodoService {
+	uow := pfuow.New(infra.DBPool)
+	todoRepo := postgres.NewPostgresTodoRepository(uow)
+	eventDispatcher := events.NewPostgresOutboxDispatcher(uow)
+
+	return application.NewTodoApplicationService(todoRepo, uow, eventDispatcher)
+}
+
+// newEventRouter creates the Watermill message router and registers all inbound event
+// handlers for the Todo module.
+//
+// Currently the only subscription is "auth.user.deleted.v1": when a user account is
+// deleted the auth module publishes that event, and this handler removes all of the
+// user's tasks to keep the database clean.
+func newEventRouter(infra Infrastructure) (*message.Router, error) {
+	watermillLogger := watermill.NewSlogLogger(infra.Logger)
+
+	router, err := message.NewRouter(message.RouterConfig{}, watermillLogger)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to create event router")
+	}
+
+	// Re-create the event dispatcher here so the handler's command has its own UoW
+	// instance — the router runs in a separate goroutine and must not share
+	// the service's UoW.
+	uow := pfuow.New(infra.DBPool)
+	eventDispatcher := events.NewPostgresOutboxDispatcher(uow)
+	deleteUserTasksCmd := command.NewDeleteUserTasksCommand(eventDispatcher)
+
+	router.AddConsumerHandler(
+		"todo.on_auth_user_deleted", // unique handler name (must be stable across restarts)
+		defauth.TopicUserDeleted,    // source topic published by the auth module
+		infra.Subscriber,            // underlying pub/sub transport (GoChannel, NATS, …)
+		inevents.HandleUserDeleted(deleteUserTasksCmd),
+	)
+
+	return router, nil
+}
+
+// newHTTPServer mounts the Connect RPC handler on an HTTP mux and wraps it with
+// platform middleware, then returns a pre-configured HTTPServer ready to be started.
+//
+// Auth middleware is applied to every route: all Todo RPCs require a valid JWT.
+// The service's Health method is exposed at GET /debug/monit so the platform runner
+// can probe database connectivity.
+// gRPC server reflection is enabled so grpcui can discover the service schema without
+// a compiled proto descriptor.
+func newHTTPServer(cfg *config.Config, infra Infrastructure, todoService application.TodoService) *pfserver.HTTPServer {
+	mux := http.NewServeMux()
+
+	// Register the Connect RPC handler with an error-logging interceptor.
+	path, handler := todov1connect.NewTodoServiceHandler(
+		connecthandler.NewTodoHandler(todoService),
+		connect.WithInterceptors(pfconnect.NewErrorLoggingInterceptor(infra.Logger)),
+	)
+
+	// Every Todo RPC requires a valid JWT — the TokenValidator calls the auth module's
+	// private service to validate the token and extract the user UUID.
+	authMiddleware := pfmiddleware.BearerAuthMiddleware(
+		connecthandler.NewTokenValidator(infra.AuthSvc),
+		infra.Logger,
+		nil, // no excluded paths — all routes are protected
+	)
+	mux.Handle(path, authMiddleware(handler))
+
+	return pfserver.NewHTTPServer(pfserver.HTTPServerInfra{
+		Config:       cfg.Server,
+		Handler:      mux,
+		Logger:       infra.Logger,
+		HealthFns:    pfserver.HealthFns{"database": todoService.Health},
+		LogPayloads:  true,
+		ServiceNames: []string{todov1connect.TodoServiceName}, // enables gRPC reflection
+	})
 }
 
 // Close properly releases allocated resources
@@ -151,12 +200,17 @@ func (m *Module) Close() error {
 
 func (m *Module) Start(ctx context.Context) error {
 	m.logger.Info("starting the app")
+
+	// Package errgroup provides synchronization, error propagation, and Context
+	// cancellation for groups of goroutines working on subtasks of a common task.
 	g, gCtx := errgroup.WithContext(ctx)
 
+	// Start the HTTP server
 	g.Go(func() error {
 		return m.server.Start(gCtx)
 	})
 
+	// Start the Outbox relay
 	if m.relay != nil {
 		g.Go(func() error {
 			m.relay.Start(gCtx)
@@ -165,10 +219,12 @@ func (m *Module) Start(ctx context.Context) error {
 		})
 	}
 
+	// Start the Watermill message router triggering Todo module handlers for inbound event handlers.
 	g.Go(func() error {
 		return m.router.Run(gCtx)
 	})
 
+	// Wait until the context is cancled or a goroutine returns an error or panics.
 	err := g.Wait()
 
 	return eris.Wrapf(err, "%s failure", ModuleName)

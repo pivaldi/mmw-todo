@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	pfmiddleware "github.com/piprim/mmw/pkg/platform/middleware"
 	defauth "github.com/pivaldi/mmw-contracts/go/application/auth"
 	authv1 "github.com/pivaldi/mmw-contracts/go/network/auth/v1"
-	pfmiddleware "github.com/piprim/mmw/pkg/platform/middleware"
 )
 
 // NewTokenValidator wraps an AuthPrivateService as a platform TokenValidator.
@@ -16,6 +16,7 @@ func NewTokenValidator(svc defauth.AuthPrivateService) pfmiddleware.TokenValidat
 	return func(ctx context.Context, token string) (uuid.UUID, error) {
 		resp, err := svc.ValidateToken(ctx, &authv1.ValidateTokenRequest{Token: token})
 		if err != nil {
+			//nolint:wrapcheck // err is not wrapped.
 			return uuid.Nil, err
 		}
 

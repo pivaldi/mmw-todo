@@ -7,7 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/piprim/mmw/pkg/platform"
 	"github.com/pivaldi/mmw-contracts/go/application/todo"
-	"github.com/pivaldi/mmw-contracts/go/network/common/v1"
+	commonv1 "github.com/pivaldi/mmw-contracts/go/network/common/v1"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 )
 

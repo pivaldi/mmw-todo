@@ -7,20 +7,20 @@ require (
 	github.com/ThreeDotsLabs/watermill v1.5.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.9.1
-	github.com/piprim/mmw v0.0.0-20260409092134-c961c00ab351
+	github.com/piprim/mmw v0.0.0-20260412102203-45bd3f41cf8a
 	github.com/pivaldi/mmw-contracts v0.0.0-20260409102333-380efea737ec
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/rotisserie/eris v0.5.4
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0
-	golang.org/x/net v0.50.0
 	golang.org/x/sync v0.20.0
 	google.golang.org/protobuf v1.36.11
 )
 
 require (
 	connectrpc.com/cors v0.1.0 // indirect
+	connectrpc.com/grpcreflect v1.3.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -123,14 +123,15 @@ require (
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260109210033-bd525da824e2 // indirect
-	golang.org/x/term v0.40.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/mod v0.33.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260209163413-e7419c687ee4 // indirect
+	golang.org/x/term v0.41.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.41.0 // indirect
+	golang.org/x/tools v0.42.0 // indirect
 	golang.org/x/tools/cmd/cover v0.1.0-deprecated // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
