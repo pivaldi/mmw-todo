@@ -73,10 +73,10 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 var _ pfcore.Module = (*Module)(nil)
 
 type Infrastructure struct {
-	DBPool     *pgxpool.Pool
+	DBPool     *pgxpool.Pool // Connexion à la bdd
 	EventBus   pfevents.SystemEventBus
 	Subscriber message.Subscriber
-	AuthSvc    defauth.AuthPrivateService
+	AuthSvc    defauth.AuthPrivateService // C'est un contract pas une implementation
 	Logger     *slog.Logger
 }
 
