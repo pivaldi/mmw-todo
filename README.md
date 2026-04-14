@@ -1,6 +1,8 @@
 # DDD & Hexagonal Architecture with Standard Go Project Layout
 
-This Go module takes part of the [mmw](https://github.com/pivaldi/mmw) project that demonstrates the implementation of the [Go Modular Monolith White Paper](https://github.com/pivaldi/go-modular-monolith-white-paper)
+This Go module takes part of the [mmw](https://github.com/pivaldi/mmw) project that demonstrates the implementation of the [Go Modular Monolith White Paper](https://github.com/pivaldi/go-modular-monolith-white-paper).
+
+This project is not usable independently of [mmw-auth](https://github.com/pivaldi/mmw-auth); the best way to test this project is to use directly the [Monolith Modular Worskpace](https://github.com/pivaldi/mmw).
 
 ## Overview
 
@@ -14,6 +16,7 @@ The Todo API example provides:
 
 - **Complete CRUD API** for managing todo items
 - **Dual Protocol Support** - HTTP and gRPC from single protobuf definitions using [Buf Connect](https://connect.build)
+- **In-process/Network calls switch** - demonstrate the interaction with an authentication service in-proccess or through a gRPC connection.
 - **Domain-Driven Design** - Rich domain model with aggregates, value objects, and domain events
 - **Hexagonal Architecture** - Clear separation between domain, application, and infrastructure layers
 - **PostgreSQL Persistence** - Repository pattern with database migrations
@@ -28,7 +31,7 @@ The Todo API example provides:
 ./configure
 
 # Start the project
-mise run docker:up
+mise run db:up
 mise run db:migrate:up
 cd web/todoapp/ && npm install && npm start
 ```
