@@ -73,11 +73,11 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 var _ pfcore.Module = (*Module)(nil)
 
 type Infrastructure struct {
-	DBPool     *pgxpool.Pool // Connexion à la bdd
-	EventBus   pfevents.SystemEventBus
-	Subscriber message.Subscriber
-	AuthSvc    defauth.AuthPrivateService // C'est un contract pas une implementation
-	Logger     *slog.Logger
+	DBPool     *pgxpool.Pool              // Connection to the database (the app does not use it but builds a uow with it)
+	EventBus   pfevents.SystemEventBus    // It's a contract not an implementation
+	Subscriber message.Subscriber         // It's a contract not an implementation
+	AuthSvc    defauth.AuthPrivateService // It's a contract not an implementation
+	Logger     *slog.Logger               // Native Go logger which is more than sufficient
 }
 
 // New wires all the dependencies of the Todo module and returns a ready-to-start Module.
