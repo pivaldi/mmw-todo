@@ -15,6 +15,7 @@ import (
 	"github.com/piprim/mmw/pkg/platform"
 	pfcore "github.com/piprim/mmw/pkg/platform/core"
 	pfevents "github.com/piprim/mmw/pkg/platform/events"
+	pfpg "github.com/piprim/mmw/pkg/platform/pg"
 	pfslog "github.com/piprim/mmw/pkg/platform/slog"
 	defauth "github.com/pivaldi/mmw-contracts/go/application/auth"
 	"github.com/pivaldi/mmw-contracts/go/network/auth/v1/authv1connect"
@@ -25,7 +26,6 @@ import (
 
 const (
 	outputChannelBufferSize = 1024
-	minDatabaseURLLength    = 20
 )
 
 var errFormater = eris.ToJSON
@@ -81,7 +81,7 @@ func main() {
 	// When extracted, you might swap Watermill's GoChannel for RabbitMQ here!
 	// systemBus := setupRabbitMQ()
 
-	dbPool, err = getDatabasePoolConnexion(ctx, todoLogger, todoConf.Database.URL())
+	dbPool, err = pfpg.GetPgxPool(ctx, logger, todoConf.Database.URL())
 	if err != nil {
 		logError("creating database pool", err)
 
@@ -123,31 +123,4 @@ func main() {
 func logError(msg string, err error) {
 	l := slog.New(pfslog.StderrTxtHandler(slog.LevelDebug, nil))
 	l.Error(msg, "details", errFormater(err, true))
-}
-
-func getDatabasePoolConnexion(ctx context.Context, logger *slog.Logger, dbUrl string) (*pgxpool.Pool, error) {
-	logger.Info("connecting to database", "url", maskDatabaseURL(dbUrl))
-
-	dbPool, err := pgxpool.New(ctx, dbUrl)
-	if err != nil {
-		return nil, eris.Wrap(err, "connecting to database")
-	}
-
-	if err := dbPool.Ping(ctx); err != nil {
-		return dbPool, eris.Wrap(err, "pinging database")
-	}
-
-	logger.Info("database connection established")
-
-	return dbPool, nil
-}
-
-// maskDatabaseURL masks sensitive parts of database URL for logging
-func maskDatabaseURL(url string) string {
-	// Simple masking - in production use more robust URL parsing
-	if len(url) < minDatabaseURLLength {
-		return "***"
-	}
-
-	return url[:10] + "***" + url[len(url)-10:]
 }
