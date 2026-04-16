@@ -3,8 +3,12 @@ package todo
 
 import (
 	"context"
+	"embed"
+	"io/fs"
 	"log/slog"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 
 	"connectrpc.com/connect"
 	"github.com/ThreeDotsLabs/watermill"
@@ -38,6 +42,9 @@ const (
 	ModuleName     = "Todo"
 	PGSchema       = "todo"
 )
+
+//go:embed web/todoapp/dist/todoapp
+var webFS embed.FS
 
 type Module struct {
 	relay   *pfoutbox.EventsRelay   // m.relay.Start(gCtx)  ← outbox relay (DB → bus)
@@ -161,6 +168,7 @@ func newEventRouter(infra Infrastructure) (*message.Router, error) {
 func newHTTPServer(cfg *config.Config, infra Infrastructure, todoService application.TodoService) *pfserver.HTTPServer {
 	mux := http.NewServeMux()
 
+	// 1. Connect RPC
 	// Register the Connect RPC handler with an error-logging interceptor.
 	path, handler := todov1connect.NewTodoServiceHandler(
 		connecthandler.NewTodoHandler(todoService),
@@ -174,7 +182,35 @@ func newHTTPServer(cfg *config.Config, infra Infrastructure, todoService applica
 		infra.Logger,
 		nil, // no excluded paths — all routes are protected
 	)
+	// /api/todo.v1.TodoService/* → strip /api → Connect handler
 	mux.Handle(path, authMiddleware(handler))
+	mux.Handle("/api"+path, http.StripPrefix("/api", authMiddleware(handler)))
+
+	// ── 2. Auth proxy: forward /api/auth.v1.* to the auth service ──────────
+	// Mirrors what proxy.conf.json does in the Angular dev server.
+	authTarget := cfg.AuthServer.URL("", nil) // http://localhost:8091
+	authURL, _ := url.Parse(authTarget)
+	authProxy := httputil.NewSingleHostReverseProxy(authURL)
+	// /api/auth.v1.AuthPublicService/Login → strip /api → localhost:8091/auth.v1...
+	mux.Handle("/api/auth.v1.AuthPublicService/", http.StripPrefix("/api", authProxy))
+
+	// 3. Hashed assets at /app/ — immutable cache
+	// Strip /app/ prefix so http.FileServer sees "main.3fb7bef9.js" etc.
+	distFS, err := fs.Sub(webFS, "web/todoapp/dist/todoapp")
+	if err != nil {
+		panic(err) // embed path is wrong — fail at startup, not at request time
+	}
+	assetHandler := http.StripPrefix("/app/", http.FileServer(http.FS(distFS)))
+	mux.Handle("/app/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		assetHandler.ServeHTTP(w, r)
+	}))
+
+	// 4. SPA fallback — always serve index.html, never cache
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store, must-revalidate")
+		http.ServeFileFS(w, r, distFS, "index.html")
+	})
 
 	return pfserver.NewHTTPServer(pfserver.HTTPServerInfra{
 		Config:       cfg.Server,
@@ -225,7 +261,5 @@ func (m *Module) Start(ctx context.Context) error {
 	})
 
 	// Wait until the context is cancled or a goroutine returns an error or panics.
-	err := g.Wait()
-
-	return eris.Wrapf(err, "%s failure", ModuleName)
+	return eris.Wrapf(g.Wait(), "%s failure", ModuleName)
 }

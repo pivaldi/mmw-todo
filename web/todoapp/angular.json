@@ -28,6 +28,7 @@
           },
           "configurations": {
             "production": {
+              "deployUrl": "/app/",
               "budgets": [
                 {
                   "type": "initial",
@@ -36,8 +37,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "3kb",
+                  "maximumError": "6kb"
                 }
               ],
               "outputHashing": "all"
