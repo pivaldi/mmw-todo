@@ -89,7 +89,7 @@ func main() {
 	}
 
 	// authGrpc := authv1connect.NewAuthPrivateServiceClient(httpClient connect.HTTPClient)
-	authHttpClient := authv1connect.NewAuthPrivateServiceClient(
+	authHTTPClient := authv1connect.NewAuthPrivateServiceClient(
 		&http.Client{}, // no TLS needed for localhost
 		todoConf.AuthServer.URL("", nil),
 	)
@@ -99,10 +99,11 @@ func main() {
 		EventBus:   systemBus,
 		Subscriber: rawBus,
 		Logger:     todoLogger,
-		AuthSvc:    defauth.NewPrivateHTTPClient(authHttpClient),
+		AuthSvc:    defauth.NewPrivateHTTPClient(authHTTPClient),
 	})
 	if err != nil {
 		logError("creating module failed", err)
+
 		return
 	}
 

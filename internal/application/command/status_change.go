@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/rotisserie/eris"
 
 	"github.com/piprim/mmw/pkg/platform/authctx"
@@ -56,40 +55,25 @@ func (c *TodoStatusChangeCommand) Execute(ctx context.Context, id string) (*dto.
 		return nil, eris.Wrapf(err, "%s", c.errorPrefix)
 	}
 
-	return executeStatusChange(ctx, id, userID, c.repository, c.eventDispatcher, c.action, c.actionLabel)
-}
-
-// executeStatusChange handles the common flow: retrieve todo -> execute action -> update -> dispatch events.
-//
-//nolint:revive // Because it's an helper
-func executeStatusChange(
-	ctx context.Context,
-	id string,
-	userID uuid.UUID,
-	repository ports.TodoRepository,
-	eventDispatcher ports.EventDispatcher,
-	action func(*domain.Todo) error,
-	actionName string,
-) (*dto.TodoResponse, error) {
 	todoID, err := domain.ParseTodoID(id)
 	if err != nil {
 		return nil, eris.Wrap(err, "invalid todo ID")
 	}
 
-	todo, err := repository.FindByID(ctx, todoID, userID)
+	todo, err := c.repository.FindByID(ctx, todoID, userID)
 	if err != nil {
 		return nil, eris.Wrap(err, "finding todo")
 	}
 
-	if err := action(todo); err != nil {
-		return nil, eris.Wrapf(err, "%s", actionName)
+	if err := c.action(todo); err != nil {
+		return nil, eris.Wrapf(err, "%s", c.actionLabel)
 	}
 
-	if err := repository.Update(ctx, todo); err != nil {
+	if err := c.repository.Update(ctx, todo); err != nil {
 		return nil, eris.Wrap(err, "updating todo")
 	}
 
-	if err := eventDispatcher.Dispatch(ctx, todo.Events()); err != nil {
+	if err := c.eventDispatcher.Dispatch(ctx, todo.Events()); err != nil {
 		return nil, eris.Wrap(err, "dispatching events")
 	}
 

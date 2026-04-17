@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
 	pfauthctx "github.com/piprim/mmw/pkg/platform/authctx"
+	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/pivaldi/mmw-todo/internal/testhelpers"
 )

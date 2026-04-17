@@ -12,8 +12,6 @@ import (
 )
 
 // domainConnectCodeMap maps proto error codes (from contracts) to Connect status codes.
-//
-//nolint:gochecknoglobals // package-level lookup table, not mutable state
 var domainConnectCodeMap = map[platform.ErrorCode]connect.Code{
 	platform.ErrorCode(todo.ErrorCodeInvalidTitle):            connect.CodeInvalidArgument,
 	platform.ErrorCode(todo.ErrorCodeInvalidDueDate):          connect.CodeInvalidArgument,

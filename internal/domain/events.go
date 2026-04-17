@@ -65,23 +65,23 @@ func (*TodoCreated) EventType() string {
 	return EventTypeCreated
 }
 
-// NewTodoCreatedEvent creates a new TodoCreated event
-func NewTodoCreatedEvent(id TodoID, userID uuid.UUID, title TaskTitle, description string, priority Priority, dueDate *DueDate) *TodoCreated {
+// newCreatedEvent builds the TodoCreated event for this aggregate.
+func (t *Todo) newCreatedEvent() *TodoCreated {
 	var dueDatePtr *time.Time
-	if dueDate != nil {
-		t := dueDate.Time()
-		dueDatePtr = &t
+	if t.dueDate != nil {
+		d := t.dueDate.Time()
+		dueDatePtr = &d
 	}
 
 	return &TodoCreated{
 		BaseDomainEvent: BaseDomainEvent{
-			AggregateID: id.String(),
-			UserID:      userID,
+			AggregateID: t.id.String(),
+			UserID:      t.userID,
 			OccurredAt:  time.Now(),
 		},
-		Title:       title.String(),
-		Description: description,
-		Priority:    priority.String(),
+		Title:       t.title.String(),
+		Description: t.description,
+		Priority:    t.priority.String(),
 		DueDate:     dueDatePtr,
 	}
 }
@@ -189,6 +189,7 @@ func (*UserTasksDeleted) EventType() string {
 // NewUserTasksDeletedEvent creates a new UserTasksDeleted event
 func NewUserTasksDeletedEvent(userID string) *UserTasksDeleted {
 	uID, _ := uuid.Parse(userID)
+
 	return &UserTasksDeleted{
 		BaseDomainEvent: BaseDomainEvent{
 			AggregateID: userID,

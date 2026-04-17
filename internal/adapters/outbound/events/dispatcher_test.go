@@ -14,13 +14,12 @@ func TestInMemoryEventDispatcher_Dispatch_Success(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	dispatcher := NewLogEventDispatcher(logger)
 
-	// Create test events
-	todoID := domain.NewTodoID()
+	// Create test events via the aggregate (TodoCreated is emitted on construction)
 	userID := uuid.New()
 	title, _ := domain.NewTaskTitle("Test Todo")
-	event := domain.NewTodoCreatedEvent(todoID, userID, title, "Description", domain.PriorityMedium, nil)
+	todo := domain.NewTodo(title, "Description", domain.PriorityMedium, nil, userID)
 
-	events := []domain.DomainEvent{event}
+	events := todo.Events()
 
 	// Should not return error
 	err := dispatcher.Dispatch(context.Background(), events)

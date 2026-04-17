@@ -43,7 +43,8 @@ func NewTodo(title TaskTitle, description string, priority Priority, dueDate *Du
 	}
 
 	// Emit TodoCreated event
-	todo.addEvent(NewTodoCreatedEvent(id, userID, title, description, priority, dueDate))
+	todo.addEvent(todo.newCreatedEvent())
+
 	return todo
 }
 
@@ -295,6 +296,7 @@ func (t *Todo) Complete() error {
 	t.updatedAt = now
 
 	t.addEvent(NewTodoCompletedEvent(t.id, t.userID, now))
+
 	return nil
 }
 
@@ -310,6 +312,7 @@ func (t *Todo) Reopen() error {
 	t.updatedAt = time.Now()
 
 	t.addEvent(NewTodoReopenedEvent(t.id, t.userID, previousStatus))
+
 	return nil
 }
 

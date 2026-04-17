@@ -85,7 +85,9 @@ func (r *PostgresTodoRepository) BatchSave(ctx context.Context, todos []*domain.
 }
 
 // FindByID retrieves a todo by its ID scoped to the given user.
-func (r *PostgresTodoRepository) FindByID(ctx context.Context, id domain.TodoID, userID uuid.UUID) (*domain.Todo, error) {
+func (r *PostgresTodoRepository) FindByID(
+	ctx context.Context, id domain.TodoID, userID uuid.UUID,
+) (*domain.Todo, error) {
 	query := `
 		SELECT id, title, description, status, priority, due_date,
 		       created_at, updated_at, completed_at, user_id

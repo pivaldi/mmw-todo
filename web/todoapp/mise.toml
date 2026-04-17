@@ -1,0 +1,136 @@
+# Mise configuration for the Angular todo front-end
+# https://mise.jdx.dev/
+[settings]
+experimental = true
+quiet = true
+
+[tools]
+node = "lts"
+
+[shell_alias]
+r = "mise run"
+
+[vars]
+DIST_DIR = "dist/todoapp"
+PORT     = "4222"
+
+# No APP_ENV / APP_NAME required — this is a pure front-end project.
+# The Angular dev server proxies API calls via proxy.conf.json:
+#   /api/auth.v1.* → http://localhost:8091
+#   /api/todo.v1.* → http://localhost:8090
+
+# ── Installation ────────────────────────────────────────────────────────────
+
+[tasks.install]
+description = "Install npm dependencies"
+run = "npm install"
+
+[tasks."install:ci"]
+description = "Install npm dependencies (clean, frozen lockfile)"
+run = "npm ci"
+
+# ── Development ─────────────────────────────────────────────────────────────
+
+[tasks.start]
+description = "Start Angular dev server on http://localhost:{{vars.PORT}} (with API proxy)"
+run = "ng serve --port {{vars.PORT}} --proxy-config proxy.conf.json"
+alias = "run"
+
+[tasks."build:watch"]
+description = "Rebuild in watch mode (development, with source maps)"
+run = "ng build --watch --configuration development"
+
+# ── Build ────────────────────────────────────────────────────────────────────
+
+[tasks.build]
+description = "Production build → dist/todoapp/ (deployUrl=/app/, output hashing)"
+run = "ng build --configuration production"
+
+[tasks."build:dev"]
+description = "Development build → dist/todoapp/ (source maps, no optimisation)"
+run = "ng build --configuration development"
+
+[tasks."build:stats"]
+description = "Bundle analysis → dist/todoapp/stats.html (development build, open in browser)"
+run = """
+ng build --configuration development
+npx source-map-explorer {{vars.DIST_DIR}}/**/*.js \
+  --html {{vars.DIST_DIR}}/stats.html \
+  --no-border-checks 2>/dev/null || true
+xdg-open {{vars.DIST_DIR}}/stats.html 2>/dev/null || open {{vars.DIST_DIR}}/stats.html 2>/dev/null || true
+echo "Bundle report: {{vars.DIST_DIR}}/stats.html"
+"""
+
+[tasks."build:analyze"]
+ description = "Production build with webpack stats → open bundle analyzer"
+ run = """
+ ng build --configuration production --stats-json
+ npx webpack-bundle-analyzer {{vars.DIST_DIR}}/stats.json
+ """
+# ── Testing ──────────────────────────────────────────────────────────────────
+
+[tasks.test]
+description = "Run unit tests with Karma (single run, no browser window)"
+run = "ng test --watch=false --browsers=ChromeHeadless"
+
+[tasks."test:watch"]
+description = "Run unit tests in watch mode"
+run = "ng test"
+
+[tasks."test:coverage"]
+description = "Run unit tests with coverage report → coverage/"
+run = "ng test --watch=false --browsers=ChromeHeadless --code-coverage"
+
+# ── Code quality ─────────────────────────────────────────────────────────────
+
+[tasks.lint]
+description = "Run ESLint on the project"
+run = "ng lint"
+
+[tasks.fmt]
+description = "Format source files with Prettier (if configured)"
+run = "npx prettier --write \"src/**/*.{ts,html,css}\""
+
+[tasks.check]
+description = "Run all quality checks (lint + tests)"
+depends = ["lint", "test"]
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+
+[tasks."deps:outdated"]
+description = "List outdated npm packages"
+run = "npm outdated"
+
+[tasks."deps:update"]
+description = "Update npm dependencies interactively"
+run = "npm update"
+
+[tasks."deps:audit"]
+description = "Audit npm dependencies for known vulnerabilities"
+run = "npm audit"
+
+[tasks."deps:audit:fix"]
+description = "Auto-fix npm audit issues"
+run = "npm audit fix"
+
+# ── Clean ────────────────────────────────────────────────────────────────────
+
+[tasks.clean]
+description = "Remove build output (dist/)"
+run = "rm -rf {{vars.DIST_DIR}}"
+
+[tasks."clean:all"]
+description = "Remove build output and node_modules (full reset)"
+run = "rm -rf {{vars.DIST_DIR}} node_modules"
+
+# ── Help ─────────────────────────────────────────────────────────────────────
+
+[tasks.default]
+alias = "help"
+
+[tasks.help]
+description = "Display available tasks"
+run = """
+echo "Available tasks:"
+mise tasks
+"""

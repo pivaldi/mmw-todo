@@ -2,6 +2,7 @@ package inproc
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -27,7 +28,9 @@ func NewContractAdapter(svc application.TodoService) *ContractAdapter {
 	return &ContractAdapter{svc: svc}
 }
 
-func (a *ContractAdapter) CreateTodo(ctx context.Context, req *todov1.CreateTodoRequest) (*todov1.CreateTodoResponse, error) {
+func (a *ContractAdapter) CreateTodo(
+	ctx context.Context, req *todov1.CreateTodoRequest,
+) (*todov1.CreateTodoResponse, error) {
 	r, err := a.svc.CreateTodo(ctx, &dto.CreateTodoRequest{
 		Title:       req.GetTitle(),
 		Description: req.GetDescription(),
@@ -35,20 +38,26 @@ func (a *ContractAdapter) CreateTodo(ctx context.Context, req *todov1.CreateTodo
 		DueDate:     protoToTime(req.GetDueDate()),
 	})
 	if err != nil {
-		return nil, mapper.DomainErrorFor(err)
+		return nil, fmt.Errorf("create todo: %w", mapper.DomainErrorFor(err))
 	}
+
 	return &todov1.CreateTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
 
-func (a *ContractAdapter) GetTodo(ctx context.Context, req *todov1.GetTodoRequest) (*todov1.GetTodoResponse, error) {
+func (a *ContractAdapter) GetTodo(
+	ctx context.Context, req *todov1.GetTodoRequest,
+) (*todov1.GetTodoResponse, error) {
 	r, err := a.svc.GetTodo(ctx, req.GetId())
 	if err != nil {
-		return nil, mapper.DomainErrorFor(err)
+		return nil, fmt.Errorf("get todo: %w", mapper.DomainErrorFor(err))
 	}
+
 	return &todov1.GetTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
 
-func (a *ContractAdapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodoRequest) (*todov1.UpdateTodoResponse, error) {
+func (a *ContractAdapter) UpdateTodo(
+	ctx context.Context, req *todov1.UpdateTodoRequest,
+) (*todov1.UpdateTodoResponse, error) {
 	update := &dto.UpdateTodoRequest{}
 	if req.Title != nil {
 		update.Title = req.Title
@@ -57,72 +66,85 @@ func (a *ContractAdapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodo
 		update.Description = req.Description
 	}
 	if req.Priority != nil {
-		p := protoPriorityToDomain(*req.Priority)
+		p := protoPriorityToDomain(req.GetPriority())
 		update.Priority = &p
 	}
-	if req.DueDate != nil {
-		update.DueDate = protoToTime(req.DueDate)
+	if req.DueDate != nil { //nolint:protogetter // optional field: nil check requires direct access
+		update.DueDate = protoToTime(req.GetDueDate())
 	}
 	if req.Status != nil {
-		s := protoStatusToDomain(*req.Status)
+		s := protoStatusToDomain(req.GetStatus())
 		update.Status = &s
 	}
 	r, err := a.svc.UpdateTodo(ctx, req.GetId(), update)
 	if err != nil {
-		return nil, mapper.DomainErrorFor(err)
+		return nil, fmt.Errorf("update todo: %w", mapper.DomainErrorFor(err))
 	}
+
 	return &todov1.UpdateTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
 
-func (a *ContractAdapter) CompleteTodo(ctx context.Context, req *todov1.CompleteTodoRequest) (*todov1.CompleteTodoResponse, error) {
+func (a *ContractAdapter) CompleteTodo(
+	ctx context.Context, req *todov1.CompleteTodoRequest,
+) (*todov1.CompleteTodoResponse, error) {
 	r, err := a.svc.CompleteTodo(ctx, req.GetId())
 	if err != nil {
-		return nil, mapper.DomainErrorFor(err)
+		return nil, fmt.Errorf("complete todo: %w", mapper.DomainErrorFor(err))
 	}
+
 	return &todov1.CompleteTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
 
-func (a *ContractAdapter) ReopenTodo(ctx context.Context, req *todov1.ReopenTodoRequest) (*todov1.ReopenTodoResponse, error) {
+func (a *ContractAdapter) ReopenTodo(
+	ctx context.Context, req *todov1.ReopenTodoRequest,
+) (*todov1.ReopenTodoResponse, error) {
 	r, err := a.svc.ReopenTodo(ctx, req.GetId())
 	if err != nil {
-		return nil, mapper.DomainErrorFor(err)
+		return nil, fmt.Errorf("reopen todo: %w", mapper.DomainErrorFor(err))
 	}
+
 	return &todov1.ReopenTodoResponse{Todo: todoResponseToProto(r)}, nil
 }
 
-func (a *ContractAdapter) DeleteTodo(ctx context.Context, req *todov1.DeleteTodoRequest) (*todov1.DeleteTodoResponse, error) {
+func (a *ContractAdapter) DeleteTodo(
+	ctx context.Context, req *todov1.DeleteTodoRequest,
+) (*todov1.DeleteTodoResponse, error) {
 	if err := a.svc.DeleteTodo(ctx, req.GetId()); err != nil {
-		return nil, mapper.DomainErrorFor(err)
+		return nil, fmt.Errorf("delete todo: %w", mapper.DomainErrorFor(err))
 	}
+
 	return &todov1.DeleteTodoResponse{}, nil
 }
 
-func (a *ContractAdapter) ListTodos(ctx context.Context, req *todov1.ListTodosRequest) (*todov1.ListTodosResponse, error) {
+func (a *ContractAdapter) ListTodos(
+	ctx context.Context, req *todov1.ListTodosRequest,
+) (*todov1.ListTodosResponse, error) {
 	filters := &dto.ListFilters{}
 	if req.Status != nil {
-		s := protoStatusToDomain(*req.Status)
+		s := protoStatusToDomain(req.GetStatus())
 		filters.Status = &s
 	}
 	if req.Priority != nil {
-		p := protoPriorityToDomain(*req.Priority)
+		p := protoPriorityToDomain(req.GetPriority())
 		filters.Priority = &p
 	}
 	if req.Limit != nil {
-		l := int(*req.Limit)
+		l := int(req.GetLimit())
 		filters.Limit = &l
 	}
 	if req.Offset != nil {
-		o := int(*req.Offset)
+		o := int(req.GetOffset())
 		filters.Offset = &o
 	}
 	result, err := a.svc.ListTodos(ctx, filters)
 	if err != nil {
-		return nil, mapper.DomainErrorFor(err)
+		return nil, fmt.Errorf("list todos: %w", mapper.DomainErrorFor(err))
 	}
 	todos := make([]*todov1.Todo, len(result.Todos))
 	for i, t := range result.Todos {
 		todos[i] = todoResponseToProto(t)
 	}
+
 	return &todov1.ListTodosResponse{
 		Todos:      todos,
 		TotalCount: int32(result.TotalCount),
@@ -159,8 +181,6 @@ func domainStatusToProto(s domain.TaskStatus) todov1.TaskStatus {
 
 func protoStatusToDomain(s todov1.TaskStatus) domain.TaskStatus {
 	switch s {
-	case todov1.TaskStatus_TASK_STATUS_PENDING:
-		return domain.TaskStatusPending
 	case todov1.TaskStatus_TASK_STATUS_COMPLETED:
 		return domain.TaskStatusCompleted
 	case todov1.TaskStatus_TASK_STATUS_CANCELLED:
@@ -187,8 +207,6 @@ func protoPriorityToDomain(p todov1.Priority) domain.Priority {
 	switch p {
 	case todov1.Priority_PRIORITY_LOW:
 		return domain.PriorityLow
-	case todov1.Priority_PRIORITY_MEDIUM:
-		return domain.PriorityMedium
 	case todov1.Priority_PRIORITY_HIGH:
 		return domain.PriorityHigh
 	default:
@@ -200,6 +218,7 @@ func timeToProto(t *time.Time) *timestamppb.Timestamp {
 	if t == nil {
 		return nil
 	}
+
 	return timestamppb.New(*t)
 }
 
@@ -207,6 +226,8 @@ func protoToTime(ts *timestamppb.Timestamp) *time.Time {
 	if ts == nil {
 		return nil
 	}
+
 	t := ts.AsTime()
+
 	return &t
 }

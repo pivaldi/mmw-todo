@@ -218,7 +218,7 @@ run = """
 
 [tasks.lint]
 description = "Run linter"
-run = "golangci-lint run ./..."
+run = "golangci-lint run"
 
 [tasks.vet]
 description = "Run go vet"

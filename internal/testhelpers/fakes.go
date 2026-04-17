@@ -34,6 +34,7 @@ func (r *InMemoryTodoRepo) Save(_ context.Context, todo *domain.Todo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.todos[todo.ID()] = todo
+
 	return nil
 }
 
@@ -44,13 +45,14 @@ func (r *InMemoryTodoRepo) FindByID(_ context.Context, id domain.TodoID, userID 
 	if !ok || t.UserID() != userID {
 		return nil, domain.ErrTodoNotFound
 	}
+
 	return t, nil
 }
 
 func (r *InMemoryTodoRepo) FindAll(_ context.Context, filters ports.Filters) ([]*domain.Todo, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	var result []*domain.Todo
+	result := make([]*domain.Todo, 0, len(r.todos))
 	for _, t := range r.todos {
 		if filters.UserID != nil && t.UserID() != *filters.UserID {
 			continue
@@ -63,6 +65,7 @@ func (r *InMemoryTodoRepo) FindAll(_ context.Context, filters ports.Filters) ([]
 		}
 		result = append(result, t)
 	}
+
 	return result, nil
 }
 
@@ -74,6 +77,7 @@ func (r *InMemoryTodoRepo) Update(_ context.Context, todo *domain.Todo) error {
 		return domain.ErrTodoNotFound
 	}
 	r.todos[todo.ID()] = todo
+
 	return nil
 }
 
@@ -85,10 +89,11 @@ func (r *InMemoryTodoRepo) Delete(_ context.Context, id domain.TodoID, userID uu
 		return domain.ErrTodoNotFound
 	}
 	delete(r.todos, id)
+
 	return nil
 }
 
-func (r *InMemoryTodoRepo) Health(_ context.Context) (any, error) {
+func (*InMemoryTodoRepo) Health(_ context.Context) (any, error) {
 	return 0, nil
 }
 
@@ -119,5 +124,6 @@ func NewTestService(t *testing.T) (application.TodoService, *InMemoryTodoRepo) {
 	t.Helper()
 	repo := NewInMemoryTodoRepo()
 	svc := application.NewTodoApplicationService(repo, PassthroughUoW{}, NoopEventDispatcher{})
+
 	return svc, repo
 }

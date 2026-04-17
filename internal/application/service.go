@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pivaldi/mmw-todo/internal/application/command"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
@@ -68,7 +69,7 @@ func (s *TodoApplicationService) CreateTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.createTodoCmd.Execute(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create todo: %w", err)
 	}
 
 	return result, nil
@@ -81,7 +82,7 @@ func (s *TodoApplicationService) GetTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.getTodoQuery.Execute(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get todo: %w", err)
 	}
 
 	return result, nil
@@ -95,7 +96,7 @@ func (s *TodoApplicationService) UpdateTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.updateTodoCmd.Execute(ctx, id, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("update todo: %w", err)
 	}
 
 	return result, nil
@@ -108,7 +109,7 @@ func (s *TodoApplicationService) CompleteTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.completeTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("complete todo: %w", err)
 	}
 
 	return result, nil
@@ -121,7 +122,7 @@ func (s *TodoApplicationService) ReopenTodo(
 ) (*dto.TodoResponse, error) {
 	result, err := s.reopenTodoCmd.Execute(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reopen todo: %w", err)
 	}
 
 	return result, nil
@@ -132,9 +133,8 @@ func (s *TodoApplicationService) DeleteTodo(
 	ctx context.Context,
 	id string,
 ) error {
-	err := s.deleteTodoCmd.Execute(ctx, id)
-	if err != nil {
-		return err
+	if err := s.deleteTodoCmd.Execute(ctx, id); err != nil {
+		return fmt.Errorf("delete todo: %w", err)
 	}
 
 	return nil
@@ -147,7 +147,7 @@ func (s *TodoApplicationService) ListTodos(
 ) (*dto.ListTodosResponse, error) {
 	result, err := s.listTodosQuery.Execute(ctx, filters)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list todos: %w", err)
 	}
 
 	return result, nil
@@ -157,7 +157,7 @@ func (s *TodoApplicationService) ListTodos(
 func (s *TodoApplicationService) Health(ctx context.Context) (any, error) {
 	count, err := s.repository.Health(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("health check: %w", err)
 	}
 
 	return count, nil

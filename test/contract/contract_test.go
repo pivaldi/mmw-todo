@@ -9,14 +9,14 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
+	"github.com/piprim/mmw/pkg/platform"
+	pfauthctx "github.com/piprim/mmw/pkg/platform/authctx"
 	tododef "github.com/pivaldi/mmw-contracts/go/application/todo"
+	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/inproc"
 	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
-	pfauthctx "github.com/piprim/mmw/pkg/platform/authctx"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	"github.com/pivaldi/mmw-todo/internal/testhelpers"
-	"github.com/piprim/mmw/pkg/platform"
 )
 
 func newAdapter(t *testing.T) (*inproc.Adapter, *testhelpers.InMemoryTodoRepo) {

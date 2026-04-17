@@ -93,7 +93,9 @@ func (a *Adapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodoRequest)
 	return &todov1.UpdateTodoResponse{Todo: mapTodoToProto(todo)}, nil
 }
 
-func (a *Adapter) CompleteTodo(ctx context.Context, req *todov1.CompleteTodoRequest) (*todov1.CompleteTodoResponse, error) {
+func (a *Adapter) CompleteTodo(
+	ctx context.Context, req *todov1.CompleteTodoRequest,
+) (*todov1.CompleteTodoResponse, error) {
 	todo, err := a.svc.CompleteTodo(ctx, req.GetId())
 	if err != nil {
 		return nil, eris.Wrap(err, "complete todo")

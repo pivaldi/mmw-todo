@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
 	"github.com/pivaldi/mmw-todo/internal/domain"
@@ -22,5 +23,9 @@ func (c *DeleteUserTasksCommand) Execute(ctx context.Context, userID string) err
 
 	event := domain.NewUserTasksDeletedEvent(userID)
 
-	return c.dispatcher.Dispatch(ctx, []domain.DomainEvent{event})
+	if err := c.dispatcher.Dispatch(ctx, []domain.DomainEvent{event}); err != nil {
+		return fmt.Errorf("dispatch: %w", err)
+	}
+
+	return nil
 }
