@@ -89,7 +89,11 @@ func (t *Todo) newCreatedEvent() *TodoCreated {
 // TodoUpdated event is emitted when a todo is modified
 type TodoUpdated struct {
 	BaseDomainEvent
-	Todo *Todo
+	Title       string
+	Description string
+	Priority    string
+	Status      string
+	DueDate     *time.Time
 }
 
 // EventType returns the event type
@@ -97,21 +101,34 @@ func (*TodoUpdated) EventType() string {
 	return EventTypeUpdated
 }
 
-// NewTodoUpdatedEvent creates a new TodoUpdated event
-func NewTodoUpdatedEvent(todo *Todo) *TodoUpdated {
+// newUpdatedEvent builds the TodoUpdated event for this aggregate.
+func (t *Todo) newUpdatedEvent() *TodoUpdated {
+	var dueDatePtr *time.Time
+	if t.dueDate != nil {
+		d := t.dueDate.Time()
+		dueDatePtr = &d
+	}
+
 	return &TodoUpdated{
 		BaseDomainEvent: BaseDomainEvent{
-			AggregateID: todo.id.String(),
-			UserID:      todo.userID,
+			AggregateID: t.id.String(),
+			UserID:      t.userID,
 			OccurredAt:  time.Now(),
 		},
-		Todo: todo,
+		Title:       t.title.String(),
+		Description: t.description,
+		Priority:    t.priority.String(),
+		Status:      t.status.String(),
+		DueDate:     dueDatePtr,
 	}
 }
 
 // TodoCompleted event is emitted when a todo is marked as completed
 type TodoCompleted struct {
 	BaseDomainEvent
+	Title       string
+	Description string
+	Priority    string
 	CompletedAt time.Time
 }
 
@@ -120,14 +137,22 @@ func (*TodoCompleted) EventType() string {
 	return EventTypeCompleted
 }
 
-// NewTodoCompletedEvent creates a new TodoCompleted event
-func NewTodoCompletedEvent(id TodoID, userID uuid.UUID, completedAt time.Time) *TodoCompleted {
+// newCompletedEvent builds the TodoCompleted event for this aggregate.
+func (t *Todo) newCompletedEvent() *TodoCompleted {
+	var completedAt time.Time
+	if t.completedAt != nil {
+		completedAt = *t.completedAt
+	}
+
 	return &TodoCompleted{
 		BaseDomainEvent: BaseDomainEvent{
-			AggregateID: id.String(),
-			UserID:      userID,
+			AggregateID: t.id.String(),
+			UserID:      t.userID,
 			OccurredAt:  time.Now(),
 		},
+		Title:       t.title.String(),
+		Description: t.description,
+		Priority:    t.priority.String(),
 		CompletedAt: completedAt,
 	}
 }
@@ -135,6 +160,7 @@ func NewTodoCompletedEvent(id TodoID, userID uuid.UUID, completedAt time.Time) *
 // TodoReopened event is emitted when a completed todo is reopened
 type TodoReopened struct {
 	BaseDomainEvent
+	Title          string
 	PreviousStatus string
 }
 
@@ -143,14 +169,16 @@ func (*TodoReopened) EventType() string {
 	return EventTypeReopened
 }
 
-// NewTodoReopenedEvent creates a new TodoReopened event
-func NewTodoReopenedEvent(id TodoID, userID uuid.UUID, previousStatus TaskStatus) *TodoReopened {
+// newReopenedEvent builds the TodoReopened event for this aggregate.
+// previousStatus is passed explicitly as it is the local state captured at the moment of reopening.
+func (t *Todo) newReopenedEvent(previousStatus TaskStatus) *TodoReopened {
 	return &TodoReopened{
 		BaseDomainEvent: BaseDomainEvent{
-			AggregateID: id.String(),
-			UserID:      userID,
+			AggregateID: t.id.String(),
+			UserID:      t.userID,
 			OccurredAt:  time.Now(),
 		},
+		Title:          t.title.String(),
 		PreviousStatus: previousStatus.String(),
 	}
 }
@@ -158,6 +186,7 @@ func NewTodoReopenedEvent(id TodoID, userID uuid.UUID, previousStatus TaskStatus
 // TodoDeleted event is emitted when a todo is deleted
 type TodoDeleted struct {
 	BaseDomainEvent
+	Title string
 }
 
 // EventType returns the event type
@@ -165,14 +194,15 @@ func (*TodoDeleted) EventType() string {
 	return EventTypeDeleted
 }
 
-// NewTodoDeletedEvent creates a new TodoDeleted event
-func NewTodoDeletedEvent(id TodoID, userID uuid.UUID) *TodoDeleted {
+// newDeletedEvent builds the TodoDeleted event for this aggregate.
+func (t *Todo) newDeletedEvent() *TodoDeleted {
 	return &TodoDeleted{
 		BaseDomainEvent: BaseDomainEvent{
-			AggregateID: id.String(),
-			UserID:      userID,
+			AggregateID: t.id.String(),
+			UserID:      t.userID,
 			OccurredAt:  time.Now(),
 		},
+		Title: t.title.String(),
 	}
 }
 
@@ -186,14 +216,12 @@ func (*UserTasksDeleted) EventType() string {
 	return EventTypeUserTasksDeleted
 }
 
-// NewUserTasksDeletedEvent creates a new UserTasksDeleted event
-func NewUserTasksDeletedEvent(userID string) *UserTasksDeleted {
-	uID, _ := uuid.Parse(userID)
-
+// NewUserTasksDeletedEvent creates a new UserTasksDeleted event.
+func NewUserTasksDeletedEvent(userID uuid.UUID) *UserTasksDeleted {
 	return &UserTasksDeleted{
 		BaseDomainEvent: BaseDomainEvent{
-			AggregateID: userID,
-			UserID:      uID,
+			AggregateID: userID.String(),
+			UserID:      userID,
 			OccurredAt:  time.Now(),
 		},
 	}

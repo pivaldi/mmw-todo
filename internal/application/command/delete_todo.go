@@ -43,15 +43,19 @@ func (c *DeleteTodoCommand) Execute(
 		return eris.Wrap(err, "invalid todo ID")
 	}
 
-	// Delete from repository
+	// Load the aggregate so the deleted event carries its details
+	todo, err := c.repository.FindByID(ctx, todoID, userID)
+	if err != nil {
+		return eris.Wrap(err, "finding todo to delete")
+	}
+
+	todo.Delete()
+
 	if err := c.repository.Delete(ctx, todoID, userID); err != nil {
 		return eris.Wrap(err, "deleting todo")
 	}
 
-	// Create and dispatch deleted event
-	deletedEvent := domain.NewTodoDeletedEvent(todoID, userID)
-
-	if err := c.eventDispatcher.Dispatch(ctx, []domain.DomainEvent{deletedEvent}); err != nil {
+	if err := c.eventDispatcher.Dispatch(ctx, todo.Events()); err != nil {
 		return eris.Wrap(err, "dispatching events")
 	}
 

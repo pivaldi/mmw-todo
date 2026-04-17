@@ -210,7 +210,7 @@ func (t *Todo) Update(title, description *string, priority *Priority, dueDate *t
 		t.status = *status
 	}
 
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
 }
@@ -223,7 +223,7 @@ func (t *Todo) UpdateTitle(newTitle TaskTitle) error {
 
 	t.title = newTitle
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
 }
@@ -236,7 +236,7 @@ func (t *Todo) UpdateDescription(newDescription string) error {
 
 	t.description = newDescription
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
 }
@@ -249,7 +249,7 @@ func (t *Todo) UpdatePriority(newPriority Priority) error {
 
 	t.priority = newPriority
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
 }
@@ -262,7 +262,7 @@ func (t *Todo) UpdateDueDate(newDueDate *DueDate) error {
 
 	t.dueDate = newDueDate
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
 }
@@ -275,7 +275,7 @@ func (t *Todo) UpdateStatus(newStatus TaskStatus) error {
 
 	t.status = newStatus
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
 }
@@ -295,7 +295,7 @@ func (t *Todo) Complete() error {
 	t.completedAt = &now
 	t.updatedAt = now
 
-	t.addEvent(NewTodoCompletedEvent(t.id, t.userID, now))
+	t.addEvent(t.newCompletedEvent())
 
 	return nil
 }
@@ -311,7 +311,7 @@ func (t *Todo) Reopen() error {
 	t.completedAt = nil
 	t.updatedAt = time.Now()
 
-	t.addEvent(NewTodoReopenedEvent(t.id, t.userID, previousStatus))
+	t.addEvent(t.newReopenedEvent(previousStatus))
 
 	return nil
 }
@@ -328,7 +328,7 @@ func (t *Todo) Cancel() error {
 
 	t.status = TaskStatusCancelled
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
 }
@@ -345,9 +345,15 @@ func (t *Todo) MarkInProgress() error {
 
 	t.status = TaskStatusInProgress
 	t.updatedAt = time.Now()
-	t.addEvent(NewTodoUpdatedEvent(t))
+	t.addEvent(t.newUpdatedEvent())
 
 	return nil
+}
+
+// Delete marks the todo as deleted, emitting the TodoDeleted event.
+// The caller is responsible for removing it from the repository and dispatching events.
+func (t *Todo) Delete() {
+	t.addEvent(t.newDeletedEvent())
 }
 
 // IsDue checks if the todo has a due date and it has passed

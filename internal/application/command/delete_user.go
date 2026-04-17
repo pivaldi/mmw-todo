@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 )
@@ -17,7 +19,7 @@ func NewDeleteUserTasksCommand(dispatcher ports.EventDispatcher) *DeleteUserTask
 	return &DeleteUserTasksCommand{dispatcher: dispatcher}
 }
 
-func (c *DeleteUserTasksCommand) Execute(ctx context.Context, userID string) error {
+func (c *DeleteUserTasksCommand) Execute(ctx context.Context, userID uuid.UUID) error {
 	// TODO: Delete the user's tasks from the todo repository
 	// ids := c.repo.DeleteUserTasks(ctx, userID)
 

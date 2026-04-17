@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/google/uuid"
 	pfevents "github.com/piprim/mmw/pkg/platform/events"
 	defauth "github.com/pivaldi/mmw-contracts/go/application/auth"
 	"github.com/pivaldi/mmw-todo/internal/application/command"
@@ -15,6 +16,11 @@ import (
 // DeleteUserTasksCommand. Wire it to defauth.TopicUserDeleted using AddNoPublisherHandler.
 func HandleUserDeleted(cmd *command.DeleteUserTasksCommand) func(*message.Message) error {
 	return pfevents.Handle(func(ctx context.Context, e *defauth.UserDeletedEvent) error {
-		return eris.Wrap(cmd.Execute(ctx, e.UserId), "fail to delete user tasks")
+		userID, err := uuid.Parse(e.UserId)
+		if err != nil {
+			return eris.Wrap(err, "invalid user ID in UserDeletedEvent")
+		}
+
+		return eris.Wrap(cmd.Execute(ctx, userID), "fail to delete user tasks")
 	})
 }
