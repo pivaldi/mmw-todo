@@ -70,8 +70,8 @@ run = "UPDATE=true scripts/common/install-tools-ss.sh"
 
 [tasks.pre-commit]
 depends = ["arch:check", "buf:lint"]
-description = "Pre-commit checks (can be run manually or as git hook)"
-run = "APP_ROOT_PATH={{config_root}} ./scripts/common/pre-commit.sh"
+description = "Pre-commit checks"
+run = "go tool mmw check pre-commit --modified"
 alias = "pc"
 
 # Development tasks
