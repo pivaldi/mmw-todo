@@ -101,10 +101,14 @@ func New(infra Infrastructure) (*Module, error) {
 	}
 
 	httpServer := newHTTPServer(cfg, infra, todoService)
+	eventsRelay, err := pfoutbox.NewEventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName)
+	if err != nil {
+		return nil, eris.Wrap(err, "failed to create events relay")
+	}
 
 	return &Module{
 		// Outbox relay: polls todo.event every 2 s and forwards rows to the SystemEventBus.
-		relay:   pfoutbox.NewEnventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName),
+		relay:   eventsRelay,
 		server:  httpServer,
 		router:  router,
 		logger:  infra.Logger,
