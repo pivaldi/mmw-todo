@@ -8,7 +8,7 @@ filename: '{{.InterfaceName | snakecase}}.go'
 structname: 'Mock{{.InterfaceName}}'
 
 packages:
-  github.com/pivaldi/mmw/todo/internal/application/ports:
+  github.com/pivaldi/mmw-todo/internal/application/ports:
     interfaces:
       UnitOfWork: {}
       TodoRepository: {}

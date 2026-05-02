@@ -4,6 +4,7 @@ package todo
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -88,8 +89,8 @@ type Infrastructure struct {
 }
 
 // New wires all the dependencies of the Todo module and returns a ready-to-start Module.
-func New(infra Infrastructure) (*Module, error) {
-	cfg, err := config.Load(context.Background(), "")
+func New(ctx context.Context, infra Infrastructure) (*Module, error) {
+	cfg, err := config.Load(ctx, "")
 	if err != nil {
 		return nil, eris.Wrap(err, "app failed to load config")
 	}
@@ -100,7 +101,10 @@ func New(infra Infrastructure) (*Module, error) {
 		return nil, err
 	}
 
-	httpServer := newHTTPServer(cfg, infra, todoService)
+	httpServer, err := newHTTPServer(cfg, infra, todoService)
+	if err != nil {
+		return nil, err
+	}
 	eventsRelay, err := pfoutbox.NewEventsRelay(infra.DBPool, infra.EventBus, infra.Logger, relayTableName)
 	if err != nil {
 		return nil, eris.Wrap(err, "failed to create events relay")
@@ -169,7 +173,11 @@ func newEventRouter(infra Infrastructure) (*message.Router, error) {
 // can probe database connectivity.
 // gRPC server reflection is enabled so grpcui can discover the service schema without
 // a compiled proto descriptor.
-func newHTTPServer(cfg *config.Config, infra Infrastructure, todoService application.TodoService) *pfserver.HTTPServer {
+func newHTTPServer(
+	cfg *config.Config,
+	infra Infrastructure,
+	todoService application.TodoService,
+) (*pfserver.HTTPServer, error) {
 	mux := http.NewServeMux()
 
 	// 1. Connect RPC
@@ -193,7 +201,10 @@ func newHTTPServer(cfg *config.Config, infra Infrastructure, todoService applica
 	// ── 2. Auth proxy: forward /api/auth.v1.* to the auth service ──────────
 	// Mirrors what proxy.conf.json does in the Angular dev server.
 	authTarget := cfg.AuthServer.URL("", nil) // http://localhost:8091
-	authURL, _ := url.Parse(authTarget)
+	authURL, err := url.Parse(authTarget)
+	if err != nil {
+		return nil, fmt.Errorf("invalid auth server URL %q: %v", authTarget, err)
+	}
 	authProxy := httputil.NewSingleHostReverseProxy(authURL)
 	// /api/auth.v1.AuthPublicService/Login → strip /api → localhost:8091/auth.v1...
 	mux.Handle("/api/auth.v1.AuthPublicService/", http.StripPrefix("/api", authProxy))
@@ -223,7 +234,7 @@ func newHTTPServer(cfg *config.Config, infra Infrastructure, todoService applica
 		HealthFns:    pfserver.HealthFns{"database": todoService.Health},
 		LogPayloads:  true,
 		ServiceNames: []string{todov1connect.TodoServiceName}, // enables gRPC reflection
-	})
+	}), nil
 }
 
 // Close properly releases allocated resources

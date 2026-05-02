@@ -5,13 +5,12 @@ import (
 	"context"
 
 	"github.com/rotisserie/eris"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	deftodo "github.com/pivaldi/mmw-contracts/go/application/todo"
 	todov1 "github.com/pivaldi/mmw-contracts/go/network/todo/v1"
+	"github.com/pivaldi/mmw-todo/internal/adapters/inbound/mapper"
 	"github.com/pivaldi/mmw-todo/internal/application"
 	"github.com/pivaldi/mmw-todo/internal/application/dto"
-	"github.com/pivaldi/mmw-todo/internal/domain"
 )
 
 // Adapter wraps application.TodoService and implements deftodo.TodoService.
@@ -32,7 +31,7 @@ func (a *Adapter) CreateTodo(ctx context.Context, req *todov1.CreateTodoRequest)
 	appReq := dto.CreateTodoRequest{
 		Title:       req.GetTitle(),
 		Description: req.GetDescription(),
-		Priority:    mapPriorityFromProto(req.GetPriority()),
+		Priority:    mapper.PriorityFromProto(req.GetPriority()),
 	}
 
 	if req.GetDueDate() != nil {
@@ -45,7 +44,7 @@ func (a *Adapter) CreateTodo(ctx context.Context, req *todov1.CreateTodoRequest)
 		return nil, eris.Wrap(err, "create todo")
 	}
 
-	return &todov1.CreateTodoResponse{Todo: mapTodoToProto(todo)}, nil
+	return &todov1.CreateTodoResponse{Todo: mapper.TodoToProto(todo)}, nil
 }
 
 func (a *Adapter) GetTodo(ctx context.Context, req *todov1.GetTodoRequest) (*todov1.GetTodoResponse, error) {
@@ -54,7 +53,7 @@ func (a *Adapter) GetTodo(ctx context.Context, req *todov1.GetTodoRequest) (*tod
 		return nil, eris.Wrap(err, "get todo")
 	}
 
-	return &todov1.GetTodoResponse{Todo: mapTodoToProto(todo)}, nil
+	return &todov1.GetTodoResponse{Todo: mapper.TodoToProto(todo)}, nil
 }
 
 func (a *Adapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodoRequest) (*todov1.UpdateTodoResponse, error) {
@@ -71,12 +70,12 @@ func (a *Adapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodoRequest)
 	}
 
 	if req.Priority != nil {
-		priority := mapPriorityFromProto(req.GetPriority())
+		priority := mapper.PriorityFromProto(req.GetPriority())
 		appReq.Priority = &priority
 	}
 
 	if req.Status != nil {
-		status := mapStatusFromProto(req.GetStatus())
+		status := mapper.StatusFromProto(req.GetStatus())
 		appReq.Status = &status
 	}
 
@@ -90,7 +89,7 @@ func (a *Adapter) UpdateTodo(ctx context.Context, req *todov1.UpdateTodoRequest)
 		return nil, eris.Wrap(err, "update todo")
 	}
 
-	return &todov1.UpdateTodoResponse{Todo: mapTodoToProto(todo)}, nil
+	return &todov1.UpdateTodoResponse{Todo: mapper.TodoToProto(todo)}, nil
 }
 
 func (a *Adapter) CompleteTodo(
@@ -101,7 +100,7 @@ func (a *Adapter) CompleteTodo(
 		return nil, eris.Wrap(err, "complete todo")
 	}
 
-	return &todov1.CompleteTodoResponse{Todo: mapTodoToProto(todo)}, nil
+	return &todov1.CompleteTodoResponse{Todo: mapper.TodoToProto(todo)}, nil
 }
 
 func (a *Adapter) ReopenTodo(ctx context.Context, req *todov1.ReopenTodoRequest) (*todov1.ReopenTodoResponse, error) {
@@ -110,7 +109,7 @@ func (a *Adapter) ReopenTodo(ctx context.Context, req *todov1.ReopenTodoRequest)
 		return nil, eris.Wrap(err, "reopen todo")
 	}
 
-	return &todov1.ReopenTodoResponse{Todo: mapTodoToProto(todo)}, nil
+	return &todov1.ReopenTodoResponse{Todo: mapper.TodoToProto(todo)}, nil
 }
 
 func (a *Adapter) DeleteTodo(ctx context.Context, req *todov1.DeleteTodoRequest) (*todov1.DeleteTodoResponse, error) {
@@ -125,12 +124,12 @@ func (a *Adapter) ListTodos(ctx context.Context, req *todov1.ListTodosRequest) (
 	filters := dto.ListFilters{}
 
 	if req.Status != nil {
-		status := mapStatusFromProto(req.GetStatus())
+		status := mapper.StatusFromProto(req.GetStatus())
 		filters.Status = &status
 	}
 
 	if req.Priority != nil {
-		priority := mapPriorityFromProto(req.GetPriority())
+		priority := mapper.PriorityFromProto(req.GetPriority())
 		filters.Priority = &priority
 	}
 
@@ -151,87 +150,11 @@ func (a *Adapter) ListTodos(ctx context.Context, req *todov1.ListTodosRequest) (
 
 	protoTodos := make([]*todov1.Todo, len(result.Todos))
 	for i, todo := range result.Todos {
-		protoTodos[i] = mapTodoToProto(todo)
+		protoTodos[i] = mapper.TodoToProto(todo)
 	}
 
 	return &todov1.ListTodosResponse{
 		Todos:      protoTodos,
 		TotalCount: int32(result.TotalCount),
 	}, nil
-}
-
-// — mapping helpers —
-
-func mapTodoToProto(todo *dto.TodoResponse) *todov1.Todo {
-	protoTodo := &todov1.Todo{
-		Id:          todo.ID,
-		Title:       todo.Title,
-		Description: todo.Description,
-		Status:      mapStatusToProto(todo.Status),
-		Priority:    mapPriorityToProto(todo.Priority),
-		CreatedAt:   timestamppb.New(todo.CreatedAt),
-		UpdatedAt:   timestamppb.New(todo.UpdatedAt),
-	}
-
-	if todo.DueDate != nil {
-		protoTodo.DueDate = timestamppb.New(*todo.DueDate)
-	}
-
-	return protoTodo
-}
-
-func mapStatusToProto(status domain.TaskStatus) todov1.TaskStatus {
-	switch status {
-	case domain.TaskStatusPending:
-		return todov1.TaskStatus_TASK_STATUS_PENDING
-	case domain.TaskStatusInProgress:
-		return todov1.TaskStatus_TASK_STATUS_IN_PROGRESS
-	case domain.TaskStatusCompleted:
-		return todov1.TaskStatus_TASK_STATUS_COMPLETED
-	case domain.TaskStatusCancelled:
-		return todov1.TaskStatus_TASK_STATUS_CANCELLED
-	default:
-		return todov1.TaskStatus_TASK_STATUS_UNSPECIFIED
-	}
-}
-
-func mapPriorityToProto(priority domain.Priority) todov1.Priority {
-	switch priority {
-	case domain.PriorityLow:
-		return todov1.Priority_PRIORITY_LOW
-	case domain.PriorityMedium:
-		return todov1.Priority_PRIORITY_MEDIUM
-	case domain.PriorityHigh:
-		return todov1.Priority_PRIORITY_HIGH
-	case domain.PriorityUrgent:
-		return todov1.Priority_PRIORITY_URGENT
-	default:
-		return todov1.Priority_PRIORITY_UNSPECIFIED
-	}
-}
-
-func mapStatusFromProto(status todov1.TaskStatus) domain.TaskStatus {
-	switch status {
-	case todov1.TaskStatus_TASK_STATUS_IN_PROGRESS:
-		return domain.TaskStatusInProgress
-	case todov1.TaskStatus_TASK_STATUS_COMPLETED:
-		return domain.TaskStatusCompleted
-	case todov1.TaskStatus_TASK_STATUS_CANCELLED:
-		return domain.TaskStatusCancelled
-	default:
-		return domain.TaskStatusPending
-	}
-}
-
-func mapPriorityFromProto(priority todov1.Priority) domain.Priority {
-	switch priority {
-	case todov1.Priority_PRIORITY_LOW:
-		return domain.PriorityLow
-	case todov1.Priority_PRIORITY_HIGH:
-		return domain.PriorityHigh
-	case todov1.Priority_PRIORITY_URGENT:
-		return domain.PriorityUrgent
-	default:
-		return domain.PriorityMedium
-	}
 }

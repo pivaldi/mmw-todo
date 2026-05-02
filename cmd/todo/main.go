@@ -94,7 +94,7 @@ func main() {
 		todoConf.AuthServer.URL("", nil),
 	)
 
-	todoModule, err := todo.New(todo.Infrastructure{
+	todoModule, err := todo.New(ctx, todo.Infrastructure{
 		DBPool:     dbPool,
 		EventBus:   systemBus,
 		Subscriber: rawBus,

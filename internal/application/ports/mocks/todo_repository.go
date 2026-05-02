@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-
 	"github.com/pivaldi/mmw-todo/internal/application/ports"
 	"github.com/pivaldi/mmw-todo/internal/domain"
 	mock "github.com/stretchr/testify/mock"
@@ -55,7 +54,6 @@ func (_mock *MockTodoRepository) Delete(ctx context.Context, id domain.TodoID, u
 	} else {
 		r0 = ret.Error(0)
 	}
-
 	return r0
 }
 
@@ -92,19 +90,16 @@ func (_c *MockTodoRepository_Delete_Call) Run(run func(ctx context.Context, id d
 			arg2,
 		)
 	})
-
 	return _c
 }
 
 func (_c *MockTodoRepository_Delete_Call) Return(err error) *MockTodoRepository_Delete_Call {
 	_c.Call.Return(err)
-
 	return _c
 }
 
 func (_c *MockTodoRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, id domain.TodoID, userID uuid.UUID) error) *MockTodoRepository_Delete_Call {
 	_c.Call.Return(run)
-
 	return _c
 }
 
@@ -133,7 +128,6 @@ func (_mock *MockTodoRepository) FindAll(ctx context.Context, filters ports.Filt
 	} else {
 		r1 = ret.Error(1)
 	}
-
 	return r0, r1
 }
 
@@ -164,19 +158,16 @@ func (_c *MockTodoRepository_FindAll_Call) Run(run func(ctx context.Context, fil
 			arg1,
 		)
 	})
-
 	return _c
 }
 
 func (_c *MockTodoRepository_FindAll_Call) Return(todos []*domain.Todo, err error) *MockTodoRepository_FindAll_Call {
 	_c.Call.Return(todos, err)
-
 	return _c
 }
 
 func (_c *MockTodoRepository_FindAll_Call) RunAndReturn(run func(ctx context.Context, filters ports.Filters) ([]*domain.Todo, error)) *MockTodoRepository_FindAll_Call {
 	_c.Call.Return(run)
-
 	return _c
 }
 
@@ -205,7 +196,6 @@ func (_mock *MockTodoRepository) FindByID(ctx context.Context, id domain.TodoID,
 	} else {
 		r1 = ret.Error(1)
 	}
-
 	return r0, r1
 }
 
@@ -242,19 +232,78 @@ func (_c *MockTodoRepository_FindByID_Call) Run(run func(ctx context.Context, id
 			arg2,
 		)
 	})
-
 	return _c
 }
 
 func (_c *MockTodoRepository_FindByID_Call) Return(todo *domain.Todo, err error) *MockTodoRepository_FindByID_Call {
 	_c.Call.Return(todo, err)
-
 	return _c
 }
 
 func (_c *MockTodoRepository_FindByID_Call) RunAndReturn(run func(ctx context.Context, id domain.TodoID, userID uuid.UUID) (*domain.Todo, error)) *MockTodoRepository_FindByID_Call {
 	_c.Call.Return(run)
+	return _c
+}
 
+// Health provides a mock function for the type MockTodoRepository
+func (_mock *MockTodoRepository) Health(ctx context.Context) (any, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Health")
+	}
+
+	var r0 any
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (any, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) any); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(any)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTodoRepository_Health_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Health'
+type MockTodoRepository_Health_Call struct {
+	*mock.Call
+}
+
+// Health is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockTodoRepository_Expecter) Health(ctx interface{}) *MockTodoRepository_Health_Call {
+	return &MockTodoRepository_Health_Call{Call: _e.mock.On("Health", ctx)}
+}
+
+func (_c *MockTodoRepository_Health_Call) Run(run func(ctx context.Context)) *MockTodoRepository_Health_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTodoRepository_Health_Call) Return(v any, err error) *MockTodoRepository_Health_Call {
+	_c.Call.Return(v, err)
+	return _c
+}
+
+func (_c *MockTodoRepository_Health_Call) RunAndReturn(run func(ctx context.Context) (any, error)) *MockTodoRepository_Health_Call {
+	_c.Call.Return(run)
 	return _c
 }
 
@@ -272,7 +321,6 @@ func (_mock *MockTodoRepository) Save(ctx context.Context, todo *domain.Todo) er
 	} else {
 		r0 = ret.Error(0)
 	}
-
 	return r0
 }
 
@@ -303,37 +351,33 @@ func (_c *MockTodoRepository_Save_Call) Run(run func(ctx context.Context, todo *
 			arg1,
 		)
 	})
-
 	return _c
 }
 
 func (_c *MockTodoRepository_Save_Call) Return(err error) *MockTodoRepository_Save_Call {
 	_c.Call.Return(err)
-
 	return _c
 }
 
 func (_c *MockTodoRepository_Save_Call) RunAndReturn(run func(ctx context.Context, todo *domain.Todo) error) *MockTodoRepository_Save_Call {
 	_c.Call.Return(run)
-
 	return _c
 }
 
 // Update provides a mock function for the type MockTodoRepository
-func (_mock *MockTodoRepository) Update(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error {
-	ret := _mock.Called(ctx, todo, userID)
+func (_mock *MockTodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
+	ret := _mock.Called(ctx, todo)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.Todo, uuid.UUID) error); ok {
-		r0 = returnFunc(ctx, todo, userID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.Todo) error); ok {
+		r0 = returnFunc(ctx, todo)
 	} else {
 		r0 = ret.Error(0)
 	}
-
 	return r0
 }
 
@@ -345,12 +389,11 @@ type MockTodoRepository_Update_Call struct {
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - todo *domain.Todo
-//   - userID uuid.UUID
-func (_e *MockTodoRepository_Expecter) Update(ctx interface{}, todo interface{}, userID interface{}) *MockTodoRepository_Update_Call {
-	return &MockTodoRepository_Update_Call{Call: _e.mock.On("Update", ctx, todo, userID)}
+func (_e *MockTodoRepository_Expecter) Update(ctx interface{}, todo interface{}) *MockTodoRepository_Update_Call {
+	return &MockTodoRepository_Update_Call{Call: _e.mock.On("Update", ctx, todo)}
 }
 
-func (_c *MockTodoRepository_Update_Call) Run(run func(ctx context.Context, todo *domain.Todo, userID uuid.UUID)) *MockTodoRepository_Update_Call {
+func (_c *MockTodoRepository_Update_Call) Run(run func(ctx context.Context, todo *domain.Todo)) *MockTodoRepository_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -360,28 +403,20 @@ func (_c *MockTodoRepository_Update_Call) Run(run func(ctx context.Context, todo
 		if args[1] != nil {
 			arg1 = args[1].(*domain.Todo)
 		}
-		var arg2 uuid.UUID
-		if args[2] != nil {
-			arg2 = args[2].(uuid.UUID)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
-
 	return _c
 }
 
 func (_c *MockTodoRepository_Update_Call) Return(err error) *MockTodoRepository_Update_Call {
 	_c.Call.Return(err)
-
 	return _c
 }
 
-func (_c *MockTodoRepository_Update_Call) RunAndReturn(run func(ctx context.Context, todo *domain.Todo, userID uuid.UUID) error) *MockTodoRepository_Update_Call {
+func (_c *MockTodoRepository_Update_Call) RunAndReturn(run func(ctx context.Context, todo *domain.Todo) error) *MockTodoRepository_Update_Call {
 	_c.Call.Return(run)
-
 	return _c
 }
