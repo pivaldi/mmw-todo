@@ -66,7 +66,7 @@ type MockTodoRepository_Delete_Call struct {
 //   - ctx context.Context
 //   - id domain.TodoID
 //   - userID uuid.UUID
-func (_e *MockTodoRepository_Expecter) Delete(ctx interface{}, id interface{}, userID interface{}) *MockTodoRepository_Delete_Call {
+func (_e *MockTodoRepository_Expecter) Delete(ctx any, id any, userID any) *MockTodoRepository_Delete_Call {
 	return &MockTodoRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, id, userID)}
 }
 
@@ -139,7 +139,7 @@ type MockTodoRepository_FindAll_Call struct {
 // FindAll is a helper method to define mock.On call
 //   - ctx context.Context
 //   - filters ports.Filters
-func (_e *MockTodoRepository_Expecter) FindAll(ctx interface{}, filters interface{}) *MockTodoRepository_FindAll_Call {
+func (_e *MockTodoRepository_Expecter) FindAll(ctx any, filters any) *MockTodoRepository_FindAll_Call {
 	return &MockTodoRepository_FindAll_Call{Call: _e.mock.On("FindAll", ctx, filters)}
 }
 
@@ -208,7 +208,7 @@ type MockTodoRepository_FindByID_Call struct {
 //   - ctx context.Context
 //   - id domain.TodoID
 //   - userID uuid.UUID
-func (_e *MockTodoRepository_Expecter) FindByID(ctx interface{}, id interface{}, userID interface{}) *MockTodoRepository_FindByID_Call {
+func (_e *MockTodoRepository_Expecter) FindByID(ctx any, id any, userID any) *MockTodoRepository_FindByID_Call {
 	return &MockTodoRepository_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id, userID)}
 }
 
@@ -280,7 +280,7 @@ type MockTodoRepository_Health_Call struct {
 
 // Health is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockTodoRepository_Expecter) Health(ctx interface{}) *MockTodoRepository_Health_Call {
+func (_e *MockTodoRepository_Expecter) Health(ctx any) *MockTodoRepository_Health_Call {
 	return &MockTodoRepository_Health_Call{Call: _e.mock.On("Health", ctx)}
 }
 
@@ -332,7 +332,7 @@ type MockTodoRepository_Save_Call struct {
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
 //   - todo *domain.Todo
-func (_e *MockTodoRepository_Expecter) Save(ctx interface{}, todo interface{}) *MockTodoRepository_Save_Call {
+func (_e *MockTodoRepository_Expecter) Save(ctx any, todo any) *MockTodoRepository_Save_Call {
 	return &MockTodoRepository_Save_Call{Call: _e.mock.On("Save", ctx, todo)}
 }
 
@@ -389,7 +389,7 @@ type MockTodoRepository_Update_Call struct {
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - todo *domain.Todo
-func (_e *MockTodoRepository_Expecter) Update(ctx interface{}, todo interface{}) *MockTodoRepository_Update_Call {
+func (_e *MockTodoRepository_Expecter) Update(ctx any, todo any) *MockTodoRepository_Update_Call {
 	return &MockTodoRepository_Update_Call{Call: _e.mock.On("Update", ctx, todo)}
 }
 
